@@ -1,6 +1,6 @@
 require_relative 'rest_service'
 
-class ServerServiceAPI
+class WallAPI
   include RESTServiceHelper
 
   attr_reader :base_url

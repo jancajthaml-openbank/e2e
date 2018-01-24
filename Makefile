@@ -7,4 +7,4 @@ bbtest:
 
 .PHONY: run
 run:
-	docker-compose up
+	@docker-compose up

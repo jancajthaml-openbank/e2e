@@ -36,7 +36,7 @@ end
 step ":host is healthy" do |host|
   case host
   when "wall"
-    $http_client.server_service.health_check()
+    $http_client.wall_service.health_check()
   else
     raise "unknown host #{host}"
   end
