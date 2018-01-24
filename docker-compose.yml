@@ -1,0 +1,87 @@
+version: '2'
+
+services:
+
+  bbtest:
+    build:
+      context: .
+      dockerfile: bbtest/Dockerfile
+    image: e2e_dev
+    working_dir: /opt/bbtest
+    depends_on:
+      - wall
+      - queue
+      - vault
+      - vaultRaiffeisen
+      - vaultFio
+    environment:
+      - PERSISTENCE_PATH=/data
+      - TENANT=test
+      - COMPOSE_PROJECT_NAME
+    volumes:
+      - ./journal:/data
+      - ./logs:/logs
+      - ./bbtest:/opt/bbtest
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers
+
+  wall:
+    image: openbank/wall
+    restart: unless-stopped
+    environment:
+      - WALL_STORAGE=/data
+      - LAKE_LOG_LEVEL=DEBUG
+    volumes:
+      - ./journal:/data
+    ports:
+      - "8080"
+    logging:
+      driver: json-file
+
+  queue:
+    image: openbank/lake
+    restart: "no"
+    environment:
+      - LAKE_LOG_LEVEL=DEBUG
+    ports:
+      - "5562"
+      - "5561"
+    command: ["run"]
+    logging:
+      driver: json-file
+
+  vault:
+    image: openbank/vault
+    restart: unless-stopped
+    environment:
+      - VAULT_STORAGE=/data
+      - VAULT_LOG_LEVEL=DEBUG
+      - VAULT_TENANT=test
+    volumes:
+      - ./journal:/data
+    logging:
+      driver: json-file
+
+  vaultRaiffeisen:
+    image: openbank/vault
+    restart: unless-stopped
+    environment:
+      - VAULT_STORAGE=/data
+      - VAULT_LOG_LEVEL=DEBUG
+      - VAULT_TENANT=RAIFFEISEN
+    volumes:
+      - ./journal:/data
+    logging:
+      driver: json-file
+
+  vaultFio:
+    image: openbank/vault
+    restart: unless-stopped
+    environment:
+      - VAULT_STORAGE=/data
+      - VAULT_LOG_LEVEL=DEBUG
+      - VAULT_TENANT=FIO
+    volumes:
+      - ./journal:/data
+    logging:
+      driver: json-file
