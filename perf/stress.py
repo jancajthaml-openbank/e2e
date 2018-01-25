@@ -18,8 +18,6 @@ info("tenant set to {0}".format(tenant))
 
 class StressTest:
   accounts = {
-    #"min": max(100, int((limit * 20 * nodes) / 10)) * 10,
-    #"max": max(1000, int((limit * 200 * nodes) / 10)) * 10,
     "max_amount": 100000
   }
 
@@ -178,7 +176,7 @@ class StressTest:
     return True
 
   def create_random_transactions_parallel(self):
-    num_of_transactions = 5000
+    num_of_transactions = 1000
 
     all_accounts = list(self.g_accounts.keys())
     credit_accounts = [i for i in all_accounts if self.g_accounts[i]['active']]

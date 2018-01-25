@@ -32,11 +32,9 @@ mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH}
 
 ################################################################################
 
-clean_volume() {
-  if [ -z ${KEEP_VOLUME} ] && [ "$(ls -A ${PERSISTENCE_PATH})" ] ; then
-    rm -rf ${PERSISTENCE_PATH}/*
-  fi
-}
+if [ "$(ls -A ${PERSISTENCE_PATH})" ] ; then
+  rm -rf ${PERSISTENCE_PATH}/*
+fi
 
 rand_alnum() {
   LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 13 ; echo
@@ -96,11 +94,6 @@ spawn_vault() {
   openbank/vault
 }
 
-pre_start() {
-  echo "pre-start clearing folder ${PERSISTENCE_PATH}"
-  clean_volume
-}
-
 post_stop() {
   if [ -z $at_most_once ]; then
     echo ""
@@ -136,9 +129,6 @@ post_stop() {
       docker kill $c &> /dev/null || :
       docker rm -f $c &> /dev/null || :
     fi
-
-    echo "post-stop clearing folder ${PERSISTENCE_PATH}"
-    clean_volume
 
     test_container=$(docker ps -a | grep openbank/dev:perf | awk '{print $1}')
 

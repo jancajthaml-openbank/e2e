@@ -8,7 +8,7 @@ import sys
 try:
   limit = int(os.getenv('MAX_PARALLELISM', '100'))
 except ValueError:
-  limit = 100
+  limit = 200
 
 try:
   nodes = int(os.getenv('NODES', 1))
