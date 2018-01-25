@@ -57,6 +57,7 @@ services:
       - VAULT_STORAGE=/data
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=test
+      - VAULT_JOURNAL_SATURATION=1
     volumes:
       - ./journal:/data
     logging:
@@ -69,6 +70,7 @@ services:
       - VAULT_STORAGE=/data
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=RAIFFEISEN
+      - VAULT_JOURNAL_SATURATION=1
     volumes:
       - ./journal:/data
     logging:
@@ -81,6 +83,7 @@ services:
       - VAULT_STORAGE=/data
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=FIO
+      - VAULT_JOURNAL_SATURATION=1
     volumes:
       - ./journal:/data
     logging:

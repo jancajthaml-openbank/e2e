@@ -30,11 +30,7 @@ RSpec.configure do |config|
       label = %x(docker inspect --format='{{.Name}}' #{container})
       label = $? == 0 ? label.strip : container
 
-      log_path = %x(docker inspect --format='{{.LogPath}}' #{container})
-      if $? == 0
-        log_path = log_path.strip
-        FileUtils.cp(log_path, "/logs/#{label}.jsonlog") if File.file?(log_path)
-      end
+      %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
 
       %x(docker kill #{container} &>/dev/null || :)
       %x(docker rm -f #{container} &>/dev/null || :)
@@ -47,11 +43,7 @@ RSpec.configure do |config|
       label = %x(docker inspect --format='{{.Name}}' #{container})
       label = $? == 0 ? label.strip : container
 
-      log_path = %x(docker inspect --format='{{.LogPath}}' #{container})
-      if $? == 0
-        log_path = log_path.strip
-        FileUtils.cp(log_path, "/logs/#{label}.jsonlog") if File.file?(log_path)
-      end
+      %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
 
       %x(docker kill #{container} &>/dev/null || :)
       %x(docker rm -f #{container} &>/dev/null || :)
@@ -64,11 +56,7 @@ RSpec.configure do |config|
       label = %x(docker inspect --format='{{.Name}}' #{container})
       label = $? == 0 ? label.strip : container
 
-      log_path = %x(docker inspect --format='{{.LogPath}}' #{container})
-      if $? == 0
-        log_path = log_path.strip
-        FileUtils.cp(log_path, "/logs/#{label}.jsonlog") if File.file?(log_path)
-      end
+      %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
 
       %x(docker kill #{container} &>/dev/null || :)
       %x(docker rm -f #{container} &>/dev/null || :)
