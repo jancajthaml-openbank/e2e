@@ -8,3 +8,9 @@ bbtest:
 .PHONY: run
 run:
 	@docker-compose up
+
+.PHONY: perf
+perf:
+	@cd perf && docker build -t e2e_perf .
+	KEEP_VOLUME=true \
+		./perf/performance

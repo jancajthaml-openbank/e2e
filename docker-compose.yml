@@ -30,7 +30,7 @@ services:
     restart: unless-stopped
     environment:
       - WALL_STORAGE=/data
-      - LAKE_LOG_LEVEL=DEBUG
+      - WALL_LOG_LEVEL=DEBUG
     volumes:
       - ./journal:/data
     ports:
