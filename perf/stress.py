@@ -18,8 +18,8 @@ info("tenant set to {0}".format(tenant))
 
 class StressTest:
   accounts = {
-    "min": max(100, int((limit * 20 * nodes) / 10)) * 10,
-    "max": max(1000, int((limit * 200 * nodes) / 10)) * 10,
+    #"min": max(100, int((limit * 20 * nodes) / 10)) * 10,
+    #"max": max(1000, int((limit * 200 * nodes) / 10)) * 10,
     "max_amount": 100000
   }
 
@@ -74,7 +74,7 @@ class StressTest:
     return True
 
   def create_random_accounts_parallel(self):
-    num_of_accounts = 10000
+    num_of_accounts = 100
 
     info("preparing creation of {0} accounts in parallel of {1}".format(num_of_accounts, limit))
     prepared = [ api.prepare_create_account("par_" + str(x + 1), bool(getrandbits(1))) for x in range(num_of_accounts) ]
@@ -126,10 +126,10 @@ class StressTest:
     return True
 
   def create_random_accounts_serial(self):
-    num_of_accounts = 100
+    num_of_accounts = 10
     info("preparing creation of {0} accounts one by one".format(num_of_accounts))
 
-    prepared = [ api.prepare_create_account("ser_" + str(self.accounts["max"] + x + 1), bool(getrandbits(1))) for x in range(num_of_accounts) ]
+    prepared = [ api.prepare_create_account("ser_" + str(x + 1), bool(getrandbits(1))) for x in range(num_of_accounts) ]
 
     #def partial(cb, request):
      # def wrapper(response, *extra_args, **kwargs):
@@ -178,7 +178,7 @@ class StressTest:
     return True
 
   def create_random_transactions_parallel(self):
-    num_of_transactions = 10000
+    num_of_transactions = 5000
 
     all_accounts = list(self.g_accounts.keys())
     credit_accounts = [i for i in all_accounts if self.g_accounts[i]['active']]
@@ -241,7 +241,7 @@ class StressTest:
     return True
 
   def create_random_transactions_serial(self):
-    num_of_transactions = 100
+    num_of_transactions = 50
 
     all_accounts = list(self.g_accounts.keys())
     credit_accounts = [i for i in all_accounts if self.g_accounts[i]['active']]
