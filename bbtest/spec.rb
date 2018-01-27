@@ -61,7 +61,7 @@ RSpec.configure do |config|
       %x(docker kill #{container} &>/dev/null || :)
       %x(docker rm -f #{container} &>/dev/null || :)
     } if $? == 0
-    puts "[info] after suite done"
+    print "[info] after suite done"
   end
 
 end
