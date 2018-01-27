@@ -50,7 +50,7 @@ Feature: Transaction workflow test
     When  active EUR account Target is created
     Then  Target balance should be 0 EUR
 
-    When  Following transaction forward_id is created
+    When  Following transaction forward_id is created 1 times
     """
         OriginDebit OriginCredit 1 EUR transfer_1
         OriginDebit OriginCredit 2 EUR transfer_2

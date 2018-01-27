@@ -47,7 +47,7 @@ step ":amount :currency is transfered from :from to :to" do |amount, currency, f
   end
 end
 
-step "Following transaction :transaction_id is created" do |transaction_id, data = nil|
+step "Following transaction :transaction_id is created :times times" do |transaction_id, times, data = nil|
   transfers = []
 
   data.each_line do |transfer|
@@ -62,8 +62,10 @@ step "Following transaction :transaction_id is created" do |transaction_id, data
     })
   end
 
-  resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
-  expect(resp.status).to eq(200)
+  times.times do |i|
+    resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
+    expect(resp.status).to eq(200)
+  end
 end
 
 step ":transaction_id :transfer_id :side side is forwarded to :account" do |transaction_id, transfer_id, side, account|
@@ -87,5 +89,11 @@ end
 placeholder :amount do
   match(/-?\d{1,100}\.\d{1,100}|-?\d{1,100}/) do |amount|
     amount
+  end
+end
+
+placeholder :times do
+  match(/\d{1,10}/) do |times|
+    times.to_i
   end
 end

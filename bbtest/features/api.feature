@@ -1,5 +1,7 @@
 Feature: API test
+
   Background: Basic orchestration
+
     Given container wall should be running
     And   container lake should be running
     And   container vault should be running
