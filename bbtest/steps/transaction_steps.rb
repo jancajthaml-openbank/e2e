@@ -63,20 +63,31 @@ step "Following transaction :transaction_id is created :times times" do |transac
     })
   end
 
-  requests = [*1..times]
   responses = []
-  mutex = Mutex.new
 
-  32.times.map {
-    Thread.new(requests, responses) do |requests, responses|
-      while request = mutex.synchronize { requests.pop }
-        mutex.synchronize { responses << $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers) }
+  if times == 1
+    resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
+    responses << resp.status
+  else
+    requests = [*1..times].reverse
+    mutex = Mutex.new
+
+    8.times.map {
+      Thread.new(requests, responses) do |requests, responses|
+        while request = mutex.synchronize { requests.pop }
+          begin
+            resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
+            mutex.synchronize { responses << resp.status }
+          rescue Exception => e
+            mutex.synchronize { responses << 503 }
+          end
+        end
       end
-    end
-  }.each(&:join)
+    }.each(&:join)
+  end
 
-  responses.each { |resp|
-    expect(resp.status).to eq(200)
+  responses.each { |status|
+    expect(status).to eq(200)
   }
 end
 
