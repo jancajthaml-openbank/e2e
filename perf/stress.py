@@ -17,6 +17,7 @@ info("server running at {0}".format(site + '/v1/sparrow'))
 info("tenant set to {0}".format(tenant))
 
 class StressTest:
+
   accounts = {
     "max_amount": 100000
   }
@@ -67,7 +68,7 @@ class StressTest:
     else:
       took('all passed                                                      ', time.time() - start, num_of_requests, success)
 
-    ######
+    ############################################################################
 
     return True
 
@@ -119,7 +120,7 @@ class StressTest:
     else:
       took('all passed                                                      ', time.time() - start, num_of_accounts, success)
 
-    ######
+    ############################################################################
 
     return True
 
@@ -128,11 +129,6 @@ class StressTest:
     info("preparing creation of {0} accounts one by one".format(num_of_accounts))
 
     prepared = [ api.prepare_create_account("ser_" + str(x + 1), bool(getrandbits(1))) for x in range(num_of_accounts) ]
-
-    #def partial(cb, request):
-     # def wrapper(response, *extra_args, **kwargs):
-      #  return cb(response, request)
-      #return wrapper
 
     def account_callback(response, req):
       if response.status_code == 200:
@@ -171,7 +167,7 @@ class StressTest:
     else:
       took('all passed                                                      ', time.time() - start, num_of_accounts, success)
 
-    ######
+    ############################################################################
 
     return True
 
@@ -210,7 +206,7 @@ class StressTest:
       else:
         return None
 
-    ######
+    ############################################################################
 
     info('sending {0} requests'.format(len(prepared)))
 
@@ -315,13 +311,7 @@ class StressTest:
     num_of_accounts = len(self.g_accounts.keys())
     info("preparing checking balance of {0} accounts one by one".format(num_of_accounts))
 
-    #prepared = [ api.prepare_create_account("ser_" + str(self.accounts["max"] + x + 1), bool(getrandbits(1))) for x in range(num_of_accounts) ]
     prepared = [ api.prepare_get_balance(number, reference) for number, reference in self.g_accounts.items() ]
-
-    #def partial(cb, request):
-    #  def wrapper(response, *extra_args, **kwargs):
-    #    return cb(response, request)
-    #  return wrapper
 
     def account_callback(response, req):
       content = response.json()
@@ -356,7 +346,7 @@ class StressTest:
     else:
       took('all passed                                                      ', time.time() - start, num_of_accounts, success)
 
-    ######
+    ############################################################################
 
     return True
 
@@ -433,5 +423,4 @@ class StressTest:
 
     self.balance_cancel_out_check()
 
-
-#    self.check_balances()
+    ############################################################################

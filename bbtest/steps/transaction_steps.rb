@@ -62,7 +62,7 @@ step "Following transaction :transaction_id is created :times times" do |transac
     })
   end
 
-  times.times do |i|
+  times.times do |_|
     resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
     expect(resp.status).to eq(200)
   end
