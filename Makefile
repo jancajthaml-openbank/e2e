@@ -1,5 +1,5 @@
 .PHONY: all
-all: bbtest
+all: bbtest perf
 
 .PHONY: bbtest
 bbtest:

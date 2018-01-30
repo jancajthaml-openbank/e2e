@@ -67,7 +67,7 @@ step "Following transaction :transaction_id is created :times times" do |transac
 
   if times == 1
     resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
-    responses << resp.status
+    expect(resp.status).to eq(200)
   else
     requests = [*1..times].reverse
     mutex = Mutex.new
@@ -77,9 +77,10 @@ step "Following transaction :transaction_id is created :times times" do |transac
         while request = mutex.synchronize { requests.pop }
           begin
             resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
+            raise if resp.status == 503
             mutex.synchronize { responses << resp.status }
-          rescue Exception => e
-            mutex.synchronize { responses << 503 }
+          rescue
+            retry
           end
         end
       end

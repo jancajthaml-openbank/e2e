@@ -15,7 +15,7 @@ Feature: Integrity test
     When  active EUR account ReplayCredit is created
     When  pasive EUR account ReplayDredit is created
 
-    When  Following transaction same is created 100 times
+    When  Following transaction race is created 100 times
     """
-        ReplayDredit ReplayCredit 1 EUR same_id
+        ReplayDredit ReplayCredit 1 EUR race_id
     """
