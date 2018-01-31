@@ -48,6 +48,19 @@ step ":amount :currency is transfered from :from to :to" do |amount, currency, f
   end
 end
 
+step ":amount :currency is transfered from :from to :to with id :id" do |amount, currency, from, to, id|
+  resp = $http_client.wall_service.single_transfer(@tenant_id, from, to, amount, currency, id)
+  expect(resp.status).to eq(200)
+
+  begin
+    resp_body = JSON.parse(resp.body)
+    @transaction = resp_body["transaction"]
+    @transfers = resp_body["transfers"]
+  rescue JSON::ParserError
+    raise "invalid response got \"#{resp.body.strip}\""
+  end
+end
+
 step "Following transaction :transaction_id is created :times times" do |transaction_id, times, data = nil|
   transfers = []
 

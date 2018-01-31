@@ -11,8 +11,8 @@ Feature: Journal integrity test
   Scenario: Creation of account
     Given tenant is test
 
-    When  pasive EUR account A is created
-    Then  snapshot /account/A/snapshot/0000000000 should be
+    When  pasive EUR account Euro is created
+    Then  snapshot /account/Euro/snapshot/0000000000 should be
     """
         {
             "version": 0,
@@ -21,10 +21,10 @@ Feature: Journal integrity test
             "promiseBuffer": []
         }
     """
-    And  meta data /account/A/meta should be
+    And  meta data /account/Euro/meta should be
     """
         {
-            "accountName": "A",
+            "accountName": "Euro",
             "isBalanceCheck": false,
             "currency": "EUR"
         }
@@ -48,4 +48,14 @@ Feature: Journal integrity test
             "currency": "XRP"
         }
     """
+
+  Scenario: Creating of transaction
+    Given tenant is test
+
+    When  pasive XXX account A is created
+    And   active XXX account B is created
+    And   123456789123313.000422901124 XXX is transfered from A to B with id xxx
+
+    Then  file /transaction/xxx should exist
+    And   file /transaction_state/xxx should exist
 

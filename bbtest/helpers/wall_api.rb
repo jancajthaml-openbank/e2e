@@ -26,7 +26,7 @@ class WallAPI
 
   ##################################################### transaction methods ####
 
-  def single_transfer(tenant_id, from, to, amount, currency)
+  def single_transfer(tenant_id, from, to, amount, currency, id = nil)
     body = {
       transfers: [{
         credit: to,
@@ -35,6 +35,8 @@ class WallAPI
         currency: currency
       }]
     }
+
+    body["id"] = id unless id.nil?
     post("#{base_url}/v1/sparrow/transaction/#{tenant_id}", body)
   end
 
