@@ -1,5 +1,6 @@
 require 'bigdecimal'
 require 'json'
+require 'date'
 
 step "snapshot :path should be" do |path, expectation|
   abspath = "/data/#{@tenant_id}#{path}"
@@ -51,16 +52,20 @@ step "transaction :path should be" do |path, expectation|
   lines = File.open(abspath, 'r').read.split("\n")
 
   id = lines[0]
+  now = DateTime.now
 
   transactions = lines[1..-1].map { |line|
     _, from, to, value_date, amount, currency = line.strip.split(" ")
+
+    delta_seconds = ((now - Time.at(value_date.to_i).to_datetime) * 24 * 60 * 60).to_i
+    raise "invalid valueDate" if delta_seconds > 60
 
     {
       "accountFrom" => from,
       "accountTo" => to,
       "amount" => BigDecimal.new(amount).to_s('F'),
       "currency" => currency
-    } #valueDate: value_date, # todo check value date parse to datetime rfc
+    }
   }
 
   expectation = JSON.parse(expectation)
