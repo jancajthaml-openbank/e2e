@@ -1,4 +1,8 @@
 
+step "storage is empty" do
+  FileUtils.rm_rf("/data/.", secure: true)
+end
+
 step "container :container_name should be running" do |container_name|
   prefix = ENV.fetch('COMPOSE_PROJECT_NAME', "")
   container_id = %x(docker ps -aqf "name=#{prefix}_#{container_name}" 2>/dev/null)

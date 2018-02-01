@@ -1,13 +1,12 @@
 Feature: Integrity test
 
   Background: Basic orchestration
-
     Given container wall should be running
     And   container lake should be running
     And   container vault should be running
     And   wall is listening on 8080
     And   wall is healthy
-
+    And   storage is empty
 
   Scenario: Replay same transaction
     Given tenant is test

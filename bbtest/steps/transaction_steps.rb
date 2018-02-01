@@ -37,7 +37,7 @@ end
 
 step ":amount :currency is transfered from :from to :to" do |amount, currency, from, to|
   resp = $http_client.wall_service.single_transfer(@tenant_id, from, to, amount, currency)
-  expect(resp.status).to eq(200)
+  raise "failed to create transaction with #{resp.status}" unless resp.status == 200 || resp.status == 201
 
   begin
     resp_body = JSON.parse(resp.body)
@@ -50,7 +50,7 @@ end
 
 step ":amount :currency is transfered from :from to :to with id :id" do |amount, currency, from, to, id|
   resp = $http_client.wall_service.single_transfer(@tenant_id, from, to, amount, currency, id)
-  expect(resp.status).to eq(200)
+  raise "failed to create transaction with #{resp.status}" unless resp.status == 200 || resp.status == 201
 
   begin
     resp_body = JSON.parse(resp.body)

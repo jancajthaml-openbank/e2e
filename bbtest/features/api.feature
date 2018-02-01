@@ -1,12 +1,12 @@
 Feature: API test
 
   Background: Basic orchestration
-
     Given container wall should be running
     And   container lake should be running
     And   container vault should be running
     And   wall is listening on 8080
     And   wall is healthy
+    And   storage is empty
 
   Scenario: Account API - account doesn't exist
     When  I call GET http://wall:8080/v1/sparrow/account/test/xxx
@@ -89,7 +89,7 @@ Feature: API test
         {}
     """
 
-  Scenario: Transaction API - new transaction
+  Scenario: Transaction API - new transaction, valid resend, invalid resend
     When  I call POST http://wall:8080/v1/sparrow/transaction/test
     """
         {
@@ -114,7 +114,6 @@ Feature: API test
         }
     """
 
-  Scenario: Transaction API - duplicate transaction (valid)
     When  I call POST http://wall:8080/v1/sparrow/transaction/test
     """
         {
@@ -139,7 +138,6 @@ Feature: API test
         }
     """
 
-  Scenario: Transaction API - duplicate transaction (invalid)
     When  I call POST http://wall:8080/v1/sparrow/transaction/test
     """
         {
