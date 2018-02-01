@@ -28,6 +28,7 @@ RSpec.configure do |config|
     puts "[info] after suite start"
 
     teardown_vaults = Proc.new {
+      # fixme each of vaults in parallel
       vaults = %x(docker ps -aqf "ancestor=openbank/vault" 2>/dev/null)
       vaults.split("\n").each { |container|
 
@@ -42,6 +43,7 @@ RSpec.configure do |config|
     }
 
     teardown_walls = Proc.new {
+      # fixme each of wall in parallel
       walls = %x(docker ps -aqf "ancestor=openbank/wall" 2>/dev/null)
       walls.split("\n").each { |container|
 
@@ -56,6 +58,7 @@ RSpec.configure do |config|
     }
 
     teardown_lakes = Proc.new {
+      # fixme each of lake in parallel
       lakes = %x(docker ps -aqf "ancestor=openbank/lake" 2>/dev/null)
       lakes.split("\n").each { |container|
 
