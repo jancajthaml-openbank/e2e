@@ -10,10 +10,7 @@ step "directory :path should contain :count files" do |path, count|
   abspath = "/data/#{@tenant_id}#{path}"
   files = Dir["#{abspath}/*"].reject { |f| File.directory?(f) }
 
-  #expect(files.length).to eq(count)
-  unless files.length == count
-    raise "expected  #{count} files, actual is #{files.length}\nfiles:    #{files}"
-  end
+  raise "expected  #{count} files, actual is #{files.length}\nfiles:    #{files}" unless files.length == count
 end
 
 # input matching

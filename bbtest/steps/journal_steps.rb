@@ -9,7 +9,7 @@ step "snapshot :path should be" do |path, expectation|
   contents = File.open(abspath, 'rb').read
 
   version = contents[0..4].unpack('L')[0]
-  lines = contents[4..-1].split("\n").map { |line| line.strip }
+  lines = contents[4..-1].split("\n").map(&:strip)
 
   balance = BigDecimal.new(lines[0]).to_s('F')
   promised = BigDecimal.new(lines[1]).to_s('F')
@@ -78,10 +78,7 @@ step "transaction state :path should be" do |path, expectation|
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
   contents = File.open(abspath, 'r').read
-
-  expectation = expectation.strip
-
-  expect(contents).to eq(expectation)
+  expect(contents).to eq(expectation.strip)
 end
 
 # input matching

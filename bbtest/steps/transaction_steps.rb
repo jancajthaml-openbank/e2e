@@ -82,27 +82,20 @@ step "Following transaction :transaction_id is created :times times" do |transac
     resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
     expect(resp.status).to eq(200)
   else
-    requests = [*1..times].reverse
     mutex = Mutex.new
 
-    8.times.map {
-      Thread.new(requests, responses) do |requests, responses|
-        while request = mutex.synchronize { requests.pop }
-          begin
-            resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
-            raise if resp.status == 503
-            mutex.synchronize { responses << resp.status }
-          rescue
-            retry
-          end
-        end
+    [*1..times].in_parallel_n(8){ |_|
+      begin
+        resp = $http_client.wall_service.multi_transfer(@tenant_id, transaction_id, transfers)
+        raise if resp.status == 503
+        mutex.synchronize { responses << resp.status }
+      rescue
+        retry
       end
-    }.each(&:join)
+    }
   end
 
-  responses.each { |status|
-    expect(status).to eq(200)
-  }
+  responses.each { |status| expect(status).to eq(200) }
 end
 
 step ":transaction_id :transfer_id :side side is forwarded to :account" do |transaction_id, transfer_id, side, account|

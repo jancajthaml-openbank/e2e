@@ -1,5 +1,6 @@
 require 'turnip/rspec'
 require 'json'
+require 'thread'
 
 Thread.abort_on_exception = true
 
@@ -25,44 +26,51 @@ RSpec.configure do |config|
   config.after(:suite) do |_suite|
     puts ""
     puts "[info] after suite start"
-    puts "[info] > teardown vaults"
-    vaults = %x(docker ps -aqf "ancestor=openbank/vault" 2>/dev/null)
-    vaults.split("\n").each { |container|
 
-      label = %x(docker inspect --format='{{.Name}}' #{container})
-      label = $? == 0 ? label.strip : container
+    teardown_vaults = Proc.new {
+      vaults = %x(docker ps -aqf "ancestor=openbank/vault" 2>/dev/null)
+      vaults.split("\n").each { |container|
 
-      %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
+        label = %x(docker inspect --format='{{.Name}}' #{container})
+        label = $? == 0 ? label.strip : container
 
-      %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
-      %x(docker rm -f #{container} &>/dev/null || :)
-    } if $? == 0
+        %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
 
-    puts "[info] > teardown walls"
-    walls = %x(docker ps -aqf "ancestor=openbank/wall" 2>/dev/null)
-    walls.split("\n").each { |container|
+        %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
+        %x(docker rm -f #{container} &>/dev/null || :)
+      } if $? == 0
+    }
 
-      label = %x(docker inspect --format='{{.Name}}' #{container})
-      label = $? == 0 ? label.strip : container
+    teardown_walls = Proc.new {
+      walls = %x(docker ps -aqf "ancestor=openbank/wall" 2>/dev/null)
+      walls.split("\n").each { |container|
 
-      %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
+        label = %x(docker inspect --format='{{.Name}}' #{container})
+        label = $? == 0 ? label.strip : container
 
-      %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
-      %x(docker rm -f #{container} &>/dev/null || :)
-    } if $? == 0
+        %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
 
-    puts "[info] > teardown lakes"
-    lakes = %x(docker ps -aqf "ancestor=openbank/lake" 2>/dev/null)
-    lakes.split("\n").each { |container|
+        %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
+        %x(docker rm -f #{container} &>/dev/null || :)
+      } if $? == 0
+    }
 
-      label = %x(docker inspect --format='{{.Name}}' #{container})
-      label = $? == 0 ? label.strip : container
+    teardown_lakes = Proc.new {
+      lakes = %x(docker ps -aqf "ancestor=openbank/lake" 2>/dev/null)
+      lakes.split("\n").each { |container|
 
-      %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
+        label = %x(docker inspect --format='{{.Name}}' #{container})
+        label = $? == 0 ? label.strip : container
 
-      %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
-      %x(docker rm -f #{container} &>/dev/null || :)
-    } if $? == 0
+        %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
+
+        %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
+        %x(docker rm -f #{container} &>/dev/null || :)
+      } if $? == 0
+    }
+
+    [teardown_vaults, teardown_walls, teardown_lakes].in_parallel_n(3){ |f| f.call }
+
     print "[info] after suite done"
   end
 
@@ -81,6 +89,24 @@ class Hash
         end
       end
     end
+  end
+
+end
+
+module Enumerable
+
+  def in_parallel_n(n)
+    todo = Queue.new
+    ts = (1..n).map{
+      Thread.new{
+        while x = todo.deq
+          yield(x[0])
+        end
+      }
+    }
+    each{|x| todo << [x]}
+    n.times{ todo << nil }
+    ts.each{|t| t.join}
   end
 
 end
