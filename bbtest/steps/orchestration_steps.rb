@@ -1,6 +1,6 @@
 
 step "storage is empty" do
-  FileUtils.rm_rf("/data/.", secure: true)
+  FileUtils.rm_rf Dir.glob("/data/*")
 end
 
 step "container :container_name should be running" do |container_name|

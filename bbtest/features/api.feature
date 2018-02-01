@@ -6,7 +6,6 @@ Feature: API test
     And   container vault should be running
     And   wall is listening on 8080
     And   wall is healthy
-    And   storage is empty
 
   Scenario: Account API - account doesn't exist
     When  I call GET http://wall:8080/v1/sparrow/account/test/xxx

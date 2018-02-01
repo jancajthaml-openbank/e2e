@@ -13,10 +13,12 @@ RSpec.configure do |config|
 
   config.before(:suite) do |_suite|
     puts "[info] before suite start"
-    FileUtils.rm_rf("/logs/.", secure: true)
-    FileUtils.rm_rf("/data/.", secure: true)
+
+    FileUtils.rm_rf Dir.glob("/data/*")
+    FileUtils.rm_rf Dir.glob("/logs/*")
 
     $http_client = HTTPClient.new()
+
     puts "[info] before suite done"
   end
 
@@ -32,7 +34,7 @@ RSpec.configure do |config|
 
       %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
 
-      %x(docker kill #{container} &>/dev/null || :)
+      %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
       %x(docker rm -f #{container} &>/dev/null || :)
     } if $? == 0
 
@@ -45,7 +47,7 @@ RSpec.configure do |config|
 
       %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
 
-      %x(docker kill #{container} &>/dev/null || :)
+      %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
       %x(docker rm -f #{container} &>/dev/null || :)
     } if $? == 0
 
@@ -58,7 +60,7 @@ RSpec.configure do |config|
 
       %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
 
-      %x(docker kill #{container} &>/dev/null || :)
+      %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
       %x(docker rm -f #{container} &>/dev/null || :)
     } if $? == 0
     print "[info] after suite done"
