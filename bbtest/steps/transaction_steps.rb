@@ -1,13 +1,8 @@
 require 'json'
 require 'bigdecimal'
-require 'thread'  # for Mutex
 
 step "tenant is :tenant" do |tenant|
-  if tenant == "random"
-    @tenant_id = (0...8).map { ('A'..'Z').to_a[rand(26)] }.join
-  else
-    @tenant_id = tenant
-  end
+  @tenant_id = (tenant == "random" ? (0...8).map { ('A'..'Z').to_a[rand(26)] }.join : tenant)
 end
 
 step ":activity :currency account :account is created" do |activity, currency, account|
@@ -78,22 +73,15 @@ step "Following transaction :transaction_id is created :times times" do |transac
 
   responses = []
 
-  if times == 1
-    resp = $http_client.wall.multi_transfer(@tenant_id, transaction_id, transfers)
-    expect(resp.status).to eq(200)
-  else
-    mutex = Mutex.new
-
-    [*1..times].par { |_|
-      begin
-        resp = $http_client.wall.multi_transfer(@tenant_id, transaction_id, transfers)
-        raise if resp.status == 503
-        mutex.synchronize { responses << resp.status }
-      rescue
-        retry
-      end
-    }
-  end
+  [*1..times].par { |_|
+    begin
+      resp = $http_client.wall.multi_transfer(@tenant_id, transaction_id, transfers)
+      raise if resp.status == 503
+      responses << resp.status
+    rescue
+      retry # fixme add total timeout
+    end
+  }
 
   responses.each { |status| expect(status).to eq(200) }
 end

@@ -16,8 +16,9 @@ RSpec.configure do |config|
   config.before(:suite) do |_suite|
     puts "[info] before suite start"
 
-    FileUtils.rm_rf Dir.glob("/data/*")
-    FileUtils.rm_rf Dir.glob("/logs/*")
+    ["/data", "/logs"].par { |folder|
+      FileUtils.rm_rf Dir.glob("#{folder}/*")
+    }
 
     $http_client = HTTPClient.new()
 
