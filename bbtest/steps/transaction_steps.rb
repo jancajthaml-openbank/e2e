@@ -84,7 +84,7 @@ step "Following transaction :transaction_id is created :times times" do |transac
   else
     mutex = Mutex.new
 
-    [*1..times].in_parallel_n(8){ |_|
+    [*1..times].par { |_|
       begin
         resp = $http_client.wall.multi_transfer(@tenant_id, transaction_id, transfers)
         raise if resp.status == 503

@@ -28,52 +28,25 @@ RSpec.configure do |config|
     puts ""
     puts "[info] after suite start"
 
-    teardown_vaults = Proc.new {
-      # fixme each of vaults in parallel
-      vaults = %x(docker ps -aqf "ancestor=openbank/vault" 2>/dev/null)
-      vaults.split("\n").each { |container|
-
-        label = %x(docker inspect --format='{{.Name}}' #{container})
-        label = $? == 0 ? label.strip : container
-
-        %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
-
-        %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
-        %x(docker rm -f #{container} &>/dev/null || :)
-      } if $? == 0
+    get_containers = -> (image) {
+      containers = %x(docker ps -aqf "ancestor=#{image}" 2>/dev/null)
+      return ($? == 0 ? containers.split("\n") : [])
     }
 
-    teardown_walls = Proc.new {
-      # fixme each of wall in parallel
-      walls = %x(docker ps -aqf "ancestor=openbank/wall" 2>/dev/null)
-      walls.split("\n").each { |container|
+    teardown_container = -> (container) {
+      label = %x(docker inspect --format='{{.Name}}' #{container})
+      label = ($? == 0 ? label.strip : container)
 
-        label = %x(docker inspect --format='{{.Name}}' #{container})
-        label = $? == 0 ? label.strip : container
-
-        %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
-
-        %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
-        %x(docker rm -f #{container} &>/dev/null || :)
-      } if $? == 0
+      %x(docker logs #{container} >/logs/#{label}.log 2>&1)
+      %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
+      %x(docker rm -f #{container} &>/dev/null || :)
     }
 
-    teardown_lakes = Proc.new {
-      # fixme each of lake in parallel
-      lakes = %x(docker ps -aqf "ancestor=openbank/lake" 2>/dev/null)
-      lakes.split("\n").each { |container|
-
-        label = %x(docker inspect --format='{{.Name}}' #{container})
-        label = $? == 0 ? label.strip : container
-
-        %x(docker logs #{container} >/logs/#{label}.log 2>&1 )
-
-        %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
-        %x(docker rm -f #{container} &>/dev/null || :)
-      } if $? == 0
-    }
-
-    [teardown_vaults, teardown_walls, teardown_lakes].in_parallel_n(3){ |f| f.call }
+    (
+      get_containers.call("openbank/wall") <<
+      get_containers.call("openbank/vault") <<
+      get_containers.call("openbank/lake")
+    ).flatten.par { |container| teardown_container.call(container) }
 
     print "[info] after suite done"
   end

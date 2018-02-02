@@ -19,18 +19,19 @@ end
 
 module Enumerable
 
-  def in_parallel_n(n)
+  def par
+    parallelism = (Integer(%x(getconf _NPROCESSORS_ONLN)) rescue 1) << 3
+
     work = Queue.new
-    ts = (1..n).map{
+    each { |x| work << [x] }
+    parallelism.times { work << nil }
+
+    (1..parallelism).map {
       Thread.new{
-        while x = work.deq
-          yield(x[0])
+        while x = work.deq ; yield(x[0])
         end
       }
-    }
-    each { |x| work << [x] }
-    n.times { work << nil }
-    ts.each(&:join)
+    }.each(&:join)
   end
 
 end
