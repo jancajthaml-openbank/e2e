@@ -1,6 +1,7 @@
 require 'turnip/rspec'
 require 'json'
 require 'thread'
+require_relative 'pimp'
 
 Thread.abort_on_exception = true
 
@@ -75,41 +76,6 @@ RSpec.configure do |config|
     [teardown_vaults, teardown_walls, teardown_lakes].in_parallel_n(3){ |f| f.call }
 
     print "[info] after suite done"
-  end
-
-end
-
-class Hash
-
-  def deep_diff(b)
-    a = self
-    (a.keys | b.keys).each_with_object({}) do |k, diff|
-      if a[k] != b[k]
-        if a[k].respond_to?(:deep_diff) && b[k].respond_to?(:deep_diff)
-          diff[k] = a[k].deep_diff(b[k])
-        else
-          diff[k] = [a[k], b[k]]
-        end
-      end
-    end
-  end
-
-end
-
-module Enumerable
-
-  def in_parallel_n(n)
-    todo = Queue.new
-    ts = (1..n).map{
-      Thread.new{
-        while x = todo.deq
-          yield(x[0])
-        end
-      }
-    }
-    each{|x| todo << [x]}
-    n.times{ todo << nil }
-    ts.each{|t| t.join}
   end
 
 end
