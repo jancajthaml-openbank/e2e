@@ -6,7 +6,7 @@ class WallAPI
   attr_reader :base_url
 
   def initialize()
-    @base_url = "http://wall:8080"
+    @base_url = "http://wall:8080" # fixme discover
   end
 
   ######################################################### account methods ####

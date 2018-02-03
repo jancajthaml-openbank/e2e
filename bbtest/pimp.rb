@@ -19,14 +19,14 @@ end
 
 module Enumerable
 
-  def par
-    parallelism = (Integer(%x(getconf _NPROCESSORS_ONLN)) rescue 1) << 3
+  class << self; attr_accessor :parallelism; end
 
+  def par
     work = Queue.new
     each { |x| work << [x] }
-    parallelism.times { work << nil }
+    Enumerable.parallelism.times { work << nil }
 
-    (1..parallelism).map {
+    (1..Enumerable.parallelism).map {
       Thread.new{
         while x = work.deq ; yield(x[0])
         end
@@ -35,3 +35,5 @@ module Enumerable
   end
 
 end
+
+Enumerable.parallelism = (Integer(%x(getconf _NPROCESSORS_ONLN)) rescue 1) << 3

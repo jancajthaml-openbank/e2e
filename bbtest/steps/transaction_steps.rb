@@ -59,27 +59,29 @@ end
 step "Following transaction :transaction_id is created :times times" do |transaction_id, times, data = nil|
   transfers = []
 
-  data.each_line do |transfer|
+  data.each_line.each.par { |transfer|
     parts = transfer.split(" ")
 
-    transfers.push({
+    transfers << {
       id: parts[4],
       credit: parts[1],
       debit: parts[0],
       amount: parts[2],
       currency: parts[3]
-    })
-  end
+    }
+  }
 
   responses = []
+  wait_until = Time.now + 10
 
   [*1..times].par { |_|
     begin
       resp = $http_client.wall.multi_transfer(@tenant_id, transaction_id, transfers)
       raise if resp.status == 503
       responses << resp.status
-    rescue
-      retry # fixme add total timeout
+    rescue Exception => e
+      raise e if Time.now >= wait_until
+      retry
     end
   }
 
