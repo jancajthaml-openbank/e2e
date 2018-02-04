@@ -66,6 +66,7 @@ spawn_wall() {
     -d \
     -h ${name} \
     -e HOSTNAME=${name} \
+    -e WALL_LAKE_HOSTNAME=queue \
     -e WALL_STORAGE=/data \
     -e WALL_LOG_LEVEL=DEBUG \
     -v ${PERSISTENCE_PATH}:/data \
@@ -83,9 +84,10 @@ spawn_vault() {
   docker run \
     -d \
     -h ${name} \
+    -e VAULT_LAKE_HOSTNAME=queue \
     -e VAULT_STORAGE=/data \
     -e VAULT_LOG_LEVEL=DEBUG \
-    -e TENANT=${TENANT} \
+    -e VAULT_TENANT=${TENANT} \
     -v ${PERSISTENCE_PATH}:/data \
     -v ${LOGS_PATH}:/logs \
     --net=$network \
@@ -178,6 +180,7 @@ fi
 
 docker run \
   -t \
+  -e LAKE_HOSTNAME=queue \
   -e HTTP_ENTRYPOINT=wall_1:8080 \
   -e TENANT=${TENANT} \
   -e NODES=1 \
