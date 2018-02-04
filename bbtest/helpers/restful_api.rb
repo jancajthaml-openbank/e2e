@@ -4,7 +4,7 @@ class RestfulAPI
   include RESTServiceHelper
 
   def call(http_method, url, data = {})
-    case http_method
+    case http_method.downcase
     when "get";    return get(url)
     when "post";   return post(url, data)
     when "patch";  return patch(url, data)

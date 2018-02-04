@@ -30,6 +30,7 @@ services:
     restart: unless-stopped
     environment:
       - WALL_STORAGE=/data
+      - WALL_LAKE_HOSTNAME=queue
       - WALL_LOG_LEVEL=DEBUG
     volumes:
       - ./journal:/data
@@ -46,7 +47,6 @@ services:
     ports:
       - "5562"
       - "5561"
-    command: ["run"]
     logging:
       driver: json-file
 
@@ -58,6 +58,7 @@ services:
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=test
       - VAULT_JOURNAL_SATURATION=1
+      - VAULT_LAKE_HOSTNAME=queue
     volumes:
       - ./journal:/data
     logging:
@@ -71,6 +72,7 @@ services:
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=RAIFFEISEN
       - VAULT_JOURNAL_SATURATION=1
+      - VAULT_LAKE_HOSTNAME=queue
     volumes:
       - ./journal:/data
     logging:
@@ -84,6 +86,7 @@ services:
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=FIO
       - VAULT_JOURNAL_SATURATION=1
+      - VAULT_LAKE_HOSTNAME=queue
     volumes:
       - ./journal:/data
     logging:

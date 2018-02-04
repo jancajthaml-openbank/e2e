@@ -49,6 +49,8 @@ RSpec.configure do |config|
       get_containers.call("openbank/lake")
     ).flatten.par { |container| teardown_container.call(container) }
 
+    FileUtils.rm_rf Dir.glob("/data/*")
+
     print "[info] after suite done"
   end
 
