@@ -14,7 +14,7 @@ RSpec.configure do |config|
   Dir.glob("./steps/*_steps.rb") { |f| load f, true }
 
   config.before(:suite) do |_suite|
-    puts "[info] before suite start"
+    print "[ suite starting ]\n"
 
     ["/data", "/logs"].par { |folder|
       FileUtils.rm_rf Dir.glob("#{folder}/*")
@@ -22,12 +22,11 @@ RSpec.configure do |config|
 
     $http_client = HTTPClient.new()
 
-    puts "[info] before suite done"
+    print "[ suite started  ]\n"
   end
 
   config.after(:suite) do |_suite|
-    puts ""
-    puts "[info] after suite start"
+    print "\n[ suite ending   ]\n"
 
     get_containers = -> (image) {
       containers = %x(docker ps -aqf "ancestor=#{image}" 2>/dev/null)
@@ -39,7 +38,7 @@ RSpec.configure do |config|
       label = ($? == 0 ? label.strip : container)
 
       %x(docker logs #{container} >/logs/#{label}.log 2>&1)
-      %x(docker kill --signal="TERM" #{container} &>/dev/null || :)
+      %x(docker kill --signal="TERM" #{container} >/dev/null 2>&1 || :)
       %x(docker rm -f #{container} &>/dev/null || :)
     }
 
@@ -51,7 +50,7 @@ RSpec.configure do |config|
 
     FileUtils.rm_rf Dir.glob("/data/*")
 
-    print "[info] after suite done"
+    print "[ suite ended    ]"
   end
 
 end
