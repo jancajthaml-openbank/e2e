@@ -24,11 +24,15 @@ if [ -z ${LOGS_PATH} ] ; then
   LOGS_PATH="$(pwd)/logs"
 fi
 
+if [ -z ${METRICS_PATH} ] ; then
+  METRICS_PATH="$(pwd)/metrics"
+fi
+
 network=e2e_bridge
 
 ################################################################################
 
-mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH}
+mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
 
 ################################################################################
 
@@ -51,6 +55,7 @@ spawn_queue() {
     -d \
     -h queue \
     -v ${LOGS_PATH}:/logs \
+    -v ${METRICS_PATH}:/opt/metrics \
     --net=$network \
     --net-alias=queue \
     --name=performance_queue_${name} \
@@ -71,6 +76,7 @@ spawn_wall() {
     -e WALL_LOG_LEVEL=DEBUG \
     -v ${PERSISTENCE_PATH}:/data \
     -v ${LOGS_PATH}:/logs \
+    -v ${METRICS_PATH}:/opt/metrics \
     --net=$network \
     --net-alias=${name} \
     --name=performance_wall_${name} \
@@ -87,9 +93,12 @@ spawn_vault() {
     -e VAULT_LAKE_HOSTNAME=queue \
     -e VAULT_STORAGE=/data \
     -e VAULT_LOG_LEVEL=DEBUG \
+    -e VAULT_JOURNAL_SATURATION=10 \
+    -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
     -e VAULT_TENANT=${TENANT} \
     -v ${PERSISTENCE_PATH}:/data \
     -v ${LOGS_PATH}:/logs \
+    -v ${METRICS_PATH}:/opt/metrics \
     --net=$network \
     --net-alias=${name} \
     --name=performance_vault_${name} \
@@ -189,6 +198,7 @@ docker run \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -v ${PERSISTENCE_PATH}:/data \
   -v ${LOGS_PATH}:/logs \
+  -v ${METRICS_PATH}:/opt/metrics \
   --net=${network} \
   e2e_perf
 
