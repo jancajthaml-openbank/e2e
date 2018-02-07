@@ -1,0 +1,205 @@
+#!/bin/bash
+
+#set -eo pipefail
+
+################################################################################
+
+MAX_PARALLELISM=${MAX_PARALLELISM:=100}
+VERSION=${VERSION:=latest}
+TENANT=${TENANT:=performance}
+
+if [ -n "$TTY" ] ; then
+  TTY="$TTY"
+elif [ -t 1 ] ; then
+  TTY="yes"
+else
+  TTY="no"
+fi
+
+if [ -z ${PERSISTENCE_PATH} ] ; then
+  PERSISTENCE_PATH="$(pwd)/journal/perf"
+fi
+
+if [ -z ${LOGS_PATH} ] ; then
+  LOGS_PATH="$(pwd)/logs"
+fi
+
+if [ -z ${METRICS_PATH} ] ; then
+  METRICS_PATH="$(pwd)/metrics"
+fi
+
+network=e2e_bridge
+
+################################################################################
+
+mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
+
+################################################################################
+
+if [ "$(ls -A ${PERSISTENCE_PATH})" ] ; then
+  rm -rf ${PERSISTENCE_PATH}/*
+fi
+
+rand_alnum() {
+  LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 13 ; echo
+}
+
+calc() {
+  echo "$*" | bc -l
+}
+
+spawn_queue() {
+  name="queue_$1"
+
+  docker run \
+    -d \
+    -h queue \
+    -v ${LOGS_PATH}:/logs \
+    -v ${METRICS_PATH}:/opt/metrics \
+    --net=$network \
+    --net-alias=queue \
+    --name=performance_queue_${name} \
+    --publish 5562:5562 \
+    --publish 5561:5561 \
+  openbank/lake run
+}
+
+spawn_wall() {
+  name="wall_$1"
+
+  docker run \
+    -d \
+    -h ${name} \
+    -e HOSTNAME=${name} \
+    -e WALL_LAKE_HOSTNAME=queue \
+    -e WALL_STORAGE=/data \
+    -e WALL_LOG_LEVEL=DEBUG \
+    -v ${PERSISTENCE_PATH}:/data \
+    -v ${LOGS_PATH}:/logs \
+    -v ${METRICS_PATH}:/opt/metrics \
+    --net=$network \
+    --net-alias=${name} \
+    --name=performance_wall_${name} \
+    --publish 8080:8080 \
+  openbank/wall
+}
+
+spawn_vault() {
+  name="vault_$1"
+
+  docker run \
+    -d \
+    -h ${name} \
+    -e VAULT_LAKE_HOSTNAME=queue \
+    -e VAULT_STORAGE=/data \
+    -e VAULT_LOG_LEVEL=DEBUG \
+    -e VAULT_JOURNAL_SATURATION=10 \
+    -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
+    -e VAULT_TENANT=${TENANT} \
+    -v ${PERSISTENCE_PATH}:/data \
+    -v ${LOGS_PATH}:/logs \
+    -v ${METRICS_PATH}:/opt/metrics \
+    --net=$network \
+    --net-alias=${name} \
+    --name=performance_vault_${name} \
+  openbank/vault
+}
+
+post_stop() {
+  if [ -z $at_most_once ]; then
+    echo ""
+
+    at_most_once=true
+
+    if [ -n $wall_container ] ; then
+      c=$wall_container
+      unset wall_container
+      echo "storing logs to ${LOGS_PATH}/perf_wall.log"
+      docker logs $c &> ${LOGS_PATH}/perf_wall.log
+      echo "deleting wall container $c"
+      docker kill $c &> /dev/null || :
+      docker rm -f $c &> /dev/null || :
+    fi
+
+    if [ -n $vault_container ] ; then
+      c=$vault_container
+      unset vault_container
+      echo "storing logs to ${LOGS_PATH}/perf_vault.log"
+      docker logs $c &> ${LOGS_PATH}/perf_vault.log
+      echo "deleting vault container $c"
+      docker kill $c &> /dev/null || :
+      docker rm -f $c &> /dev/null || :
+    fi
+
+    if [ -n $queue_container ] ; then
+      c=$queue_container
+      unset queue_container
+      echo "storing logs to ${LOGS_PATH}/perf_queue.log"
+      docker logs $c &> ${LOGS_PATH}/perf_queue.log
+      echo "deleting queue container $c"
+      docker kill $c &> /dev/null || :
+      docker rm -f $c &> /dev/null || :
+    fi
+
+    test_container=$(docker ps -a | grep openbank/dev:perf | awk '{print $1}')
+
+    if [ -n $test_container ] ; then
+      echo "deleting test container $c"
+      docker kill $test_container &> /dev/null || :
+      docker rm -f $test_container &> /dev/null || :
+    fi
+
+    echo "deleting network $network"
+    docker network rm $network &> /dev/null || :
+
+    exit 0
+  fi
+}
+
+################################################################################
+
+trap exit INT TERM
+trap "kill 0" EXIT
+trap post_stop EXIT
+
+################################################################################
+
+docker network create ${network} &> /dev/null || :
+
+queue_container=$(spawn_queue 1)
+
+if [ -z "$queue_container" ] ; then
+  echo "failed to start queue"
+  exit 1
+fi
+
+vault_container=$(spawn_vault 1)
+
+if [ -z "$vault_container" ] ; then
+  echo "failed to start vault"
+  exit 1
+fi
+
+wall_container=$(spawn_wall 1 1)
+
+if [ -z "$wall_container" ] ; then
+  echo "failed to start wall"
+  exit 1
+fi
+
+docker run \
+  -t \
+  -e LAKE_HOSTNAME=queue \
+  -e HTTP_ENTRYPOINT=wall_1:8080 \
+  -e TENANT=${TENANT} \
+  -e NODES=1 \
+  -e MAX_PARALLELISM=${MAX_PARALLELISM} \
+  -e TTY=${TTY} \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v ${PERSISTENCE_PATH}:/data \
+  -v ${LOGS_PATH}:/logs \
+  -v ${METRICS_PATH}:/opt/metrics \
+  --net=${network} \
+  e2e_perf
+
+exit 0

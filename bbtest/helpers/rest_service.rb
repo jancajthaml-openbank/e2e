@@ -12,21 +12,21 @@ module RESTServiceHelper
     headers = {
       'Content-Type' => 'application/json;charset=utf8'
     }
-    Excon.post(url, :headers => headers, :body => data.to_json, :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+    Excon.post(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
   end
 
   def patch(url, data = {})
     headers = {
       'Content-Type' => 'application/json;charset=utf8'
     }
-    Excon.patch(url, :headers => headers, :body => data.to_json, :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+    Excon.patch(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
   end
 
   def put(url, data = {})
     headers = {
       'Content-Type' => 'application/json;charset=utf8'
     }
-    Excon.put(url, :headers => headers, :body => data.to_json, :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+    Excon.put(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
   end
 
   def delete(url)
@@ -35,4 +35,4 @@ module RESTServiceHelper
 
 end
 
-RESTServiceHelper.timeout = 1
+RESTServiceHelper.timeout = 2

@@ -1,31 +1,28 @@
+require_relative 'placeholders'
 require 'json'
 require 'bigdecimal'
 
 step "tenant is :tenant" do |tenant|
-  if tenant == "random"
-    @tenant_id = (0...8).map { ('A'..'Z').to_a[rand(26)] }.join
-  else
-    @tenant_id = tenant
-  end
+  @tenant_id = (tenant == "random" ? (0...8).map { ('A'..'Z').to_a[rand(26)] }.join : tenant)
 end
 
 step ":activity :currency account :account is created" do |activity, currency, account|
-  resp = $http_client.server_service.create_account(@tenant_id, account, currency, activity)
+  resp = $http_client.wall.create_account(@tenant_id, account, currency, activity)
   expect(resp.status).to satisfy { |code| code == 200 || code == 409 }
 end
 
 step ":account should exist" do |account|
-  resp = $http_client.server_service.get_balance(@tenant_id, account)
+  resp = $http_client.wall.get_balance(@tenant_id, account)
   expect(resp.status).to satisfy { |code| code == 200 || code == 409 }
 end
 
 step ":account should not exist" do |account|
-  resp = $http_client.server_service.get_balance(@tenant_id, account)
+  resp = $http_client.wall.get_balance(@tenant_id, account)
   expect(resp.status).to eq(404)
 end
 
 step ":account balance should be :amount :currency" do |account, amount, currency|
-  resp = $http_client.server_service.get_balance(@tenant_id, account)
+  resp = $http_client.wall.get_balance(@tenant_id, account)
   expect(resp.status).to eq(200)
 
   body = JSON.parse(resp.body)
@@ -35,8 +32,8 @@ step ":account balance should be :amount :currency" do |account, amount, currenc
 end
 
 step ":amount :currency is transfered from :from to :to" do |amount, currency, from, to|
-  resp = $http_client.server_service.single_transfer(@tenant_id, from, to, amount, currency)
-  expect(resp.status).to eq(200)
+  resp = $http_client.wall.single_transfer(@tenant_id, from, to, amount, currency)
+  raise "failed to create transaction with #{resp.status}" unless resp.status == 200 || resp.status == 201
 
   begin
     resp_body = JSON.parse(resp.body)
@@ -47,45 +44,52 @@ step ":amount :currency is transfered from :from to :to" do |amount, currency, f
   end
 end
 
-step "Following transaction :transaction_id is created" do |transaction_id, data = nil|
+step ":amount :currency is transfered from :from to :to with id :id" do |amount, currency, from, to, id|
+  resp = $http_client.wall.single_transfer(@tenant_id, from, to, amount, currency, id)
+  raise "failed to create transaction with #{resp.status}" unless resp.status == 200 || resp.status == 201
+
+  begin
+    resp_body = JSON.parse(resp.body)
+    @transaction = resp_body["transaction"]
+    @transfers = resp_body["transfers"]
+  rescue JSON::ParserError
+    raise "invalid response got \"#{resp.body.strip}\""
+  end
+end
+
+step "Following transaction :transaction_id is created :count times" do |transaction_id, count, data = nil|
   transfers = []
 
-  data.each_line do |transfer|
+  data.each_line.each.par { |transfer|
     parts = transfer.split(" ")
 
-    transfers.push({
+    transfers << {
       id: parts[4],
       credit: parts[1],
       debit: parts[0],
       amount: parts[2],
       currency: parts[3]
-    })
-  end
+    }
+  }
 
-  resp = $http_client.server_service.multi_transfer(@tenant_id, transaction_id, transfers)
-  expect(resp.status).to eq(200)
+  responses = []
+  wait_until = Time.now + 10
+
+  [*1..count].par { |_|
+    begin
+      resp = $http_client.wall.multi_transfer(@tenant_id, transaction_id, transfers)
+      raise if resp.status == 503
+      responses << resp.status
+    rescue Exception => e
+      raise e if Time.now >= wait_until
+      retry
+    end
+  }
+
+  responses.each { |status| expect(status).to eq(200) }
 end
 
 step ":transaction_id :transfer_id :side side is forwarded to :account" do |transaction_id, transfer_id, side, account|
-  resp = $http_client.server_service.forward_transfer(@tenant_id, transaction_id, transfer_id, side, account)
+  resp = $http_client.wall.forward_transfer(@tenant_id, transaction_id, transfer_id, side, account)
   expect(resp.status).to eq(200)
-end
-
-# input matching
-placeholder :activity do
-  match(/(active|pasive)/) do |activity|
-    activity == "active"
-  end
-end
-
-placeholder :side do
-  match(/(credit|debit)/) do |side|
-    side
-  end
-end
-
-placeholder :amount do
-  match(/-?\d{1,100}\.\d{1,100}|-?\d{1,100}/) do |amount|
-    amount
-  end
 end

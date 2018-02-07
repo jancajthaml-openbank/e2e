@@ -10,7 +10,7 @@ services:
     working_dir: /opt/bbtest
     depends_on:
       - wall
-      - queue
+      - lake
       - vault
       - vaultRaiffeisen
       - vaultFio
@@ -20,6 +20,7 @@ services:
       - COMPOSE_PROJECT_NAME
     volumes:
       - ./journal:/data
+      - ./metrics:/opt/metrics
       - ./logs:/logs
       - ./bbtest:/opt/bbtest
       - /var/run/docker.sock:/var/run/docker.sock
@@ -30,7 +31,8 @@ services:
     restart: unless-stopped
     environment:
       - WALL_STORAGE=/data
-      - LAKE_LOG_LEVEL=DEBUG
+      - WALL_LAKE_HOSTNAME=lake
+      - WALL_LOG_LEVEL=DEBUG
     volumes:
       - ./journal:/data
     ports:
@@ -38,7 +40,7 @@ services:
     logging:
       driver: json-file
 
-  queue:
+  lake:
     image: openbank/lake
     restart: "no"
     environment:
@@ -46,7 +48,6 @@ services:
     ports:
       - "5562"
       - "5561"
-    command: ["run"]
     logging:
       driver: json-file
 
@@ -57,8 +58,14 @@ services:
       - VAULT_STORAGE=/data
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=test
+      - VAULT_JOURNAL_SATURATION=1
+      - VAULT_SNAPSHOT_SCANINTERVAL=1s
+      - VAULT_LAKE_HOSTNAME=lake
+      - VAULT_METRICS_REFRESHRATE=1s
+      - VAULT_METRICS_OUTPUT=/metrics/vault_test.json
     volumes:
       - ./journal:/data
+      - ./metrics:/metrics
     logging:
       driver: json-file
 
@@ -69,6 +76,9 @@ services:
       - VAULT_STORAGE=/data
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=RAIFFEISEN
+      - VAULT_JOURNAL_SATURATION=1
+      - VAULT_SNAPSHOT_SCANINTERVAL=1s
+      - VAULT_LAKE_HOSTNAME=lake
     volumes:
       - ./journal:/data
     logging:
@@ -81,6 +91,9 @@ services:
       - VAULT_STORAGE=/data
       - VAULT_LOG_LEVEL=DEBUG
       - VAULT_TENANT=FIO
+      - VAULT_JOURNAL_SATURATION=1
+      - VAULT_SNAPSHOT_SCANINTERVAL=1s
+      - VAULT_LAKE_HOSTNAME=lake
     volumes:
       - ./journal:/data
     logging:

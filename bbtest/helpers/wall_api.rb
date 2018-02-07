@@ -1,12 +1,12 @@
 require_relative 'rest_service'
 
-class ServerServiceAPI
+class WallAPI
   include RESTServiceHelper
 
   attr_reader :base_url
 
   def initialize()
-    @base_url = "http://wall:8080"
+    @base_url = "http://wall:8080" # fixme discover
   end
 
   ######################################################### account methods ####
@@ -26,7 +26,7 @@ class ServerServiceAPI
 
   ##################################################### transaction methods ####
 
-  def single_transfer(tenant_id, from, to, amount, currency)
+  def single_transfer(tenant_id, from, to, amount, currency, id = nil)
     body = {
       transfers: [{
         credit: to,
@@ -35,6 +35,8 @@ class ServerServiceAPI
         currency: currency
       }]
     }
+
+    body["id"] = id unless id.nil?
     post("#{base_url}/v1/sparrow/transaction/#{tenant_id}", body)
   end
 
