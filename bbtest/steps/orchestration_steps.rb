@@ -21,6 +21,7 @@ step "container :container_name should be started from scratch" do |container_na
     containers.each { |id|
       %x(docker start #{id} >/dev/null 2>&1)
       expect($?).to be_success
+
       container_state = %x(docker inspect -f {{.State.Running}} #{id} 2>/dev/null)
       expect($?).to be_success
       expect(container_state.strip).to eq("true")
@@ -40,6 +41,7 @@ step "container :container_name should be running" do |container_name|
     containers.each { |id|
       %x(docker start #{id} >/dev/null 2>&1)
       expect($?).to be_success
+
       container_state = %x(docker inspect -f {{.State.Running}} #{id} 2>/dev/null)
       expect($?).to be_success
       expect(container_state.strip).to eq("true")

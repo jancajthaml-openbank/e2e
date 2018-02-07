@@ -93,3 +93,4 @@ step ":transaction_id :transfer_id :side side is forwarded to :account" do |tran
   resp = $http_client.wall.forward_transfer(@tenant_id, transaction_id, transfer_id, side, account)
   expect(resp.status).to eq(200)
 end
+

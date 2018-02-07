@@ -1,4 +1,5 @@
 require_relative 'placeholders'
+
 require 'json'
 
 step "metrics should report :count created accounts" do |count|

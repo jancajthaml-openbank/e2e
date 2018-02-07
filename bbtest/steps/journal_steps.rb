@@ -1,4 +1,5 @@
 require_relative 'placeholders'
+
 require 'bigdecimal'
 require 'json'
 require 'date'

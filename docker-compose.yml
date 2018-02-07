@@ -81,6 +81,7 @@ services:
       - VAULT_LAKE_HOSTNAME=lake
     volumes:
       - ./journal:/data
+      - ./metrics:/opt/metrics
     logging:
       driver: json-file
 
@@ -96,5 +97,6 @@ services:
       - VAULT_LAKE_HOSTNAME=lake
     volumes:
       - ./journal:/data
+      - ./metrics:/opt/metrics
     logging:
       driver: json-file
