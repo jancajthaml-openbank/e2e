@@ -1,23 +1,11 @@
 require 'json'
-require 'excon'
 
-# fixme add with timeout as a parameter
 step "I call :http_method :url" do |http_method, url, body = nil|
-  case http_method
-  when "get"
-    @resp = Excon.get(url, :read_timeout => 5, :write_timeout => 5)
-  when "post"
-    @resp = Excon.post(url, :headers => {
-      'Content-Type' => 'application/json;charset=utf8'
-    }, :body => body, :read_timeout => 5, :write_timeout => 5)
-  else
-    raise "undefined method #{http_method.upcase}"
-  end
-
+  @resp = $http_client.any.call(http_method, url, body)
 end
 
 step "response status should be :http_status" do |http_status|
-  expect(@resp.status).to be http_status
+  expect(@resp.status).to eq(http_status)
 end
 
 step "response content should be:" do |content|
@@ -27,11 +15,8 @@ step "response content should be:" do |content|
     resp_body = JSON.parse(@resp.body)
     resp_body.deep_diff(expected_body).each do |key, array|
       (have, want) = array
-      if want.nil?
-        raise "unexpected attribute \"#{key}\" in response \"#{@resp.body}\" expected \"#{expected_body.to_json}\""
-      else
-        raise "\"#{key}\" expected \"#{want}\" but got \"#{have}\" instead"
-      end
+      raise "unexpected attribute \"#{key}\" in response \"#{@resp.body}\" expected \"#{expected_body.to_json}\"" if want.nil?
+      raise "\"#{key}\" expected \"#{want}\" but got \"#{have}\" instead"
     end
   rescue JSON::ParserError
     raise "invalid response got \"#{@resp.body.strip}\", expected \"#{expected_body.to_json}\""
@@ -39,8 +24,6 @@ step "response content should be:" do |content|
 end
 
 # input matching
-
-# fixme add timeout input matching
 placeholder :http_method do
   match(/(GET|get|POST|post|PATCH|patch)/) do |http_method|
     http_method.downcase
@@ -58,5 +41,4 @@ placeholder :url do
     url
   end
 end
-
 

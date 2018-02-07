@@ -1,5 +1,5 @@
 .PHONY: all
-all: bbtest
+all: bbtest perf
 
 .PHONY: bbtest
 bbtest:
@@ -7,4 +7,9 @@ bbtest:
 
 .PHONY: run
 run:
-	docker-compose up
+	@docker-compose up
+
+.PHONY: perf
+perf:
+	@cd perf && docker build -t e2e_perf .
+	@./perf/performance

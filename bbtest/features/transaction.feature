@@ -1,12 +1,12 @@
 Feature: Transaction workflow test
 
   Background: Basic orchestration
-
     Given container wall should be running
     And   container lake should be running
     And   container vault should be running
     And   wall is listening on 8080
     And   wall is healthy
+    And   storage is empty
 
   Scenario: Trivial transfer
     Given tenant is test
@@ -50,7 +50,7 @@ Feature: Transaction workflow test
     When  active EUR account Target is created
     Then  Target balance should be 0 EUR
 
-    When  Following transaction forward_id is created
+    When  Following transaction forward_id is created 1 times
     """
         OriginDebit OriginCredit 1 EUR transfer_1
         OriginDebit OriginCredit 2 EUR transfer_2

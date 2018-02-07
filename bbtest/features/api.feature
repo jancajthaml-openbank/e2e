@@ -1,4 +1,5 @@
 Feature: API test
+
   Background: Basic orchestration
     Given container wall should be running
     And   container lake should be running
@@ -87,7 +88,7 @@ Feature: API test
         {}
     """
 
-  Scenario: Transaction API - new transaction
+  Scenario: Transaction API - new transaction, valid resend, invalid resend
     When  I call POST http://wall:8080/v1/sparrow/transaction/test
     """
         {
@@ -112,7 +113,6 @@ Feature: API test
         }
     """
 
-  Scenario: Transaction API - duplicate transaction (valid)
     When  I call POST http://wall:8080/v1/sparrow/transaction/test
     """
         {
@@ -137,7 +137,6 @@ Feature: API test
         }
     """
 
-  Scenario: Transaction API - duplicate transaction (invalid)
     When  I call POST http://wall:8080/v1/sparrow/transaction/test
     """
         {

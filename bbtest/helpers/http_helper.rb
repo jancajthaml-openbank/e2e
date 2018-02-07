@@ -1,9 +1,14 @@
-require_relative 'server_service_api'
+require_relative 'wall_api'
+require_relative 'restful_api'
 
 class HTTPClient
 
-  def server_service
-    @server_service ||= ServerServiceAPI.new()
+  def wall
+    @wall ||= WallAPI.new()
+  end
+
+  def any
+    @any ||= RestfulAPI.new()
   end
 
 end
