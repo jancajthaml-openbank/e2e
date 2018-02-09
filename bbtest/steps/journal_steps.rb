@@ -59,7 +59,7 @@ step "transaction :path should be" do |path, expectation|
 
   transactions = []
   lines[1..-1].par { |line|
-    _, from, to, value_date, amount, currency = line.strip.split(" ")
+    _, to, from, value_date, amount, currency = line.strip.split(" ")
 
     delta_seconds = ((now - Time.at(value_date.to_i).to_datetime) * 24 * 60 * 60).to_i
     raise "invalid valueDate" if delta_seconds > 60
