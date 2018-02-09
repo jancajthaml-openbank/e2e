@@ -60,8 +60,8 @@ Feature: Journal integrity test
     """
         [
             {
-                "accountFrom": "B",
-                "accountTo": "A",
+                "accountFrom": "A",
+                "accountTo": "B",
                 "amount": "123456789123313.000422901124",
                 "currency": "XXX"
             }
@@ -78,7 +78,7 @@ Feature: Journal integrity test
     And file /account/B/events/0000000000/p_123456789123313.000422901124_xxx should exist
     And file /account/B/events/0000000000/c_123456789123313.000422901124_xxx should exist
 
-  Scenario: Creating of transaction rejected
+  Scenario: Creating of transaction rejected (insufficient funds)
     Given tenant is test
 
     When  pasive XXX account C is created
@@ -89,8 +89,8 @@ Feature: Journal integrity test
     """
         [
             {
-                "accountFrom": "C",
-                "accountTo": "D",
+                "accountFrom": "D",
+                "accountTo": "C",
                 "amount": "123456789123313.000422901124",
                 "currency": "XXX"
             }
