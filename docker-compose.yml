@@ -27,8 +27,9 @@ services:
       - /var/lib/docker/containers:/var/lib/docker/containers
 
   wall:
-    image: openbank/wall
+    image: openbank/wall:master
     restart: unless-stopped
+    container_name: e2e_wall
     environment:
       - WALL_STORAGE=/data
       - WALL_LAKE_HOSTNAME=lake
@@ -41,7 +42,8 @@ services:
       driver: json-file
 
   lake:
-    image: openbank/lake
+    image: openbank/lake:master
+    container_name: e2e_lake
     restart: "no"
     environment:
       - LAKE_LOG_LEVEL=DEBUG
@@ -52,7 +54,8 @@ services:
       driver: json-file
 
   vault:
-    image: openbank/vault
+    image: openbank/vault:master
+    container_name: e2e_vault_test
     restart: unless-stopped
     environment:
       - VAULT_STORAGE=/data
@@ -70,7 +73,8 @@ services:
       driver: json-file
 
   vaultRaiffeisen:
-    image: openbank/vault
+    image: openbank/vault:master
+    container_name: e2e_vault_raiffeisen
     restart: unless-stopped
     environment:
       - VAULT_STORAGE=/data
@@ -86,7 +90,8 @@ services:
       driver: json-file
 
   vaultFio:
-    image: openbank/vault
+    image: openbank/vault:master
+    container_name: e2e_vault_fio
     restart: unless-stopped
     environment:
       - VAULT_STORAGE=/data

@@ -72,11 +72,11 @@ Feature: Journal integrity test
         commited
     """
     And directory /account/A/events/0000000000 should contain 2 files
-    And file /account/A/events/0000000000/p_-123456789123313.000422901124_xxx should exist
-    And file /account/A/events/0000000000/c_-123456789123313.000422901124_xxx should exist
+    And file /account/A/events/0000000000/0_-123456789123313.000422901124_xxx should exist
+    And file /account/A/events/0000000000/1_-123456789123313.000422901124_xxx should exist
     And directory /account/B/events/0000000000 should contain 2 files
-    And file /account/B/events/0000000000/p_123456789123313.000422901124_xxx should exist
-    And file /account/B/events/0000000000/c_123456789123313.000422901124_xxx should exist
+    And file /account/B/events/0000000000/0_123456789123313.000422901124_xxx should exist
+    And file /account/B/events/0000000000/1_123456789123313.000422901124_xxx should exist
 
   Scenario: Creating of transaction rejected (insufficient funds)
     Given tenant is test
@@ -101,6 +101,6 @@ Feature: Journal integrity test
         rollbacked
     """
     And directory /account/C/events/0000000000 should contain 2 files
-    And file /account/C/events/0000000000/p_123456789123313.000422901124_xxx should exist
-    And file /account/C/events/0000000000/r_123456789123313.000422901124_xxx should exist
+    And file /account/C/events/0000000000/0_123456789123313.000422901124_xxx should exist
+    And file /account/C/events/0000000000/2_123456789123313.000422901124_xxx should exist
     And directory /account/D/events/0000000000 should contain 0 files

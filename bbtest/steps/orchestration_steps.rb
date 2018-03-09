@@ -17,7 +17,7 @@ step "container :container_name should be started from scratch" do |container_na
     expect($?).to be_success
   }
 
-  eventually(timeout: 2) {
+  eventually(timeout: 3) {
     containers.each { |id|
       %x(docker start #{id} >/dev/null 2>&1)
       expect($?).to be_success
@@ -37,7 +37,7 @@ step "container :container_name should be running" do |container_name|
   containers = container_id.split("\n").map(&:strip).reject(&:empty?)
   expect(containers).not_to be_empty
 
-  eventually(timeout: 2) {
+  eventually(timeout: 3) {
     containers.each { |id|
       %x(docker start #{id} >/dev/null 2>&1)
       expect($?).to be_success
@@ -50,7 +50,7 @@ step "container :container_name should be running" do |container_name|
 end
 
 step ":host is listening on :port" do |host, port|
-  eventually(timeout: 2) {
+  eventually(timeout: 3) {
     %x(nc -z #{host} #{port} 2> /dev/null)
     expect($?).to be_success
   }

@@ -1,6 +1,7 @@
 module EventuallyHelper
 
-  def self.eventually(timeout: 10, delay: 2, &_blk)
+  def self.eventually(timeout: 10, delay: 0.10, &_blk)
+    return unless block_given?
     wait_until = Time.now + timeout
     begin
       yield

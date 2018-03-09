@@ -353,7 +353,7 @@ class StressTest:
   def check_balances_parallel(self):
     num_of_accounts = len(self.g_accounts.keys())
 
-    info("preparing checking balance of {0} accountsin parallel of {1}".format(num_of_accounts, limit))
+    info("preparing checking balance of {0} accounts in parallel of {1}".format(num_of_accounts, limit))
     prepared = [ api.prepare_get_balance(number, reference) for number, reference in self.g_accounts.items() ]
 
     def partial(cb, reference):
