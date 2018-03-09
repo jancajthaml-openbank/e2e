@@ -1,4 +1,5 @@
 require 'json'
+require_relative 'deep_diff'
 
 step "I call :http_method :url" do |http_method, url, body = nil|
   @resp = $http_client.any.call(http_method, url, body)
@@ -20,25 +21,6 @@ step "response content should be:" do |content|
     end
   rescue JSON::ParserError
     raise "invalid response got \"#{@resp.body.strip}\", expected \"#{expected_body.to_json}\""
-  end
-end
-
-# input matching
-placeholder :http_method do
-  match(/(GET|get|POST|post|PATCH|patch)/) do |http_method|
-    http_method.downcase
-  end
-end
-
-placeholder :http_status do
-  match(/\d{3}/) do |http_status|
-    http_status.to_i
-  end
-end
-
-placeholder :url do
-  match(/https?:\/\/[\S]+/) do |url|
-    url
   end
 end
 
