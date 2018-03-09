@@ -61,7 +61,7 @@ spawn_queue() {
     --name=performance_queue_${name} \
     --publish 5562:5562 \
     --publish 5561:5561 \
-  openbank/lake run
+  openbank/lake:master
 }
 
 spawn_wall() {
@@ -81,7 +81,7 @@ spawn_wall() {
     --net-alias=${name} \
     --name=performance_wall_${name} \
     --publish 8080:8080 \
-  openbank/wall
+  openbank/wall:master
 }
 
 spawn_vault() {
@@ -96,13 +96,15 @@ spawn_vault() {
     -e VAULT_JOURNAL_SATURATION=10 \
     -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
     -e VAULT_TENANT=${TENANT} \
+    -e VAULT_METRICS_REFRESHRATE=10s \
+    -e VAULT_METRICS_OUTPUT=/opt/metrics/vault_perf.json \
     -v ${PERSISTENCE_PATH}:/data \
     -v ${LOGS_PATH}:/logs \
     -v ${METRICS_PATH}:/opt/metrics \
     --net=$network \
     --net-alias=${name} \
     --name=performance_vault_${name} \
-  openbank/vault
+  openbank/vault:master
 }
 
 post_stop() {
