@@ -4,17 +4,10 @@ from __future__ import print_function
 
 from gevent import spawn, joinall
 
-#monkey.patch_all()
-
 import subprocess
-#import socket
 import sys
-#import os
-#from constants import site, took, tenant
-#from constants import took, tenant
 from constants import took
 import time
-#import api
 
 def run_command(bash_command, silent=False):
   sys.stdout.write('\033[94m>> bash | \033[0m{0}\n'.format(bash_command))

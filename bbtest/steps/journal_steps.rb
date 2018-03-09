@@ -58,7 +58,7 @@ step "transaction :path should be" do |path, expectation|
   now = DateTime.now
 
   transactions = []
-  lines[1..-1].par { |line|
+  lines[1..-1].each { |line|
     _, to, from, value_date, amount, currency = line.strip.split(" ")
 
     delta_seconds = ((now - Time.at(value_date.to_i).to_datetime) * 24 * 60 * 60).to_i

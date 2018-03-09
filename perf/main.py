@@ -5,6 +5,7 @@ import api
 from constants import debug, error, info
 
 import sys
+import os
 
 from stress import StressTest
 
@@ -47,12 +48,13 @@ def main():
     env.reset_dockers({
       'vault': containers['vault']
     })
-    #debug("waiting util service is ready")
+
     api.ping()
     st.check_balances_parallel()
 
     #debug("TDB audit from database")
     # fixme audit here
+    os.exit(0)
 
   except KeyboardInterrupt:
     print(" detected, exiting")

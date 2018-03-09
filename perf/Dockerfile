@@ -27,4 +27,5 @@ COPY api.py /etc/perf/api.py
 
 WORKDIR /etc/perf
 
-CMD python main.py
+ENTRYPOINT ["python"]
+CMD ["main.py"]

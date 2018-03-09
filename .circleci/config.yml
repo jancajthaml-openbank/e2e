@@ -1,0 +1,259 @@
+version: 2
+
+jobs:
+
+  performance:
+    machine: true
+    environment:
+      - PERSISTENCE_PATH: /home/circleci/project/dev/data
+      - LOGS_PATH: /home/circleci/project/dev/logs
+      - METRICS_PATH: /home/circleci/project/dev/metrics
+      - VERSION: master
+      - TENANT: performance
+      - MAX_PARALLELISM: 500
+
+    working_directory: /home/circleci/project
+
+    steps:
+
+      - checkout
+
+      - run:
+          name: Prepare prerequisities
+          command: |
+            cd perf && docker build -t e2e_perf .
+            docker images
+
+            mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
+
+      - run:
+          name: Start tests
+          command: |
+            rand_alnum() {
+              LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 13 ; echo
+            }
+
+            calc() {
+              echo "$*" | bc -l
+            }
+
+            spawn_queue() {
+              name="queue_$1"
+
+              docker run \
+                -d \
+                -h queue \
+                -v ${LOGS_PATH}:/logs \
+                -v ${METRICS_PATH}:/opt/metrics \
+                --net=e2e_bridge \
+                --net-alias=queue \
+                --name=performance_queue_${name} \
+                --publish 5562:5562 \
+                --publish 5561:5561 \
+              openbank/lake:master
+            }
+
+            spawn_wall() {
+              name="wall_$1"
+
+              docker run \
+                -d \
+                -h ${name} \
+                -e HOSTNAME=${name} \
+                -e WALL_LAKE_HOSTNAME=queue \
+                -e WALL_STORAGE=/data \
+                -e WALL_LOG_LEVEL=DEBUG \
+                -v ${PERSISTENCE_PATH}:/data \
+                -v ${LOGS_PATH}:/logs \
+                -v ${METRICS_PATH}:/opt/metrics \
+                --net=e2e_bridge \
+                --net-alias=${name} \
+                --name=performance_wall_${name} \
+                --publish 8080:8080 \
+              openbank/wall:master
+            }
+
+            spawn_vault() {
+              name="vault_$1"
+
+              docker run \
+                -d \
+                -h ${name} \
+                -e VAULT_LAKE_HOSTNAME=queue \
+                -e VAULT_STORAGE=/data \
+                -e VAULT_LOG_LEVEL=DEBUG \
+                -e VAULT_JOURNAL_SATURATION=10 \
+                -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
+                -e VAULT_TENANT=${TENANT} \
+                -e VAULT_METRICS_REFRESHRATE=10s \
+                -e VAULT_METRICS_OUTPUT=/opt/metrics/vault_perf.json \
+                -v ${PERSISTENCE_PATH}:/data \
+                -v ${LOGS_PATH}:/logs \
+                -v ${METRICS_PATH}:/opt/metrics \
+                --net=e2e_bridge \
+                --net-alias=${name} \
+                --name=performance_vault_${name} \
+              openbank/vault:master
+            }
+
+            post_stop() {
+              if [ -z $at_most_once ]; then
+                echo ""
+
+                at_most_once=true
+
+                if [ -n $wall_container ] ; then
+                  c=$wall_container
+                  unset wall_container
+                  docker kill $c &> /dev/null || :
+                  echo "storing logs to ${LOGS_PATH}/perf_wall.log"
+                  docker logs $c &> ${LOGS_PATH}/perf_wall.log
+                  echo "deleting wall container $c"
+                  docker rm -f $c &> /dev/null || :
+                fi
+
+                if [ -n $vault_container ] ; then
+                  c=$vault_container
+                  unset vault_container
+                  docker kill $c &> /dev/null || :
+                  echo "storing logs to ${LOGS_PATH}/perf_vault.log"
+                  docker logs $c &> ${LOGS_PATH}/perf_vault.log
+                  echo "deleting vault container $c"
+                  docker rm -f $c &> /dev/null || :
+                fi
+
+                if [ -n $queue_container ] ; then
+                  c=$queue_container
+                  unset queue_container
+                  docker kill $c &> /dev/null || :
+                  echo "storing logs to ${LOGS_PATH}/perf_queue.log"
+                  docker logs $c &> ${LOGS_PATH}/perf_queue.log
+                  echo "deleting queue container $c"
+                  docker rm -f $c &> /dev/null || :
+                fi
+
+                exit 0
+              fi
+            }
+
+            ####################################################################
+
+            trap post_stop EXIT
+
+            ####################################################################
+
+            docker network create e2e_bridge &> /dev/null || :
+
+            queue_container=$(spawn_queue 1)
+
+            if [ -z "$queue_container" ] ; then
+              echo "failed to start queue"
+              exit 1
+            fi
+
+            vault_container=$(spawn_vault 1)
+
+            if [ -z "$vault_container" ] ; then
+              echo "failed to start vault"
+              exit 1
+            fi
+
+            wall_container=$(spawn_wall 1 1)
+
+            if [ -z "$wall_container" ] ; then
+              echo "failed to start wall"
+              exit 1
+            fi
+
+            docker run \
+              -t \
+              -e LAKE_HOSTNAME=queue \
+              -e HTTP_ENTRYPOINT=wall_1:8080 \
+              -e TENANT=${TENANT} \
+              -e NODES=1 \
+              -e MAX_PARALLELISM=${MAX_PARALLELISM} \
+              -e TTY=${TTY} \
+              -v /var/run/docker.sock:/var/run/docker.sock \
+              -v ${PERSISTENCE_PATH}:/data \
+              -v ${LOGS_PATH}:/logs \
+              -v ${METRICS_PATH}:/opt/metrics \
+              --net=e2e_bridge \
+              e2e_perf
+
+      - store_artifacts:
+          path: /home/circleci/project/dev/logs/perf_queue.log
+          destination: queue.log
+
+      - store_artifacts:
+          path: /home/circleci/project/dev/logs/perf_vault.log
+          destination: vault.log
+
+      - store_artifacts:
+          path: /home/circleci/project/dev/logs/perf_wall.log
+          destination: wall.log
+
+      - store_artifacts:
+          path: /home/circleci/project/dev/metrics/vault_perf.json
+          destination: vault_metrics.json
+
+  bbtest:
+    machine: true
+    environment:
+      - PERSISTENCE_PATH: /home/circleci/project/dev/data
+      - LOGS_PATH: /home/circleci/project/dev/logs
+
+    working_directory: /home/circleci/project
+
+    steps:
+      - checkout
+
+      - run:
+          name: Run blackbox tests
+          command: |
+            echo "pulling openbank/vault:master"
+            docker pull openbank/vault:master
+
+            echo "pulling openbank/lake:master"
+            docker pull openbank/lake:master
+
+            echo "pulling openbank/wall:master"
+            docker pull openbank/wall:master
+
+            echo "[info] stopping older runs"
+            (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
+            echo "[info] running bbtest"
+            VERSION=${VERSION} docker-compose run --rm bbtest
+            echo "[info] stopping runs"
+            (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
+            (docker rm -f $(docker ps -aqf "name=bbtest") || :) &> /dev/null
+
+      - store_artifacts:
+          path: /home/circleci/project/dev/metrics/vault_test.json
+          destination: vault_metrics.json
+
+      - store_artifacts:
+          path: /home/circleci/project/logs/e2e_lake.log
+          destination: lake.log
+
+      - store_artifacts:
+          path: /home/circleci/project/logs/e2e_vault_fio.log
+          destination: vault_fio.log
+
+      - store_artifacts:
+          path: /home/circleci/project/logs/e2e_vault_raiffeisen.log
+          destination: vault_raiffeisen.log
+
+      - store_artifacts:
+          path: /home/circleci/project/logs/e2e_vault_test.log
+          destination: vault_test.log
+
+      - store_artifacts:
+          path: /home/circleci/project/logs/e2e_wall.log
+          destination: wall.log
+
+workflows:
+  version: 2
+  integration_test:
+    jobs:
+      - bbtest
+      - performance
