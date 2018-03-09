@@ -73,7 +73,7 @@ class StressTest:
     return True
 
   def create_random_accounts_parallel(self):
-    num_of_accounts = int(1e5) # fixme to env
+    num_of_accounts = int(1e4) # fixme to env
 
     info("preparing creation of {0} accounts in parallel of {1}".format(num_of_accounts, limit))
     prepared = [ api.prepare_create_account("par_" + str(x + 1), bool(getrandbits(1))) for x in range(num_of_accounts) ]
@@ -172,7 +172,7 @@ class StressTest:
     return True
 
   def create_random_transactions_parallel(self):
-    num_of_transactions = int(1e5) # fixme to env
+    num_of_transactions = int(1e4) # fixme to env
 
     all_accounts = list(self.g_accounts.keys())
     credit_accounts = [i for i in all_accounts if self.g_accounts[i]['active']]
