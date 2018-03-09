@@ -60,7 +60,7 @@ end
 step "Following transaction :transaction_id is created :count times" do |transaction_id, count, data = nil|
   transfers = []
 
-  data.each_line.each.par { |transfer|
+  data.each_line.each { |transfer|
     parts = transfer.split(" ")
 
     transfers << {
@@ -75,7 +75,7 @@ step "Following transaction :transaction_id is created :count times" do |transac
   responses = []
   wait_until = Time.now + 10
 
-  [*1..count].par { |_|
+  [*1..count].each { |_|
     begin
       resp = $http_client.wall.multi_transfer(@tenant_id, transaction_id, transfers)
       raise if resp.status == 503

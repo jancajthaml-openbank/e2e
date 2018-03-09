@@ -69,7 +69,7 @@ Feature: Journal integrity test
     """
     And   transaction state /transaction_state/xxx should be
     """
-        commited
+        committed
     """
     And directory /account/A/events/0000000000 should contain 2 files
     And file /account/A/events/0000000000/0_-123456789123313.000422901124_xxx should exist
