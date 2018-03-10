@@ -73,7 +73,7 @@ class StressTest:
     return True
 
   def create_random_accounts_parallel(self):
-    num_of_accounts = 100
+    num_of_accounts = int(1e4) # fixme to env
 
     info("preparing creation of {0} accounts in parallel of {1}".format(num_of_accounts, limit))
     prepared = [ api.prepare_create_account("par_" + str(x + 1), bool(getrandbits(1))) for x in range(num_of_accounts) ]
@@ -125,9 +125,9 @@ class StressTest:
     return True
 
   def create_random_accounts_serial(self):
-    num_of_accounts = 10
-    info("preparing creation of {0} accounts one by one".format(num_of_accounts))
+    num_of_accounts = int(1e2) # fixme to env
 
+    info("preparing creation of {0} accounts one by one".format(num_of_accounts))
     prepared = [ api.prepare_create_account("ser_" + str(x + 1), bool(getrandbits(1))) for x in range(num_of_accounts) ]
 
     def account_callback(response, req):
@@ -172,7 +172,7 @@ class StressTest:
     return True
 
   def create_random_transactions_parallel(self):
-    num_of_transactions = 1000
+    num_of_transactions = int(1e4) # fixme to env
 
     all_accounts = list(self.g_accounts.keys())
     credit_accounts = [i for i in all_accounts if self.g_accounts[i]['active']]
@@ -235,7 +235,7 @@ class StressTest:
     return True
 
   def create_random_transactions_serial(self):
-    num_of_transactions = 50
+    num_of_transactions = int(1e2) # fixme to env
 
     all_accounts = list(self.g_accounts.keys())
     credit_accounts = [i for i in all_accounts if self.g_accounts[i]['active']]
@@ -412,9 +412,6 @@ class StressTest:
     self.create_random_accounts_serial()
     self.create_random_accounts_parallel()
 
-    # fixme add reset
-    # fixme split single vs multitransaction
-    # fixme time and measure average
     self.create_random_transactions_serial()
     self.create_random_transactions_parallel()
 

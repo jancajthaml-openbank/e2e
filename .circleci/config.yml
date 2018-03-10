@@ -10,7 +10,7 @@ jobs:
       - METRICS_PATH: /home/circleci/project/dev/metrics
       - VERSION: master
       - TENANT: performance
-      - MAX_PARALLELISM: 100
+      - MAX_PARALLELISM: 500
 
     working_directory: /home/circleci/project
 
