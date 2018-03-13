@@ -1,6 +1,32 @@
 version: 2
 
+################################################################################
+
+workflows:
+
+  version: 2
+
+  commit:
+    jobs:
+      - bbtest
+      - performance
+
+  rolling:
+    triggers:
+      - schedule:
+          cron: "0,10,20,30,40,50 * * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - bbtest
+
+################################################################################
+
 jobs:
+
+  ##############################################################################
 
   performance:
     machine: true
@@ -136,11 +162,7 @@ jobs:
               fi
             }
 
-            ####################################################################
-
             trap post_stop EXIT
-
-            ####################################################################
 
             docker network create e2e_bridge &> /dev/null || :
 
@@ -196,11 +218,14 @@ jobs:
           path: /home/circleci/project/dev/metrics/vault_perf.json
           destination: vault_metrics.json
 
+  ##############################################################################
+
   bbtest:
     machine: true
     environment:
       - PERSISTENCE_PATH: /home/circleci/project/dev/data
       - LOGS_PATH: /home/circleci/project/dev/logs
+      - RELEASE_BRANCH: master
 
     working_directory: /home/circleci/project
 
@@ -210,14 +235,15 @@ jobs:
       - run:
           name: Run blackbox tests
           command: |
-            echo "pulling openbank/vault:master"
-            docker pull openbank/vault:master
+            pull() {
+              echo "pulling openbank/${1}:${RELEASE_BRANCH}"
+              docker pull openbank/${1}:${RELEASE_BRANCH}
+            }
 
-            echo "pulling openbank/lake:master"
-            docker pull openbank/lake:master
-
-            echo "pulling openbank/wall:master"
-            docker pull openbank/wall:master
+            pull vault &
+            pull lake &
+            pull wall &
+            wait
 
             echo "[info] stopping older runs"
             (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
@@ -228,32 +254,11 @@ jobs:
             (docker rm -f $(docker ps -aqf "name=bbtest") || :) &> /dev/null
 
       - store_artifacts:
-          path: /home/circleci/project/dev/metrics/vault_test.json
-          destination: vault_metrics.json
+          path: /home/circleci/project/dev/metrics
+          destination: metrics
 
       - store_artifacts:
-          path: /home/circleci/project/logs/e2e_lake.log
-          destination: lake.log
+          path: /home/circleci/project/logs
+          destination: logs
 
-      - store_artifacts:
-          path: /home/circleci/project/logs/e2e_vault_fio.log
-          destination: vault_fio.log
-
-      - store_artifacts:
-          path: /home/circleci/project/logs/e2e_vault_raiffeisen.log
-          destination: vault_raiffeisen.log
-
-      - store_artifacts:
-          path: /home/circleci/project/logs/e2e_vault_test.log
-          destination: vault_test.log
-
-      - store_artifacts:
-          path: /home/circleci/project/logs/e2e_wall.log
-          destination: wall.log
-
-workflows:
-  version: 2
-  integration_test:
-    jobs:
-      - bbtest
-      - performance
+################################################################################
