@@ -40,7 +40,7 @@ class StressTest:
 
     session = requests.Session()
     session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
-    reqs = [grequests.get(url, session=session, timeout=10) for url in prepared]
+    reqs = [grequests.get(url, session=session, timeout=2) for url in prepared]
     s_passed = 0
     s_failed = 0
     s_processed = 0
