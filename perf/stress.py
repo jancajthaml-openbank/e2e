@@ -8,7 +8,7 @@ import grequests
 import requests
 from requests.adapters import HTTPAdapter
 
-from constants import tenant, site, limit, tty, nodes, info, progress, warn, success, took
+from constants import tenant, site, limit, tty, info, progress, warn, success, took
 import api
 
 info("parallelism set to {0}".format(limit))
