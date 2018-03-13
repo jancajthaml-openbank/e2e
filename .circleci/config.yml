@@ -265,6 +265,8 @@ jobs:
             VERSION=${RELEASE_BRANCH} \
               docker-compose run --rm bbtest
 
+            # fixme check that arfifacts are present or else exit 1
+
       - store_artifacts:
           path: /home/circleci/project/metrics
           destination: metrics
