@@ -38,6 +38,7 @@ services:
       - WALL_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_wall.json
     volumes:
       - ./journal:/data
+      - ./metrics:/opt/metrics
     ports:
       - "8080"
     logging:
