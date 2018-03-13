@@ -3,7 +3,7 @@ require_relative 'placeholders'
 require 'json'
 
 step "metrics should report :count created accounts" do |count|
-  abspath = "/opt/metrics/vault_#{@tenant_id}.json"
+  abspath = "/opt/metrics/metrics_bbtest_vault_#{@tenant_id}.json"
   unless File.file?(abspath)
     raise "file:  #{abspath} is a directory" if File.directory?(abspath)
     raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}"
@@ -16,7 +16,7 @@ step "metrics should report :count created accounts" do |count|
 end
 
 step "metrics events should cancel out" do ||
-  abspath = "/opt/metrics/vault_#{@tenant_id}.json"
+  abspath = "/opt/metrics/metrics_bbtest_vault_#{@tenant_id}.json"
   unless File.file?(abspath)
     raise "file:  #{abspath} is a directory" if File.directory?(abspath)
     raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}"

@@ -34,6 +34,8 @@ services:
       - WALL_STORAGE=/data
       - WALL_LAKE_HOSTNAME=lake
       - WALL_LOG_LEVEL=DEBUG
+      - WALL_METRICS_REFRESHRATE=1s
+      - WALL_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_wall.json
     volumes:
       - ./journal:/data
     ports:
@@ -65,10 +67,10 @@ services:
       - VAULT_SNAPSHOT_SCANINTERVAL=1s
       - VAULT_LAKE_HOSTNAME=lake
       - VAULT_METRICS_REFRESHRATE=1s
-      - VAULT_METRICS_OUTPUT=/metrics/vault_test.json
+      - VAULT_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_vault_test.json
     volumes:
       - ./journal:/data
-      - ./metrics:/metrics
+      - ./metrics:/opt/metrics
     logging:
       driver: json-file
 
@@ -83,6 +85,8 @@ services:
       - VAULT_JOURNAL_SATURATION=1
       - VAULT_SNAPSHOT_SCANINTERVAL=1s
       - VAULT_LAKE_HOSTNAME=lake
+      - VAULT_METRICS_REFRESHRATE=1s
+      - VAULT_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_vault_raiffeisen.json
     volumes:
       - ./journal:/data
       - ./metrics:/opt/metrics
@@ -100,6 +104,8 @@ services:
       - VAULT_JOURNAL_SATURATION=1
       - VAULT_SNAPSHOT_SCANINTERVAL=1s
       - VAULT_LAKE_HOSTNAME=lake
+      - VAULT_METRICS_REFRESHRATE=1s
+      - VAULT_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_vault_fio.json
     volumes:
       - ./journal:/data
       - ./metrics:/opt/metrics

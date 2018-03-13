@@ -54,7 +54,7 @@ def main():
 
     #debug("TDB audit from database")
     # fixme audit here
-    os.exit(0)
+    sys.exit(0)
 
   except KeyboardInterrupt:
     print(" detected, exiting")
