@@ -14,7 +14,7 @@ workflows:
   rolling:
     triggers:
       - schedule:
-          cron: "0,10,20,30,40,50 * * * *"
+          cron: "0,5,10,15,20,25,30,35,40,45,50,55 * * * *"
           filters:
             branches:
               only:
@@ -34,7 +34,6 @@ jobs:
       - PERSISTENCE_PATH: /home/circleci/project/dev/data
       - LOGS_PATH: /home/circleci/project/dev/logs
       - METRICS_PATH: /home/circleci/project/dev/metrics
-      - VERSION: master
       - TENANT: performance
       - MAX_PARALLELISM: 500
 
@@ -45,15 +44,24 @@ jobs:
       - checkout
 
       - run:
-          name: Prepare prerequisities
+          name: Prepare performance tests
           command: |
+            pull() {
+              echo "pulling openbank/${1}:${RELEASE_BRANCH}"
+              docker pull openbank/${1}:${RELEASE_BRANCH}
+            }
+
+            pull vault &
+            pull lake &
+            pull wall &
+            wait
+
             cd perf && docker build -t e2e_perf .
-            docker images
 
             mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
 
       - run:
-          name: Start tests
+          name: Run performance tests
           command: |
             rand_alnum() {
               LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 13 ; echo
@@ -89,6 +97,8 @@ jobs:
                 -e WALL_LAKE_HOSTNAME=queue \
                 -e WALL_STORAGE=/data \
                 -e WALL_LOG_LEVEL=DEBUG \
+                -e WALL_METRICS_REFRESHRATE=10s \
+                -e WALL_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
                 -v ${PERSISTENCE_PATH}:/data \
                 -v ${LOGS_PATH}:/logs \
                 -v ${METRICS_PATH}:/opt/metrics \
@@ -112,7 +122,7 @@ jobs:
                 -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
                 -e VAULT_TENANT=${TENANT} \
                 -e VAULT_METRICS_REFRESHRATE=10s \
-                -e VAULT_METRICS_OUTPUT=/opt/metrics/vault_perf.json \
+                -e VAULT_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
                 -v ${PERSISTENCE_PATH}:/data \
                 -v ${LOGS_PATH}:/logs \
                 -v ${METRICS_PATH}:/opt/metrics \
@@ -180,7 +190,7 @@ jobs:
               exit 1
             fi
 
-            wall_container=$(spawn_wall 1 1)
+            wall_container=$(spawn_wall 1)
 
             if [ -z "$wall_container" ] ; then
               echo "failed to start wall"
@@ -203,28 +213,18 @@ jobs:
               e2e_perf
 
       - store_artifacts:
-          path: /home/circleci/project/dev/logs/perf_queue.log
-          destination: queue.log
+          path: /home/circleci/project/dev/metrics
+          destination: metrics
 
       - store_artifacts:
-          path: /home/circleci/project/dev/logs/perf_vault.log
-          destination: vault.log
-
-      - store_artifacts:
-          path: /home/circleci/project/dev/logs/perf_wall.log
-          destination: wall.log
-
-      - store_artifacts:
-          path: /home/circleci/project/dev/metrics/vault_perf.json
-          destination: vault_metrics.json
+          path: /home/circleci/project/dev/logs
+          destination: logs
 
   ##############################################################################
 
   bbtest:
     machine: true
     environment:
-      - PERSISTENCE_PATH: /home/circleci/project/dev/data
-      - LOGS_PATH: /home/circleci/project/dev/logs
       - RELEASE_BRANCH: master
 
     working_directory: /home/circleci/project
@@ -233,7 +233,7 @@ jobs:
       - checkout
 
       - run:
-          name: Run blackbox tests
+          name: Prepare blackbox tests
           command: |
             pull() {
               echo "pulling openbank/${1}:${RELEASE_BRANCH}"
@@ -245,20 +245,28 @@ jobs:
             pull wall &
             wait
 
-            echo "[info] stopping older runs"
             (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
-            echo "[info] running bbtest"
-            VERSION=${VERSION} docker-compose run --rm bbtest
-            echo "[info] stopping runs"
-            (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
-            (docker rm -f $(docker ps -aqf "name=bbtest") || :) &> /dev/null
+
+            docker-compose build bbtest
+
+      - run:
+          name: Run blackbox tests
+          command: |
+            VERSION=${RELEASE_BRANCH} \
+              docker-compose run --rm bbtest
 
       - store_artifacts:
-          path: /home/circleci/project/dev/metrics
+          path: /home/circleci/project/metrics
           destination: metrics
 
       - store_artifacts:
           path: /home/circleci/project/logs
           destination: logs
+
+      - run:
+          name: Teardown blackbox tests
+          command: |
+            (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
+            (docker rm -f $(docker ps -aqf "name=bbtest") || :) &> /dev/null
 
 ################################################################################
