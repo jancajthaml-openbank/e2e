@@ -4,7 +4,7 @@
 
 ################################################################################
 
-MAX_PARALLELISM=${MAX_PARALLELISM:=100}
+MAX_PARALLELISM=${MAX_PARALLELISM:=10}
 VERSION=${VERSION:=latest}
 TENANT=${TENANT:=performance}
 
@@ -194,7 +194,6 @@ docker run \
   -e LAKE_HOSTNAME=queue \
   -e HTTP_ENTRYPOINT=wall_1:8080 \
   -e TENANT=${TENANT} \
-  -e NODES=1 \
   -e MAX_PARALLELISM=${MAX_PARALLELISM} \
   -e TTY=${TTY} \
   -v /var/run/docker.sock:/var/run/docker.sock \

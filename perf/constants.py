@@ -5,14 +5,9 @@ import os
 import sys
 
 try:
-  limit = int(os.getenv('MAX_PARALLELISM', '100'))
+  limit = int(os.getenv('MAX_PARALLELISM', '10'))
 except ValueError:
   limit = 200
-
-try:
-  nodes = int(os.getenv('NODES', 1))
-except ValueError:
-  nodes = 1
 
 tty = os.getenv('TTY', 'yes') == 'yes'
 tenant = os.getenv('TENANT', 'test')

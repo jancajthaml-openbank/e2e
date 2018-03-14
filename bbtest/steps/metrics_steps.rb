@@ -11,7 +11,7 @@ step "metrics should report :count created accounts" do |count|
 
   eventually(timeout: 3) {
     contents = JSON.parse(File.open(abspath, 'r').read)
-    expect(contents["ACCOUNTS-CREATED"]).to eq(count)
+    expect(contents["createdAccounts"]).to eq(count), "in #{contents}"
   }
 end
 
@@ -24,11 +24,11 @@ step "metrics events should cancel out" do ||
 
   eventually(timeout: 3) {
     contents = JSON.parse(File.open(abspath, 'r').read)
-    raise "no promises" unless contents["PROMISES-ACCEPTED"] > 0
+    raise "no promises in #{contents}" unless contents["promisesAccepted"] > 0
 
-    initials = contents["PROMISES-ACCEPTED"]
-    terminals = contents["COMMITS-ACCEPTED"] + contents["ROLLBACKS-ACCEPTED"]
+    initials = contents["promisesAccepted"]
+    terminals = contents["commitsAccepted"] + contents["rollbacksAccepted"]
 
-    expect(initials - terminals).to eq(0)
+    expect(initials - terminals).to eq(0), "in #{contents}"
   }
 end

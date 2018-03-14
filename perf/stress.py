@@ -8,7 +8,7 @@ import grequests
 import requests
 from requests.adapters import HTTPAdapter
 
-from constants import tenant, site, limit, tty, nodes, info, progress, warn, success, took
+from constants import tenant, site, limit, tty, info, progress, warn, success, took
 import api
 
 info("parallelism set to {0}".format(limit))
@@ -40,7 +40,7 @@ class StressTest:
 
     session = requests.Session()
     session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
-    reqs = [grequests.get(url, session=session, timeout=10) for url in prepared]
+    reqs = [grequests.get(url, session=session, timeout=2) for url in prepared]
     s_passed = 0
     s_failed = 0
     s_processed = 0

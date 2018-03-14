@@ -11,7 +11,7 @@ workflows:
       - bbtest
       - performance
 
-  rolling:
+  rolling_contract:
     triggers:
       - schedule:
           cron: "0,5,10,15,20,25,30,35,40,45,50,55 * * * *"
@@ -21,6 +21,17 @@ workflows:
                 - master
     jobs:
       - bbtest
+
+  rolling_performance:
+    triggers:
+      - schedule:
+          cron: "0,30 * * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - performance
 
 ################################################################################
 
@@ -35,7 +46,7 @@ jobs:
       - LOGS_PATH: /home/circleci/project/dev/logs
       - METRICS_PATH: /home/circleci/project/dev/metrics
       - TENANT: performance
-      - MAX_PARALLELISM: 500
+      - MAX_PARALLELISM: 10
 
     working_directory: /home/circleci/project
 
@@ -202,7 +213,6 @@ jobs:
               -e LAKE_HOSTNAME=queue \
               -e HTTP_ENTRYPOINT=wall_1:8080 \
               -e TENANT=${TENANT} \
-              -e NODES=1 \
               -e MAX_PARALLELISM=${MAX_PARALLELISM} \
               -e TTY=${TTY} \
               -v /var/run/docker.sock:/var/run/docker.sock \
@@ -254,6 +264,8 @@ jobs:
           command: |
             VERSION=${RELEASE_BRANCH} \
               docker-compose run --rm bbtest
+
+            # fixme check that arfifacts are present or else exit 1
 
       - store_artifacts:
           path: /home/circleci/project/metrics
