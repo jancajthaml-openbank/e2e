@@ -35,6 +35,9 @@ workflows:
                 - master
     jobs:
       - performance
+      - report:
+          requires:
+            - performance
 
 ################################################################################
 
