@@ -8,8 +8,12 @@ workflows:
 
   commit:
     jobs:
-      - bbtest
       - performance
+      - bbtest
+      - report:
+          requires:
+            - performance
+            - bbtest
 
   rolling_contract:
     triggers:
@@ -21,6 +25,9 @@ workflows:
                 - master
     jobs:
       - bbtest
+      - report:
+          requires:
+            - bbtest
 
   rolling_performance:
     triggers:
@@ -32,6 +39,9 @@ workflows:
                 - master
     jobs:
       - performance
+      - report:
+          requires:
+            - performance
 
 ################################################################################
 
@@ -39,21 +49,52 @@ jobs:
 
   ##############################################################################
 
+  report:
+    machine: true
+    environment:
+      - METRICS_PATH: /home/circleci/project/reports/metrics
+    working_directory: /home/circleci/project
+
+    steps:
+      - attach_workspace:
+          at: /home/circleci/project/reports
+      - run:
+          name: Regenerate reports
+          command: |
+            if [ ! -d ${METRICS_PATH} ] ; then
+              exit 1
+            fi
+
+            git config --global user.email "jan.cajthaml@gmail.com"
+            git config --global user.name "CircleCI e2e rolling update"
+
+            git clone git@github.com:jancajthaml-openbank/health-check.git
+
+            cp -r reports/metrics health-check/reports
+
+            cd health-check
+
+            python generate_metrics_report.py > README.md
+
+            git add .
+            git commit -am "circleci e2e rolling update of reports"
+            git push
+
+  ##############################################################################
+
   performance:
     machine: true
     environment:
-      - PERSISTENCE_PATH: /home/circleci/project/dev/data
-      - LOGS_PATH: /home/circleci/project/dev/logs
-      - METRICS_PATH: /home/circleci/project/dev/metrics
+      - PERSISTENCE_PATH: /home/circleci/project/data
+      - LOGS_PATH: /home/circleci/project/logs
+      - METRICS_PATH: /home/circleci/project/metrics
       - TENANT: performance
       - MAX_PARALLELISM: 10
 
     working_directory: /home/circleci/project
 
     steps:
-
       - checkout
-
       - run:
           name: Prepare performance tests
           command: |
@@ -70,7 +111,6 @@ jobs:
             cd perf && docker build -t e2e_perf .
 
             mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
-
       - run:
           name: Run performance tests
           command: |
@@ -221,14 +261,17 @@ jobs:
               -v ${METRICS_PATH}:/opt/metrics \
               --net=e2e_bridge \
               e2e_perf
-
       - store_artifacts:
-          path: /home/circleci/project/dev/metrics
+          path: /home/circleci/project/metrics
           destination: metrics
-
       - store_artifacts:
-          path: /home/circleci/project/dev/logs
+          path: /home/circleci/project/logs
           destination: logs
+      - persist_to_workspace:
+          root: .
+          paths:
+            - metrics
+            - logs
 
   ##############################################################################
 
@@ -241,7 +284,6 @@ jobs:
 
     steps:
       - checkout
-
       - run:
           name: Prepare blackbox tests
           command: |
@@ -258,23 +300,29 @@ jobs:
             (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
 
             docker-compose build bbtest
-
       - run:
           name: Run blackbox tests
           command: |
             VERSION=${RELEASE_BRANCH} \
               docker-compose run --rm bbtest
 
-            # fixme check that arfifacts are present or else exit 1
+            if [ ! -d metrics ] || [ ! -d logs ] ; then
+              exit 1
+            fi
+
+            # fixme count files in metrics and if empty exit 1
 
       - store_artifacts:
           path: /home/circleci/project/metrics
           destination: metrics
-
       - store_artifacts:
           path: /home/circleci/project/logs
           destination: logs
-
+      - persist_to_workspace:
+          root: .
+          paths:
+            - metrics
+            - logs
       - run:
           name: Teardown blackbox tests
           command: |
