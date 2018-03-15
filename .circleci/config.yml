@@ -13,7 +13,6 @@ workflows:
       - report:
           requires:
             - performance
-            - bbtest
 
   rolling_contract:
     triggers:
@@ -25,9 +24,6 @@ workflows:
                 - master
     jobs:
       - bbtest
-      - report:
-          requires:
-            - bbtest
 
   rolling_performance:
     triggers:
@@ -39,9 +35,6 @@ workflows:
                 - master
     jobs:
       - performance
-      - report:
-          requires:
-            - performance
 
 ################################################################################
 
@@ -72,12 +65,17 @@ jobs:
 
             cp -r reports/metrics health-check/reports
 
+            find health-check/reports -type f | wc -l
+
             cd health-check
 
             python generate_metrics_report.py > README.md
 
+            cat README.md
+
             git add .
             git commit -am "circleci e2e rolling update of reports"
+            git pull
             git push
 
   ##############################################################################
