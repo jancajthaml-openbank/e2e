@@ -35,4 +35,4 @@ module RESTServiceHelper
 
 end
 
-RESTServiceHelper.timeout = 2
+RESTServiceHelper.timeout = 5
