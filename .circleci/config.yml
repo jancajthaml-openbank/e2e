@@ -68,18 +68,17 @@ jobs:
 
             cp -r reports/metrics health-check/reports
 
-            find health-check/reports -type f | wc -l
-
             cd health-check
-
             python generate_metrics_report.py > README.md
 
-            cat README.md
+            git checkout --orphan rolling
 
-            git add .
+            git add -A
             git commit -am "circleci e2e rolling update of reports"
-            git pull
-            git push
+            git push --set-upstream origin rolling
+            git branch -D master
+            git branch -m master
+            git push -f origin master
 
   ##############################################################################
 
