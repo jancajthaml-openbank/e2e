@@ -73,6 +73,7 @@ jobs:
 
             git checkout --orphan rolling
 
+            git pull -f origin rolling
             git add -A
             git commit -am "circleci e2e rolling update of reports"
             git push -f origin rolling
@@ -309,9 +310,6 @@ jobs:
             if [ ! -d metrics ] || [ ! -d logs ] ; then
               exit 1
             fi
-
-            # fixme count files in metrics and if empty exit 1
-
       - store_artifacts:
           path: /home/circleci/project/metrics
           destination: metrics
