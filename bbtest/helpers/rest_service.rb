@@ -4,35 +4,103 @@ module RESTServiceHelper
 
   class << self; attr_accessor :timeout; end
 
-  def get(url)
-    Excon.get(url, :read_timeout => RESTServiceHelper.timeout)
+  def get(url, no_timeout = true)
+    begin
+      Excon.get(url, :read_timeout => RESTServiceHelper.timeout)
+    rescue => error
+      case error
+      when Excon::Errors::Timeout
+        if no_timeout
+          retry
+        else
+          raise(error)
+        end
+      else
+        raise(error)
+      end
+    end
   end
 
-  def post(url, data = {})
+  def post(url, data = {}, no_timeout = true)
     headers = {
       'Content-Type' => 'application/json;charset=utf8'
     }
-    Excon.post(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+
+    begin
+      Excon.post(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+    rescue => error
+      case error
+      when Excon::Errors::Timeout
+        if no_timeout
+          retry
+        else
+          raise(error)
+        end
+      else
+        raise(error)
+      end
+    end
   end
 
-  def patch(url, data = {})
+  def patch(url, data = {}, no_timeout = true)
     headers = {
       'Content-Type' => 'application/json;charset=utf8'
     }
-    Excon.patch(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+
+    begin
+      Excon.patch(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+    rescue => error
+      case error
+      when Excon::Errors::Timeout
+        if no_timeout
+          retry
+        else
+          raise(error)
+        end
+      else
+        raise(error)
+      end
+    end
   end
 
-  def put(url, data = {})
+  def put(url, data = {}, no_timeout = true)
     headers = {
       'Content-Type' => 'application/json;charset=utf8'
     }
-    Excon.put(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+
+    begin
+      Excon.put(url, :headers => headers, :body => (data.is_a?(Hash) ? data.to_json : data), :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+    rescue => error
+      case error
+      when Excon::Errors::Timeout
+        if no_timeout
+          retry
+        else
+          raise(error)
+        end
+      else
+        raise(error)
+      end
+    end
   end
 
-  def delete(url)
-    Excon.delete(url, :headers => headers, :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+  def delete(url, no_timeout = true)
+    begin
+      Excon.delete(url, :headers => headers, :read_timeout => RESTServiceHelper.timeout, :write_timeout => RESTServiceHelper.timeout)
+    rescue => error
+      case error
+      when Excon::Errors::Timeout
+        if no_timeout
+          retry
+        else
+          raise(error)
+        end
+      else
+        raise(error)
+      end
+    end
   end
 
 end
 
-RESTServiceHelper.timeout = 5
+RESTServiceHelper.timeout = 1
