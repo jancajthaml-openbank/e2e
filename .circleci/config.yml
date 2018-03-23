@@ -73,13 +73,13 @@ jobs:
 
             git checkout --orphan rolling
 
-            git pull -f origin rolling
             git add -A
             git commit -am "circleci e2e rolling update of reports"
             git push -f origin rolling
             git branch -D master
             git branch -m master
             git push -f origin master
+            git push origin --delete rolling
 
   ##############################################################################
 
