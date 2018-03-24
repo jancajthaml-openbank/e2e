@@ -1,6 +1,6 @@
 version: 2
 
-################################################################################
+# ---------------------------------------------------------------------------- #
 
 workflows:
 
@@ -39,21 +39,26 @@ workflows:
           requires:
             - performance
 
-################################################################################
+# ---------------------------------------------------------------------------- #
 
 jobs:
 
-  ##############################################################################
+  # -------------------------------------------------------------------------- #
 
   report:
+
     machine: true
+
     environment:
       - METRICS_PATH: /home/circleci/project/reports/metrics
+
     working_directory: /home/circleci/project
 
     steps:
+
       - attach_workspace:
           at: /home/circleci/project/reports
+
       - run:
           name: Regenerate reports
           command: |
@@ -81,10 +86,12 @@ jobs:
             git push -f origin master
             git push origin --delete rolling
 
-  ##############################################################################
+  # -------------------------------------------------------------------------- #
 
   performance:
+
     machine: true
+
     environment:
       - PERSISTENCE_PATH: /home/circleci/project/data
       - LOGS_PATH: /home/circleci/project/logs
@@ -95,23 +102,26 @@ jobs:
     working_directory: /home/circleci/project
 
     steps:
+
       - checkout
+
       - run:
           name: Prepare performance tests
           command: |
             pull() {
-              echo "pulling openbank/${1}:${RELEASE_BRANCH}"
-              docker pull openbank/${1}:${RELEASE_BRANCH}
+              echo "pulling ${1}:${2}"
+              docker pull openbank/${1}:${2}
             }
 
-            pull vault &
-            pull lake &
-            pull wall &
+            pull openbank/vault master &
+            pull openbank/lake master &
+            pull openbank/wall master &
             wait
 
             cd perf && docker build -t e2e_perf .
 
             mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
+
       - run:
           name: Run performance tests
           command: |
@@ -262,54 +272,60 @@ jobs:
               -v ${METRICS_PATH}:/opt/metrics \
               --net=e2e_bridge \
               e2e_perf
+
       - store_artifacts:
           path: /home/circleci/project/metrics
           destination: metrics
+
       - store_artifacts:
           path: /home/circleci/project/logs
           destination: logs
+
       - persist_to_workspace:
           root: .
           paths:
             - metrics
             - logs
 
-  ##############################################################################
+  # -------------------------------------------------------------------------- #
 
   bbtest:
+
     machine: true
-    environment:
-      - RELEASE_BRANCH: master
 
     working_directory: /home/circleci/project
 
     steps:
+
       - checkout
+
       - run:
           name: Prepare blackbox tests
           command: |
             pull() {
-              echo "pulling openbank/${1}:${RELEASE_BRANCH}"
-              docker pull openbank/${1}:${RELEASE_BRANCH}
+              echo "pulling ${1}:${2}"
+              docker pull ${1}:${2}
             }
 
-            pull vault &
-            pull lake &
-            pull wall &
+            pull openbank/vault master &
+            pull openbank/lake master &
+            pull openbank/wall master &
             wait
 
             (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
 
             docker-compose build bbtest
+
       - run:
           name: Run blackbox tests
           command: |
-            VERSION=${RELEASE_BRANCH} \
-              docker-compose run --rm bbtest
+            mkdir -p /tmp
+            VERSION=master \
+            \
+            docker-compose run --rm bbtest
 
-            if [ ! -d metrics ] || [ ! -d logs ] ; then
-              exit 1
-            fi
+      - run : if [ ! -d metrics ] || [ ! -d logs ] ; then exit 1 ; fi
+
       - store_artifacts:
           path: /home/circleci/project/metrics
           destination: metrics
@@ -321,10 +337,9 @@ jobs:
           paths:
             - metrics
             - logs
-      - run:
-          name: Teardown blackbox tests
-          command: |
-            (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
-            (docker rm -f $(docker ps -aqf "name=bbtest") || :) &> /dev/null
 
-################################################################################
+      - run: (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
+
+      - run: (docker rm -f $(docker ps -aqf "name=bbtest") || :) &> /dev/null
+
+# ---------------------------------------------------------------------------- #
