@@ -9,8 +9,6 @@ class WallAPI
     @base_url = "http://wall:8080" # fixme discover
   end
 
-  ######################################################### account methods ####
-
   def create_account(tenant_id, account_name, currency, activity)
     body = {
       accountNumber: account_name,
@@ -23,8 +21,6 @@ class WallAPI
   def get_balance(tenant_id, account_name)
     get("#{base_url}/v1/sparrow/account/#{tenant_id}/#{account_name}")
   end
-
-  ##################################################### transaction methods ####
 
   def single_transfer(tenant_id, from, to, amount, currency, id = nil)
     body = {
