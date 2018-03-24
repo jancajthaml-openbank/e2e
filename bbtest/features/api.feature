@@ -2,7 +2,9 @@ Feature: API test
 
   Background: Basic orchestration
     Given container wall should be running
+    And   vault is healthy
     And   container lake should be running
+    And   lake is healthy
     And   container vault should be running
     And   wall is listening on 8080
     And   wall is healthy
