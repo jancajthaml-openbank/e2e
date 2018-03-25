@@ -1,17 +1,11 @@
 Feature: Integrity test
 
-  Background: Basic orchestration
-    Given container wall should be running
-    And   wall is listening on 8080
-    And   wall is healthy
-    And   container lake should be running
-    And   lake is healthy
-    And   container vault should be started from scratch
-    And   vault is healthy
-    And   storage is empty
-
   Scenario: Replay same transaction
-    Given tenant is test
+    Given lake is running
+    And   mongo is running
+    And   wall is running
+    And   tenant is INTEGRITY
+    And   vault is running
 
     When  active EUR account ReplayCredit is created
     When  pasive EUR account ReplayDredit is created

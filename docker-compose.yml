@@ -1,6 +1,10 @@
 version: '2'
 
+# ---------------------------------------------------------------------------- #
+
 services:
+
+  # -------------------------------------------------------------------------- #
 
   bbtest:
     build:
@@ -8,41 +12,19 @@ services:
       dockerfile: bbtest/Dockerfile
     image: e2e_dev
     working_dir: /opt/bbtest
-    depends_on:
-      - wall
-      - lake
-      - vault
-      - vaultRaiffeisen
-      - vaultFio
     environment:
       - PERSISTENCE_PATH=/data
       - TENANT=test
       - COMPOSE_PROJECT_NAME
     volumes:
-      - ./journal:/data
-      - ./metrics:/opt/metrics
-      - ./logs:/logs
+      - ./reports:/reports
+      - journal:/data
+      - metrics:/metrics
       - ./bbtest:/opt/bbtest
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers
 
-  wall:
-    image: openbank/wall:master
-    restart: unless-stopped
-    container_name: e2e_wall
-    environment:
-      - WALL_STORAGE=/data
-      - WALL_LAKE_HOSTNAME=lake
-      - WALL_LOG_LEVEL=DEBUG
-      - WALL_METRICS_REFRESHRATE=1s
-      - WALL_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_wall.json
-    volumes:
-      - ./journal:/data
-      - ./metrics:/opt/metrics
-    ports:
-      - "8080"
-    logging:
-      driver: json-file
+  # -------------------------------------------------------------------------- #
 
   lake:
     image: openbank/lake:master
@@ -56,6 +38,44 @@ services:
     logging:
       driver: json-file
 
+  # -------------------------------------------------------------------------- #
+
+  reporting:
+    image: openbank/reporting:master
+    restart: unless-stopped
+    container_name: e2e_reporting
+    environment:
+      - REPORTING_HTTP_PORT=8080
+      - REPORTING_LAKE_HOSTNAME=lake
+      - REPORTING_MONGO_HOSTNAME=e2e_mongodb
+      - REPORTING_TENANT=test
+    ports:
+      - "8080"
+    logging:
+      driver: json-file
+
+  # -------------------------------------------------------------------------- #
+
+  wall:
+    image: openbank/wall:master
+    restart: unless-stopped
+    container_name: e2e_wall
+    environment:
+      - WALL_STORAGE=/data
+      - WALL_LAKE_HOSTNAME=lake
+      - WALL_LOG_LEVEL=DEBUG
+      - WALL_METRICS_REFRESHRATE=1s
+      - WALL_METRICS_OUTPUT=/metrics/metrics_bbtest_wall.json
+    volumes:
+      - journal:/data
+      - metrics:/metrics
+    ports:
+      - "8080"
+    logging:
+      driver: json-file
+
+  # -------------------------------------------------------------------------- #
+
   vault:
     image: openbank/vault:master
     container_name: e2e_vault_test
@@ -68,47 +88,38 @@ services:
       - VAULT_SNAPSHOT_SCANINTERVAL=1s
       - VAULT_LAKE_HOSTNAME=lake
       - VAULT_METRICS_REFRESHRATE=1s
-      - VAULT_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_vault_test.json
+      - VAULT_METRICS_OUTPUT=/metrics/metrics_bbtest_vault_test.json
     volumes:
-      - ./journal:/data
-      - ./metrics:/opt/metrics
+      - journal:/data
+      - metrics:/metrics
     logging:
       driver: json-file
 
-  vaultRaiffeisen:
-    image: openbank/vault:master
-    container_name: e2e_vault_raiffeisen
-    restart: unless-stopped
-    environment:
-      - VAULT_STORAGE=/data
-      - VAULT_LOG_LEVEL=DEBUG
-      - VAULT_TENANT=RAIFFEISEN
-      - VAULT_JOURNAL_SATURATION=1
-      - VAULT_SNAPSHOT_SCANINTERVAL=1s
-      - VAULT_LAKE_HOSTNAME=lake
-      - VAULT_METRICS_REFRESHRATE=1s
-      - VAULT_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_vault_raiffeisen.json
-    volumes:
-      - ./journal:/data
-      - ./metrics:/opt/metrics
-    logging:
-      driver: json-file
+  # -------------------------------------------------------------------------- #
 
-  vaultFio:
-    image: openbank/vault:master
-    container_name: e2e_vault_fio
-    restart: unless-stopped
+  mongodb:
+    image: mongo:latest
+    restart: "no"
+    container_name: e2e_mongodb
     environment:
-      - VAULT_STORAGE=/data
-      - VAULT_LOG_LEVEL=DEBUG
-      - VAULT_TENANT=FIO
-      - VAULT_JOURNAL_SATURATION=1
-      - VAULT_SNAPSHOT_SCANINTERVAL=1s
-      - VAULT_LAKE_HOSTNAME=lake
-      - VAULT_METRICS_REFRESHRATE=1s
-      - VAULT_METRICS_OUTPUT=/opt/metrics/metrics_bbtest_vault_fio.json
+      - MONGO_DATA_DIR=/data/db
+      - MONGO_LOG_DIR=/dev/null
     volumes:
-      - ./journal:/data
-      - ./metrics:/opt/metrics
-    logging:
-      driver: json-file
+      - mongo:/data/db
+    ports:
+      - "27017:27017"
+    entrypoint: ["mongod"]
+    command: ["--smallfiles", "--logpath=/dev/null"]
+
+# ---------------------------------------------------------------------------- #
+
+volumes:
+
+  journal:
+    driver: local
+  metrics:
+    driver: local
+  mongo:
+    driver: local
+
+# ---------------------------------------------------------------------------- #

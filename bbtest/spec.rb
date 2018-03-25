@@ -15,10 +15,11 @@ RSpec.configure do |config|
   config.before(:suite) do |_suite|
     print "[ suite starting ]\n"
 
-    ["/data", "/logs"].each { |folder|
+    ["/data", "/metrics", "/reports"].each { |folder|
       FileUtils.rm_rf Dir.glob("#{folder}/*")
     }
 
+    $tenant_id = nil
     $http_client = HTTPClient.new()
 
     print "[ suite started  ]\n"
@@ -37,17 +38,22 @@ RSpec.configure do |config|
       label = ($? == 0 ? label.strip : container)
 
       %x(docker kill --signal="TERM" #{container} >/dev/null 2>&1 || :)
-      %x(docker logs #{container} >/logs/#{label}.log 2>&1)
+      %x(docker logs #{container} >/reports/#{label}.log 2>&1)
       %x(docker rm -f #{container} &>/dev/null || :)
     end
 
     (
       get_containers.call("openbank/wall") <<
+      get_containers.call("openbank/reporting") <<
       get_containers.call("openbank/vault") <<
-      get_containers.call("openbank/lake")
+      get_containers.call("openbank/lake") <<
+      get_containers.call("mongo")
     ).flatten.each { |container| teardown_container.call(container) }
 
-    FileUtils.rm_rf Dir.glob("/data/*")
+    FileUtils.cp_r '/metrics/.', '/reports'
+    ["/data", "/metrics"].each { |folder|
+      FileUtils.rm_rf Dir.glob("#{folder}/*")
+    }
 
     print "[ suite ended    ]"
   end
