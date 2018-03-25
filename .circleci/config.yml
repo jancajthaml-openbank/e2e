@@ -133,16 +133,17 @@ jobs:
               echo "$*" | bc -l
             }
 
-            spawn_queue() {
-              name="queue_$1"
+            spawn_lake() {
+              name="lake_$1"
 
               docker run \
                 -d \
-                -h queue \
+                -h lake \
                 -v ${LOGS_PATH}:/logs \
+                -e LAKE_LOG_LEVEL=ERROR \
                 -v ${METRICS_PATH}:/opt/metrics \
                 --net=e2e_bridge \
-                --net-alias=queue \
+                --net-alias=lake \
                 --name=performance_queue_${name} \
                 --publish 5562:5562 \
                 --publish 5561:5561 \
@@ -156,9 +157,9 @@ jobs:
                 -d \
                 -h ${name} \
                 -e HOSTNAME=${name} \
-                -e WALL_LAKE_HOSTNAME=queue \
+                -e WALL_LAKE_HOSTNAME=lake \
                 -e WALL_STORAGE=/data \
-                -e WALL_LOG_LEVEL=DEBUG \
+                -e WALL_LOG_LEVEL=ERROR \
                 -e WALL_METRICS_REFRESHRATE=10s \
                 -e WALL_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
                 -v ${PERSISTENCE_PATH}:/data \
@@ -177,9 +178,9 @@ jobs:
               docker run \
                 -d \
                 -h ${name} \
-                -e VAULT_LAKE_HOSTNAME=queue \
+                -e VAULT_LAKE_HOSTNAME=lake \
                 -e VAULT_STORAGE=/data \
-                -e VAULT_LOG_LEVEL=DEBUG \
+                -e VAULT_LOG_LEVEL=ERROR \
                 -e VAULT_JOURNAL_SATURATION=10 \
                 -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
                 -e VAULT_TENANT=${TENANT} \
@@ -238,7 +239,7 @@ jobs:
 
             docker network create e2e_bridge &> /dev/null || :
 
-            queue_container=$(spawn_queue 1)
+            queue_container=$(spawn_lake 1)
 
             if [ -z "$queue_container" ] ; then
               echo "failed to start queue"
@@ -310,6 +311,8 @@ jobs:
             pull openbank/vault master &
             pull openbank/lake master &
             pull openbank/wall master &
+            pull openbank/reporting master &
+            pull mongo latest &
             wait
 
             (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
@@ -324,19 +327,15 @@ jobs:
             \
             docker-compose run --rm bbtest
 
-      - run : if [ ! -d metrics ] || [ ! -d logs ] ; then exit 1 ; fi
+      - run : if [ ! -d reports ] ; then exit 1 ; fi
 
       - store_artifacts:
-          path: /home/circleci/project/metrics
-          destination: metrics
-      - store_artifacts:
-          path: /home/circleci/project/logs
-          destination: logs
+          path: /home/circleci/project/reports
+          destination: reports
       - persist_to_workspace:
           root: .
           paths:
-            - metrics
-            - logs
+            - reports
 
       - run: (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
 

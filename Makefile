@@ -1,19 +1,39 @@
 .PHONY: all
-all: bbtest perf
+all: test perf
 
-.PHONY: bbtest
-bbtest:
-	@echo "[info] stopping older runs"
+.PHONY: pull_vault
+pull_vault:
+	docker pull openbank/vault:master &> /dev/null
+
+.PHONY: pull_wall
+pull_wall:
+	docker pull openbank/wall:master &> /dev/null
+
+.PHONY: pull_lake
+pull_lake:
+	docker pull openbank/lake:master &> /dev/null
+
+.PHONY: pull_reporting
+pull_reporting:
+	docker pull openbank/reporting:master &> /dev/null
+
+.PHONY: pull_mongo
+pull_mongo:
+	docker pull mongo:latest &> /dev/null
+
+.PHONY: pull_images
+pull_images: pull_vault pull_wall pull_lake pull_reporting pull_mongo
+	@echo "[info] images up to date"
+
+.PHONY: test
+test: pull_images
+	@echo "[info] cleaning"
 	@(docker rm -f $$(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
-	@echo "[info] running bbtest"
+	@echo "[info] running"
 	@docker-compose run --rm bbtest
-	@echo "[info] stopping runs"
+	@echo "[info] cleaning"
 	@(docker rm -f $$(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
 	@(docker rm -f $$(docker ps -aqf "name=bbtest") || :) &> /dev/null
-
-.PHONY: run
-run:
-	@docker-compose up
 
 .PHONY: perf
 perf:

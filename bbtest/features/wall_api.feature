@@ -1,16 +1,14 @@
-Feature: API test
+Feature: Wall API test
 
-  Background: Basic orchestration
-    Given container wall should be running
-    And   vault is healthy
-    And   container lake should be running
-    And   lake is healthy
-    And   container vault should be running
-    And   wall is listening on 8080
-    And   wall is healthy
+  Background: Appliance
+    Given lake is running
+    And   mongo is running
+    And   wall is running
+    And   tenant is WALL
+    And   vault is running
 
   Scenario: Account API - account doesn't exist
-    When  I call GET http://wall:8080/v1/sparrow/account/test/xxx
+    When  I call GET http://wall:8080/v1/sparrow/account/WALL/xxx
     Then  response status should be 404
     And   response content should be:
     """
@@ -18,7 +16,7 @@ Feature: API test
     """
 
   Scenario: Account API - account created
-    When  I call POST http://wall:8080/v1/sparrow/account/test
+    When  I call POST http://wall:8080/v1/sparrow/account/WALL
     """
       {
         "accountNumber": "xxx",
@@ -33,7 +31,7 @@ Feature: API test
     """
 
   Scenario: Account API - account already exists
-    When  I call POST http://wall:8080/v1/sparrow/account/test
+    When  I call POST http://wall:8080/v1/sparrow/account/WALL
     """
       {
         "accountNumber": "yyy",
@@ -47,7 +45,7 @@ Feature: API test
       {}
     """
 
-    When  I call POST http://wall:8080/v1/sparrow/account/test
+    When  I call POST http://wall:8080/v1/sparrow/account/WALL
     """
       {
         "accountNumber": "yyy",
@@ -62,7 +60,7 @@ Feature: API test
     """
 
   Scenario: Account API - get account balance
-    When  I call GET http://wall:8080/v1/sparrow/account/test/xxx
+    When  I call GET http://wall:8080/v1/sparrow/account/WALL/xxx
     Then  response status should be 200
     And   response content should be:
     """
@@ -75,7 +73,7 @@ Feature: API test
     """
 
   Scenario: Transaction API - invalid transaction side
-    When  I call POST http://wall:8080/v1/sparrow/transaction/test
+    When  I call POST http://wall:8080/v1/sparrow/transaction/WALL
     """
       {
         "transfers": [{
@@ -93,14 +91,14 @@ Feature: API test
     """
 
   Scenario: Transaction API - new transaction, valid resend, invalid resend
-    When  I call GET http://wall:8080/v1/sparrow/transaction/test/unique_transaction_id
+    When  I call GET http://wall:8080/v1/sparrow/transaction/WALL/unique_transaction_id
     Then  response status should be 404
     And   response content should be:
     """
       {}
     """
 
-    When  I call POST http://wall:8080/v1/sparrow/transaction/test
+    When  I call POST http://wall:8080/v1/sparrow/transaction/WALL
     """
       {
         "id": "unique_transaction_id",
@@ -125,7 +123,7 @@ Feature: API test
       }
     """
 
-    When  I call POST http://wall:8080/v1/sparrow/transaction/test
+    When  I call POST http://wall:8080/v1/sparrow/transaction/WALL
     """
       {
         "id": "unique_transaction_id",
@@ -149,7 +147,7 @@ Feature: API test
         ]
       }
     """
-    And  I call GET http://wall:8080/v1/sparrow/transaction/test/unique_transaction_id
+    And   I call GET http://wall:8080/v1/sparrow/transaction/WALL/unique_transaction_id
     Then  response status should be 200
     And   response content should be:
     """
@@ -166,7 +164,7 @@ Feature: API test
       }
     """
 
-    When  I call POST http://wall:8080/v1/sparrow/transaction/test
+    When  I call POST http://wall:8080/v1/sparrow/transaction/WALL
     """
       {
         "id": "unique_transaction_id",

@@ -73,7 +73,7 @@ spawn_wall() {
     -e HOSTNAME=${name} \
     -e WALL_LAKE_HOSTNAME=queue \
     -e WALL_STORAGE=/data \
-    -e WALL_LOG_LEVEL=DEBUG \
+    -e WALL_LOG_LEVEL=ERROR \
     -v ${PERSISTENCE_PATH}:/data \
     -v ${LOGS_PATH}:/logs \
     -v ${METRICS_PATH}:/opt/metrics \
@@ -92,7 +92,7 @@ spawn_vault() {
     -h ${name} \
     -e VAULT_LAKE_HOSTNAME=queue \
     -e VAULT_STORAGE=/data \
-    -e VAULT_LOG_LEVEL=DEBUG \
+    -e VAULT_LOG_LEVEL=ERROR \
     -e VAULT_JOURNAL_SATURATION=10 \
     -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
     -e VAULT_TENANT=${TENANT} \

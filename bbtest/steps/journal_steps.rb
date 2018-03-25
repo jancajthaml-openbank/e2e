@@ -5,7 +5,7 @@ require 'json'
 require 'date'
 
 step "snapshot :path should be" do |path, expectation|
-  abspath = "/data/#{@tenant_id}#{path}"
+  abspath = "/data/#{$tenant_id}#{path}"
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
   contents = File.open(abspath, 'rb').read
@@ -33,7 +33,7 @@ step "snapshot :path should be" do |path, expectation|
 end
 
 step "meta data :path should be" do |path, expectation|
-  abspath = "/data/#{@tenant_id}#{path}"
+  abspath = "/data/#{$tenant_id}#{path}"
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
   contents = File.open(abspath, 'r').read
@@ -49,7 +49,7 @@ step "meta data :path should be" do |path, expectation|
 end
 
 step "transaction :path should be" do |path, expectation|
-  abspath = "/data/#{@tenant_id}#{path}"
+  abspath = "/data/#{$tenant_id}#{path}"
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
   lines = File.open(abspath, 'r').read.split("\n")
@@ -79,7 +79,7 @@ step "transaction :path should be" do |path, expectation|
 end
 
 step "transaction state :path should be" do |path, expectation|
-  abspath = "/data/#{@tenant_id}#{path}"
+  abspath = "/data/#{$tenant_id}#{path}"
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
   contents = File.open(abspath, 'r').read

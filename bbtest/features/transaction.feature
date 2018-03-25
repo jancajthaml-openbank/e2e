@@ -1,17 +1,11 @@
-Feature: Transaction workflow test
-
-  Background: Basic orchestration
-    Given container wall should be running
-    And   wall is listening on 8080
-    And   wall is healthy
-    And   container lake should be running
-    And   lake is healthy
-    And   container vault should be running
-    And   vault is healthy
-    And   storage is empty
+Feature: Transaction workflow NORDEA
 
   Scenario: Trivial transfer
-    Given tenant is test
+    Given lake is running
+    And   mongo is running
+    And   wall is running
+    And   tenant is NORDEA
+    And   vault is running
 
     When  pasive EUR account mine is created
     Then  mine balance should be 0 EUR
@@ -28,7 +22,11 @@ Feature: Transaction workflow test
     And   theirs balance should be 0 EUR
 
   Scenario: tenant isolation
-    Given tenant is FIO
+    Given lake is running
+    And   mongo is running
+    And   wall is running
+    And   tenant is FIO
+    And   vault is running
 
     When  pasive CZK account Nostro is created
     And   active CZK account Credit is created
@@ -36,12 +34,17 @@ Feature: Transaction workflow test
     And   Credit should exist
 
     Given tenant is RAIFFEISEN
+    And   vault is running
 
     Then  Nostro should not exist
     And   Credit should not exist
 
   Scenario: Transfer forward
-    Given tenant is test
+    Given lake is running
+    And   mongo is running
+    And   wall is running
+    And   tenant is AIRBANK
+    And   vault is running
 
     When  active EUR account OriginCredit is created
     Then  OriginCredit balance should be 0 EUR
