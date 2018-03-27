@@ -40,15 +40,15 @@ services:
 
   # -------------------------------------------------------------------------- #
 
-  reporting:
-    image: openbank/reporting:master
+  search:
+    image: openbank/search:master
     restart: unless-stopped
-    container_name: e2e_reporting
+    container_name: e2e_search
     environment:
-      - REPORTING_HTTP_PORT=8080
-      - REPORTING_LAKE_HOSTNAME=lake
-      - REPORTING_MONGO_HOSTNAME=e2e_mongodb
-      - REPORTING_TENANT=test
+      - SEARCH_HTTP_PORT=8080
+      - SEARCH_LAKE_HOSTNAME=lake
+      - SEARCH_MONGO_HOSTNAME=e2e_mongodb
+      - SEARCH_TENANT=test
     ports:
       - "8080"
     logging:

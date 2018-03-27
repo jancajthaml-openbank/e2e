@@ -311,7 +311,7 @@ jobs:
             pull openbank/vault master &
             pull openbank/lake master &
             pull openbank/wall master &
-            pull openbank/reporting master &
+            pull openbank/search master &
             pull mongo latest &
             wait
 

@@ -13,16 +13,16 @@ pull_wall:
 pull_lake:
 	docker pull openbank/lake:master
 
-.PHONY: pull_reporting
-pull_reporting:
-	docker pull openbank/reporting:master
+.PHONY: pull_search
+pull_search:
+	docker pull openbank/search:master
 
 .PHONY: pull_mongo
 pull_mongo:
 	docker pull mongo:latest
 
 .PHONY: pull_images
-pull_images: pull_vault pull_wall pull_lake pull_reporting pull_mongo
+pull_images: pull_vault pull_wall pull_lake pull_search pull_mongo
 	@echo "[info] images up to date"
 
 .PHONY: test

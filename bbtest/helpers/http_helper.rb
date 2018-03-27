@@ -1,13 +1,13 @@
 require_relative 'wall_api'
-require_relative 'reporting_api'
+require_relative 'search_api'
 require_relative 'vault_api'
 require_relative 'lake_api'
 require_relative 'restful_api'
 
 class HTTPClient
 
-  def reporting
-    @reporting ||= ReportingAPI.new()
+  def search
+    @search ||= SearchAPI.new()
   end
 
   def wall

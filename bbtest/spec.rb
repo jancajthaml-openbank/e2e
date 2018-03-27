@@ -44,7 +44,7 @@ RSpec.configure do |config|
 
     (
       get_containers.call("openbank/wall") <<
-      get_containers.call("openbank/reporting") <<
+      get_containers.call("openbank/search") <<
       get_containers.call("openbank/vault") <<
       get_containers.call("openbank/lake") <<
       get_containers.call("mongo")
