@@ -82,12 +82,12 @@ step ":container :version is started with" do |container, version, label, params
   }
 end
 
-step "reporting is running" do ||
-  send ":container :version is started with", "openbank/reporting", "master", "reporting_#{$tenant_id}", [
-    "-e REPORTING_LAKE_HOSTNAME=lake",
-    "-e REPORTING_MONGO_HOSTNAME=mongodb",
-    "-e REPORTING_HTTP_PORT=8080",
-    "-e REPORTING_TENANT=#{$tenant_id}",
+step "search is running" do ||
+  send ":container :version is started with", "openbank/search", "master", "search_#{$tenant_id}", [
+    "-e SEARCH_LAKE_HOSTNAME=lake",
+    "-e SEARCH_MONGO_HOSTNAME=mongodb",
+    "-e SEARCH_HTTP_PORT=8080",
+    "-e SEARCH_TENANT=#{$tenant_id}",
     "-p 8080"
   ]
 end
@@ -160,11 +160,11 @@ step ":host is healthy" do |host|
   when "lake"
     resp = $http_client.lake.health_check()
     expect(resp.status).to eq(200)
+  when "search"
+    resp = $http_client.search.health_check()
+    expect(resp.status).to eq(200)
   when "mongo"
     %x(nc -z mongodb 27017 2> /dev/null)
-    expect($?).to be_success
-  when "reporting"
-    $http_client.reporting.health_check()
     expect($?).to be_success
   else
     raise "unknown host #{host}"
