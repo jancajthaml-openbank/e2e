@@ -329,9 +329,13 @@ jobs:
 
       - run : if [ ! -d reports ] ; then exit 1 ; fi
 
+      - store_test_results:
+          path: /home/circleci/project/bbtest
+
       - store_artifacts:
           path: /home/circleci/project/reports
           destination: reports
+
       - persist_to_workspace:
           root: .
           paths:

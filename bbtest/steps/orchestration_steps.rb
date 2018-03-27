@@ -18,7 +18,7 @@ step "no :container :label is running" do |container, label|
   return if ids.empty?
 
   ids.each { |id|
-    eventually(timeout: 3) {
+    eventually(timeout: 10) {
       puts "wanting to kill #{id}"
       send ":container running state is :state", id, false
 
@@ -32,7 +32,7 @@ step "no :container :label is running" do |container, label|
 end
 
 step ":container running state is :state" do |container, state|
-  eventually(timeout: 5) {
+  eventually(timeout: 10) {
     %x(docker #{state ? "start" : "stop"} #{container} >/dev/null 2>&1)
     container_state = %x(docker inspect -f {{.State.Running}} #{container} 2>/dev/null)
     expect($?).to be_success
@@ -73,11 +73,11 @@ step ":container :version is started with" do |container, version, label, params
   id = %x(#{args.join(" ")})
   expect($?).to be_success, id
 
-  eventually(timeout: 3) {
+  eventually(timeout: 15) {
     send ":container running state is :state", id, true
   }
 
-  eventually(timeout: 3) {
+  eventually(timeout: 10) {
     send ":host is healthy", simplename
   }
 end
@@ -143,7 +143,7 @@ step "mongo is running" do ||
 end
 
 step ":host is listening on :port" do |host, port|
-  eventually(timeout: 3) {
+  eventually(timeout: 10) {
     %x(nc -z #{host} #{port} 2> /dev/null)
     expect($?).to be_success
   }
