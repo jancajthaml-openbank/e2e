@@ -3,23 +3,23 @@ all: test perf
 
 .PHONY: pull_vault
 pull_vault:
-	docker pull openbank/vault:master &> /dev/null
+	docker pull openbank/vault:master
 
 .PHONY: pull_wall
 pull_wall:
-	docker pull openbank/wall:master &> /dev/null
+	docker pull openbank/wall:master
 
 .PHONY: pull_lake
 pull_lake:
-	docker pull openbank/lake:master &> /dev/null
+	docker pull openbank/lake:master
 
 .PHONY: pull_reporting
 pull_reporting:
-	docker pull openbank/reporting:master &> /dev/null
+	docker pull openbank/reporting:master
 
 .PHONY: pull_mongo
 pull_mongo:
-	docker pull mongo:latest &> /dev/null
+	docker pull mongo:latest
 
 .PHONY: pull_images
 pull_images: pull_vault pull_wall pull_lake pull_reporting pull_mongo
