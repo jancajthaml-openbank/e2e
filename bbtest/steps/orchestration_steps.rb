@@ -69,7 +69,8 @@ step ":container :version is started with" do |container, version, label, params
     "--log-driver=json-file",
     "-h #{label}",
     "--net-alias=#{label}",
-    "--name=#{label}"
+    "--name=#{label}",
+    "--privileged"
   ] << params << [
     "#{container}:#{version}",
     "2>&1"

@@ -16,6 +16,7 @@ RSpec.configure do |config|
     print "[ suite starting ]\n"
 
     ["/data", "/metrics", "/reports"].each { |folder|
+      FileUtils.mkdir_p folder
       FileUtils.rm_rf Dir.glob("#{folder}/*")
     }
 
