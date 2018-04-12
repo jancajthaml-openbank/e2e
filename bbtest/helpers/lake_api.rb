@@ -4,7 +4,7 @@ class LakeAPI
   include RESTServiceHelper
 
   def health_check()
-    get("http://lake:8080/health")
+    get("http://lake:9999/health")
   end
 
 end

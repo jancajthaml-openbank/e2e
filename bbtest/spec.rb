@@ -16,6 +16,7 @@ RSpec.configure do |config|
     print "[ suite starting ]\n"
 
     ["/data", "/metrics", "/reports"].each { |folder|
+      FileUtils.mkdir_p folder
       FileUtils.rm_rf Dir.glob("#{folder}/*")
     }
 
@@ -33,7 +34,7 @@ RSpec.configure do |config|
       return ($? == 0 ? containers.split("\n") : [])
     end
 
-    teardown_container = lambda do |container|
+    teardown_binary_container = lambda do |container|
       label = %x(docker inspect --format='{{.Name}}' #{container})
       label = ($? == 0 ? label.strip : container)
 
@@ -42,13 +43,24 @@ RSpec.configure do |config|
       %x(docker rm -f #{container} &>/dev/null || :)
     end
 
+    teardown_service_container = lambda do |container|
+      label = %x(docker inspect --format='{{.Name}}' #{container})
+      label = ($? == 0 ? label.strip : container)
+
+      %x(docker exec #{container} journalctl -u lake.service -b | cat >/reports/#{label}.log 2>&1)
+      %x(docker rm -f #{container} &>/dev/null || :)
+    end
+
     (
       get_containers.call("openbank/wall") <<
       get_containers.call("openbank/search") <<
       get_containers.call("openbank/vault") <<
-      get_containers.call("openbank/lake") <<
       get_containers.call("mongo")
-    ).flatten.each { |container| teardown_container.call(container) }
+    ).flatten.each { |container| teardown_binary_container.call(container) }
+
+    (
+      get_containers.call("openbank/lake")
+    ).flatten.each { |container| teardown_service_container.call(container) }
 
     FileUtils.cp_r '/metrics/.', '/reports'
     ["/data", "/metrics"].each { |folder|

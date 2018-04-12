@@ -25,7 +25,12 @@ step "no :container :label is running" do |container, label|
       label = %x(docker inspect --format='{{.Name}}' #{id})
       label = ($? == 0 ? label.strip : id)
 
-      %x(docker logs #{id} >/reports#{label}.log 2>&1)
+      if container == "openbank/lake"
+        %x(docker exec #{id} journalctl -u lake.service -b | cat >/reports/#{label}.log 2>&1)
+      else
+        %x(docker logs #{id} >/reports#{label}.log 2>&1)
+      end
+
       %x(docker rm -f #{id} &>/dev/null || :)
     }
   }
@@ -64,7 +69,8 @@ step ":container :version is started with" do |container, version, label, params
     "--log-driver=json-file",
     "-h #{label}",
     "--net-alias=#{label}",
-    "--name=#{label}"
+    "--name=#{label}",
+    "--privileged"
   ] << params << [
     "#{container}:#{version}",
     "2>&1"
@@ -94,11 +100,9 @@ end
 
 step "lake is running" do ||
   send ":container :version is started with", "openbank/lake", "master", "lake", [
-    "-e LAKE_LOG_LEVEL=DEBUG",
-    "-e LAKE_HTTP_PORT=8080",
     "-p 5561",
     "-p 5562",
-    "-p 8080"
+    "-p 9999"
   ]
 end
 
