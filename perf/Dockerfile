@@ -11,6 +11,7 @@ RUN apk update && \
       build-base \
       openssh && \
     pip install \
+    gevent \
     ujson==1.35 \
     grequests==0.3.0
 
