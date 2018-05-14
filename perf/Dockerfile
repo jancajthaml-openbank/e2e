@@ -10,10 +10,11 @@ RUN apk update && \
       git \
       build-base \
       openssh && \
+    pip install --upgrade pip \
     pip install \
     setuptools \
     cffi \
-    'cython>=0.27' \
+    cython>=0.27 \
     git+git://github.com/gevent/gevent.git#egg=gevent \
     ujson==1.35 \
     requests-threads
