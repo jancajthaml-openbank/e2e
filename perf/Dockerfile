@@ -12,10 +12,12 @@ RUN apk update && \
       openssh && \
     pip install --upgrade pip && \
     pip install \
-    gevent==1.3b2 \
+    gevent==1.1rc3 \
+		&& \
+    pip install \
+		requests \
     ujson==1.35 \
-    grequests==0.3.0 \
-    ujson==1.35
+    grequests==0.3.0
 
 RUN \
   mkdir -p /opt && \
