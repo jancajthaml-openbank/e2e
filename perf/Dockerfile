@@ -11,9 +11,12 @@ RUN apk update && \
       build-base \
       openssh && \
     pip install \
-    gevent \
+    setuptools \
+    cffi \
+    'cython>=0.27' \
+    git+git://github.com/gevent/gevent.git#egg=gevent \
     ujson==1.35 \
-    grequests==0.3.0
+    requests-threads
 
 RUN \
   mkdir -p /opt && \
