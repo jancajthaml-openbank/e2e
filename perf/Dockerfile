@@ -10,7 +10,7 @@ RUN apk update && \
       git \
       build-base \
       openssh && \
-    pip install --upgrade pip \
+    pip install --upgrade pip && \
     pip install \
     setuptools \
     cffi \
