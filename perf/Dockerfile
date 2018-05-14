@@ -12,7 +12,7 @@ RUN apk update && \
       openssh && \
     pip install --upgrade pip && \
     pip install \
-    setuptools \
+    gevent==1.3.1 \
     ujson==1.35 \
     grequests==0.3.0 \
     ujson==1.35
