@@ -9,20 +9,15 @@ RUN apk update && \
       bash \
       git \
       build-base \
+      docker \
+      ca-certificates \
       openssh && \
     pip install --upgrade pip && \
     pip install \
     gevent==1.1rc3 \
-		&& \
-    pip install \
 		requests \
     ujson==1.35 \
     grequests==0.3.0
-
-RUN \
-  mkdir -p /opt && \
-  curl https://get.docker.com/builds/Linux/x86_64/docker-1.12.1.tgz | tar zx -C /opt && \
-  ln -s /opt/docker/docker /usr/bin/docker && docker -v
 
 COPY main.py /etc/perf/main.py
 COPY stress.py /etc/perf/stress.py
