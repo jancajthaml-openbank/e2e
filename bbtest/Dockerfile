@@ -20,6 +20,7 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     \
         netcat-openbsd=1.130-3 \
+        libzmq3-dev=4.2.1-4 \
     \
     && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -32,7 +33,8 @@ RUN gem install \
         rspec-instafail:1.0.0 \
         excon:0.61.0 \
         bigdecimal:1.3.4 \
-        byebug:10.0.1
+        byebug:10.0.1 \
+        ffi-rzmq:2.0.4
 
 RUN curl -L https://download.docker.com/linux/static/stable/x86_64/docker-17.09.0-ce.tgz | \
     tar -xzvf - --strip-components=1 -C /usr/bin docker/docker && \

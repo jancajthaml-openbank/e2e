@@ -156,17 +156,15 @@ end
 step ":host is healthy" do |host|
   case host
   when "wall"
-    resp = $http_client.wall.health_check()
-    expect(resp.status).to eq(200)
+    expect(HttpClient.wall.health_check().status).to eq(200)
   when "vault"
-    resp = $http_client.vault.health_check()
-    expect(resp.status).to eq(200)
+    expect(HttpClient.vault.health_check().status).to eq(200)
   when "lake"
-    resp = $http_client.lake.health_check()
-    expect(resp.status).to eq(200)
+    with_deadline(timeout: 1) {
+      ZMQHelper.lake_handshake()
+    }
   when "search"
-    resp = $http_client.search.health_check()
-    expect(resp.status).to eq(200)
+    expect(HttpClient.search.health_check().status).to eq(200)
   when "mongo"
     %x(nc -z mongodb 27017 2> /dev/null)
     expect($?).to be_success

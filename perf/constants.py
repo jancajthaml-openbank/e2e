@@ -11,7 +11,7 @@ except ValueError:
 
 tty = os.getenv('TTY', 'yes') == 'yes'
 tenant = os.getenv('TENANT', 'test')
-
+tenants = []
 hostname = os.getenv('HTTP_ENTRYPOINT', '127.0.0.1:8080')
 site = 'http://' + hostname
 

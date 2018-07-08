@@ -10,10 +10,13 @@ RSpec.configure do |config|
 
   Dir.glob("./helpers/*_helper.rb") { |f| load f }
   config.include EventuallyHelper, :type => :feature
+  config.include DeadlineHelper, :type => :feature
   Dir.glob("./steps/*_steps.rb") { |f| load f, true }
 
   config.before(:suite) do |_suite|
     print "[ suite starting ]\n"
+
+    ZMQHelper.start()
 
     ["/data", "/metrics", "/reports"].each { |folder|
       FileUtils.mkdir_p folder
@@ -21,7 +24,6 @@ RSpec.configure do |config|
     }
 
     $tenant_id = nil
-    $http_client = HTTPClient.new()
 
     print "[ suite started  ]\n"
   end
@@ -66,6 +68,8 @@ RSpec.configure do |config|
     ["/data", "/metrics"].each { |folder|
       FileUtils.rm_rf Dir.glob("#{folder}/*")
     }
+
+    ZMQHelper.stop()
 
     print "[ suite ended    ]"
   end

@@ -7,6 +7,7 @@
 MAX_PARALLELISM=${MAX_PARALLELISM:=10}
 VERSION=${VERSION:=latest}
 TENANT=${TENANT:=performance}
+VAULTS=()
 
 if [ -n "$TTY" ] ; then
   TTY="$TTY"
@@ -40,119 +41,153 @@ if [ "$(ls -A ${PERSISTENCE_PATH})" ] ; then
   rm -rf ${PERSISTENCE_PATH}/*
 fi
 
+trim() {
+  local var="$*"
+
+  var="${var#"${var%%[![:space:]]*}"}"
+  var="${var%"${var##*[![:space:]]}"}"
+  echo -n "$var"
+}
+
+# FIXME currently unused but will be used in future for random tenant name
 rand_alnum() {
   LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 13 ; echo
 }
 
-calc() {
-  echo "$*" | bc -l
+spawn() {
+  local image="${1}"
+  local args="${@:2}"
+  container=$(spawn_${image} ${args})
+  if [ -z ${container} ] && [[ $(trim $(docker inspect -f "{{.State.Running}}" ${container} 2>/dev/null)) != "true" ]] ; then
+    exit 1
+  fi
+
+  echo ${container}
 }
 
-spawn_queue() {
-  name="queue_$1"
+spawn_lake() {
+  local name="lake_$1"
+
+  # FIXME as a part of e2e testing "publish" and "subscribe" of lake should
+  # be parametric
 
   docker run \
     -d \
-    -h queue \
+    -h lake \
     -v ${LOGS_PATH}:/logs \
     -v ${METRICS_PATH}:/opt/metrics \
+    -e LAKE_LOG_LEVEL=INFO \
     --net=$network \
-    --net-alias=queue \
-    --name=performance_queue_${name} \
+    --net-alias=lake \
+    --privileged \
+    --name=performance_${name} \
     --publish 5562:5562 \
     --publish 5561:5561 \
+  \
   openbank/lake:master
 }
 
 spawn_wall() {
-  name="wall_$1"
+  local name="wall_$1"
+
+  # FIXME not ideal to have single wall and hardcoded http port, consider haproxy
 
   docker run \
     -d \
     -h ${name} \
     -e HOSTNAME=${name} \
-    -e WALL_LAKE_HOSTNAME=queue \
+    -e WALL_LAKE_HOSTNAME=lake \
     -e WALL_STORAGE=/data \
-    -e WALL_LOG_LEVEL=ERROR \
+    -e WALL_LOG_LEVEL=INFO \
+    -e WALL_METRICS_OUTPUT=/opt/metrics/${name}_perf.json \
     -v ${PERSISTENCE_PATH}:/data \
     -v ${LOGS_PATH}:/logs \
     -v ${METRICS_PATH}:/opt/metrics \
     --net=$network \
     --net-alias=${name} \
-    --name=performance_wall_${name} \
+    --name=performance_${name} \
     --publish 8080:8080 \
+  \
   openbank/wall:master
 }
 
 spawn_vault() {
-  name="vault_$1"
+  local name="vault_$1"
 
   docker run \
     -d \
     -h ${name} \
-    -e VAULT_LAKE_HOSTNAME=queue \
+    -e VAULT_LAKE_HOSTNAME=lake \
     -e VAULT_STORAGE=/data \
-    -e VAULT_LOG_LEVEL=ERROR \
+    -e VAULT_LOG_LEVEL=INFO \
     -e VAULT_JOURNAL_SATURATION=10 \
     -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
-    -e VAULT_TENANT=${TENANT} \
+    -e VAULT_TENANT=${TENANT}_${1} \
     -e VAULT_METRICS_REFRESHRATE=10s \
-    -e VAULT_METRICS_OUTPUT=/opt/metrics/vault_perf.json \
+    -e VAULT_METRICS_OUTPUT=/opt/metrics/${name}_perf.json \
     -v ${PERSISTENCE_PATH}:/data \
     -v ${LOGS_PATH}:/logs \
     -v ${METRICS_PATH}:/opt/metrics \
     --net=$network \
     --net-alias=${name} \
-    --name=performance_vault_${name} \
+    --name=performance_${name} \
+  \
   openbank/vault:master
 }
 
+teardown_service() {
+  local name="${1}"
+  local container="${2}"
+
+  if [ -z ${container} ] || [[ "${container}" =~ [^a-z0-9] ]] ; then
+    return
+  fi
+
+  echo "stopping $name container gracefully"
+  (docker kill --signal="TERM" ${container} >/dev/null 2>&1 || :)
+  echo "storing logs to ${LOGS_PATH}/perf_${name}.log"
+  docker logs $container &> ${LOGS_PATH}/perf_${name}.log
+  echo "deleting ${name} container $container"
+  (docker kill $container &> /dev/null || :)
+  (docker rm -f $container &> /dev/null || :)
+}
+
+teardown_lake() {
+  local name="${1}"
+  local container="${2}"
+
+  if [ -z ${container} ] || [[ "${container}" =~ [^a-z0-9] ]] ; then
+    return
+  fi
+
+  echo "stopping $name container gracefully"
+  (docker kill --signal="TERM" ${container} >/dev/null 2>&1 || :)
+  echo "storing logs to ${LOGS_PATH}/perf_${name}.log"
+  docker logs $container &> ${LOGS_PATH}/perf_${name}.log
+  (docker exec $container journalctl -u lake.service -b | cat >>${LOGS_PATH}/perf_${name}.log 2>&1) 2>/dev/null
+  echo "deleting $name container $container"
+  (docker kill $container &> /dev/null || :)
+  (docker rm -f $container &> /dev/null || :)
+}
+
 post_stop() {
-  if [ -z $at_most_once ]; then
+  if [ -z $at_most_once ] ; then
     echo ""
 
     at_most_once=true
 
-    if [ -n $wall_container ] ; then
-      c=$wall_container
-      unset wall_container
-      echo "storing logs to ${LOGS_PATH}/perf_wall.log"
-      docker logs $c &> ${LOGS_PATH}/perf_wall.log
-      echo "deleting wall container $c"
-      docker kill $c &> /dev/null || :
-      docker rm -f $c &> /dev/null || :
-    fi
+    teardown_service wall ${wall_container}
 
-    if [ -n $vault_container ] ; then
-      c=$vault_container
-      unset vault_container
-      echo "storing logs to ${LOGS_PATH}/perf_vault.log"
-      docker logs $c &> ${LOGS_PATH}/perf_vault.log
-      echo "deleting vault container $c"
-      docker kill $c &> /dev/null || :
-      docker rm -f $c &> /dev/null || :
-    fi
+    for i in "${!VAULTS[@]}"; do
+      teardown_service vault_$((i+1)) ${VAULTS[$i]}
+    done
 
-    if [ -n $queue_container ] ; then
-      c=$queue_container
-      unset queue_container
-      echo "storing logs to ${LOGS_PATH}/perf_queue.log"
-      docker logs $c &> ${LOGS_PATH}/perf_queue.log
-      echo "deleting queue container $c"
-      docker kill $c &> /dev/null || :
-      docker rm -f $c &> /dev/null || :
-    fi
+    teardown_lake lake ${lake_container}
 
-    test_container=$(docker ps -a | grep openbank/dev:perf | awk '{print $1}')
-
-    if [ -n $test_container ] ; then
-      echo "deleting test container $c"
-      docker kill $test_container &> /dev/null || :
-      docker rm -f $test_container &> /dev/null || :
-    fi
+    teardown_service test $(docker ps -a | grep openbank/dev:perf | awk '{print $1}')
 
     echo "deleting network $network"
-    docker network rm $network &> /dev/null || :
+    (docker network rm $network &> /dev/null || :)
 
     exit 0
   fi
@@ -161,37 +196,23 @@ post_stop() {
 ################################################################################
 
 trap exit INT TERM
-trap "kill 0" EXIT
 trap post_stop EXIT
 
 ################################################################################
 
 docker network create ${network} &> /dev/null || :
 
-queue_container=$(spawn_queue 1)
+lake_container=$(spawn lake 1)
 
-if [ -z "$queue_container" ] ; then
-  echo "failed to start queue"
-  exit 1
-fi
+for ((i=1;i<=5;i++)) ; do
+  VAULTS+=($(spawn vault $i))
+done
 
-vault_container=$(spawn_vault 1)
-
-if [ -z "$vault_container" ] ; then
-  echo "failed to start vault"
-  exit 1
-fi
-
-wall_container=$(spawn_wall 1 1)
-
-if [ -z "$wall_container" ] ; then
-  echo "failed to start wall"
-  exit 1
-fi
+wall_container=$(spawn wall 1 1)
 
 docker run \
   -t \
-  -e LAKE_HOSTNAME=queue \
+  -e LAKE_HOSTNAME=lake \
   -e HTTP_ENTRYPOINT=wall_1:8080 \
   -e TENANT=${TENANT} \
   -e MAX_PARALLELISM=${MAX_PARALLELISM} \

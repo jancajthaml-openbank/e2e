@@ -28,7 +28,7 @@ def main():
         info("found {0}({1}x)".format(container, len(images)))
 
     # fixme add timeout
-    debug("waiting util services are UP")
+    debug("waiting until services are UP")
     api.ping()
 
     info("start tests")

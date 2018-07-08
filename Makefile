@@ -28,17 +28,21 @@ pull_images: pull_vault pull_wall pull_lake pull_search pull_mongo
 .PHONY: test
 test: pull_images
 	@echo "[info] cleaning"
-	@(docker rm -f $$(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
+	@(docker rm -f $$(docker ps -aq) 2> /dev/null || :) &> /dev/null
 	@echo "[info] running"
 	@docker-compose run --rm bbtest
 	@echo "[info] cleaning"
-	@(docker rm -f $$(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
-	@(docker rm -f $$(docker ps -aqf "name=bbtest") || :) &> /dev/null
+	@(docker rm -f $$(docker ps -aq) 2> /dev/null || :) &> /dev/null
 
 .PHONY: perf
 perf:
+	@echo "[info] cleaning"
+	@(docker rm -f $$(docker ps -aq) 2> /dev/null || :) &> /dev/null
+	@echo "[info] running"
 	@cd perf && docker build -t e2e_perf .
 	@./perf/performance
+	@echo "[info] cleaning"
+	@(docker rm -f $$(docker ps -aq) 2> /dev/null || :) &> /dev/null
 
 .PHONY: k8s
 k8s:

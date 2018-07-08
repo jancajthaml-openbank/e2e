@@ -6,18 +6,14 @@ from gevent import spawn, joinall
 
 import subprocess
 import sys
-from constants import took
+from constants import took, tenant, tenants
 import time
 
 def run_command(bash_command, silent=False):
   sys.stdout.write('\033[94m>> bash | \033[0m{0}\n'.format(bash_command))
-
   start = time.time()
-
   lines = subprocess.check_output([bash_command], shell=True).decode("utf-8").splitlines()
-
   took('', time.time() - start, 1)
-
   return lines
 
 def discover_containers():
@@ -27,6 +23,10 @@ def discover_containers():
     alias, container = node.split(' ')
     name = alias.split("/")[-1].split(":")[0]
     containers.setdefault(name, []).append(container)
+
+  number_of_vaults = len(containers.get('vault', []))
+  for n in range(number_of_vaults):
+    tenants.append('{0}_{1}'.format(tenant, n+1))
 
   return containers
 

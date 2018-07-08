@@ -1,29 +1,36 @@
 require_relative 'wall_api'
 require_relative 'search_api'
 require_relative 'vault_api'
-require_relative 'lake_api'
 require_relative 'restful_api'
 
-class HTTPClient
+module HttpClient
 
   def search
-    @search ||= SearchAPI.new()
+    self.search
   end
 
   def wall
-    @wall ||= WallAPI.new()
-  end
-
-  def lake
-    @lake ||= LakeAPI.new()
+    self.wall
   end
 
   def vault
-    @vault ||= VaultAPI.new()
+    self.vault
   end
 
   def any
-    @any ||= RestfulAPI.new()
+    self.any
   end
+
+  class << self
+    attr_accessor :search,
+                  :wall,
+                  :vault,
+                  :any
+  end
+
+  self.search = SearchAPI.new()
+  self.wall = WallAPI.new()
+  self.vault = VaultAPI.new()
+  self.any = RestfulAPI.new()
 
 end
