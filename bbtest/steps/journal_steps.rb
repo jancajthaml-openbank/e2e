@@ -28,7 +28,6 @@ step "snapshot :path should be" do |path, expectation|
   expected_promised = BigDecimal.new(expectation["promised"]).to_s('F')
   expect(promised).to eq(expected_promised)
 
-  # fixme validate in parallel
   expect(buffer).to match_array(expectation["promiseBuffer"])
 end
 
@@ -74,7 +73,6 @@ step "transaction :path should be" do |path, expectation|
 
   expectation = JSON.parse(expectation)
 
-  # fixme validate in parallel
   expect(transactions).to match_array(expectation)
 end
 

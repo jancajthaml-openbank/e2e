@@ -2,7 +2,7 @@ require 'json'
 require_relative 'deep_diff'
 
 step "I call :http_method :url" do |http_method, url, body = nil|
-  @resp = $http_client.any.call(http_method, url, body)
+  @resp = HttpClient.any.call(http_method, url, body)
 end
 
 step "response status should be :http_status" do |http_status|
