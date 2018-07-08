@@ -78,8 +78,6 @@ jobs:
             cd health-check
             python generate_metrics_report.py > README.md
 
-            cat README.md
-
             git checkout --orphan rolling
 
             git add -A
@@ -121,7 +119,6 @@ jobs:
             pull openbank/lake master &
             pull openbank/wall master &
             pull openbank/search master &
-            pull mongo latest &
             wait
 
             cd perf && docker build -t e2e_perf .
