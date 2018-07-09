@@ -1,6 +1,7 @@
 require 'turnip/rspec'
 require 'json'
 require 'thread'
+require 'timeout'
 
 Thread.abort_on_exception = true
 
@@ -32,7 +33,7 @@ RSpec.configure do |config|
     print "\n[ suite ending   ]\n"
 
     get_containers = lambda do |image|
-      containers = %x(docker ps -a | awk '{ print $1,$2 }' | grep #{image} | awk '{print $1 }' 2>/dev/null)
+      containers = %x(docker ps -a | awk '$2 ~ "#{image}" {print $1}' 2>/dev/null)
       return ($? == 0 ? containers.split("\n") : [])
     end
 
@@ -46,23 +47,31 @@ RSpec.configure do |config|
     end
 
     teardown_service_container = lambda do |container|
-      label = %x(docker inspect --format='{{.Name}}' #{container})
+      label = %x(docker inspect -f '{{.Name}}' #{container})
       label = ($? == 0 ? label.strip : container)
 
-      %x(docker exec #{container} journalctl -u lake.service -b | cat >/reports/#{label}.log 2>&1)
+      %x(docker exec #{container} systemctl stop lake.service 2>&1)
+      %x(docker exec #{container} journalctl -o short-precise -u lake.service --no-pager >/reports/#{label}.log 2>&1)
       %x(docker rm -f #{container} &>/dev/null || :)
     end
 
-    (
-      get_containers.call("openbank/wall") <<
-      get_containers.call("openbank/search") <<
-      get_containers.call("openbank/vault") <<
-      get_containers.call("mongo")
-    ).flatten.each { |container| teardown_binary_container.call(container) }
+    begin
+      Timeout.timeout(20) do
+        (
+          get_containers.call("openbank/wall") <<
+          get_containers.call("openbank/search") <<
+          get_containers.call("openbank/vault")
+        ).flatten.each { |container|
+          teardown_binary_container.call(container)
+        }
 
-    (
-      get_containers.call("openbank/lake")
-    ).flatten.each { |container| teardown_service_container.call(container) }
+        get_containers.call("openbank/lake").each { |container|
+          teardown_service_container.call(container)
+        }
+      end
+    rescue Timeout::Error
+      #
+    end
 
     FileUtils.cp_r '/metrics/.', '/reports'
     ["/data", "/metrics"].each { |folder|

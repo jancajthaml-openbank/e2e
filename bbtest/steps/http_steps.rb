@@ -1,5 +1,5 @@
 require 'json'
-require_relative 'deep_diff'
+require_relative '../shims/deep_diff'
 
 step "I call :http_method :url" do |http_method, url, body = nil|
   @resp = HttpClient.any.call(http_method, url, body)
