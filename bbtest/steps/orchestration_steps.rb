@@ -10,7 +10,7 @@ end
 
 step "no :container :label is running" do |container, label|
 
-  containers = %x(docker ps -a -f name=#{label} | awk '{ print $1,$2 }' | grep #{container} | awk '{print $1 }' 2>/dev/null)
+  containers = %x(docker ps -a -f name=#{label} | awk '$2 ~ "#{container}" {print $1}' 2>/dev/null)
   expect($?).to be_success
 
   ids = containers.split("\n").map(&:strip).reject(&:empty?)
@@ -39,14 +39,14 @@ end
 step ":container running state is :state" do |container, state|
   eventually(timeout: 10) {
     %x(docker #{state ? "start" : "stop"} #{container} >/dev/null 2>&1)
-    container_state = %x(docker inspect -f {{.State.Running}} #{container} 2>/dev/null)
+    container_state = %x(docker inspect --format {{.State.Running}} #{container} 2>/dev/null)
     expect($?).to be_success
     expect(container_state.strip).to eq(state ? "true" : "false")
   }
 end
 
 step ":container :version is started with" do |container, version, label, params|
-  containers = %x(docker ps -a -f status=running -f name=#{label} | awk '{ print $1,$2 }' | sed 1,1d)
+  containers = %x(docker ps -a --filter name=#{label} --filter status=running --format "{{.ID}} {{.Image}}")
   expect($?).to be_success
   containers = containers.split("\n").map(&:strip).reject(&:empty?)
 
