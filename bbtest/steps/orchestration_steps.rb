@@ -9,7 +9,6 @@ step "storage is empty" do
 end
 
 step "no :container :label is running" do |container, label|
-
   containers = %x(docker ps -a -f name=#{label} | awk '$2 ~ "#{container}" {print $1}' 2>/dev/null)
   expect($?).to be_success
 
@@ -19,7 +18,6 @@ step "no :container :label is running" do |container, label|
 
   ids.each { |id|
     eventually(timeout: 10) {
-      puts "wanting to kill #{id}"
       send ":container running state is :state", id, false
 
       label = %x(docker inspect --format='{{.Name}}' #{id})
@@ -126,14 +124,16 @@ end
 step "wall is running" do ||
   send ":container :version is started with", "openbank/wall", "master", "wall", [
     "-e WALL_STORAGE=/data",
-    "-e WALL_HTTP_PORT=8080",
+    "-e WALL_HTTP_PRIVATE_PORT=8888",
+    "-e WALL_HTTP_PUBLIC_PORT=8080",
     "-e WALL_LOG_LEVEL=DEBUG",
     "-e WALL_LAKE_HOSTNAME=lake",
     "-e WALL_METRICS_REFRESHRATE=1s",
     "-e WALL_METRICS_OUTPUT=/metrics/e2e_wall_metrics.json",
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_journal:/data",
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_metrics:/metrics",
-    "-p 8080"
+    "-p 8080",
+    "-p 8888"
   ]
 end
 
@@ -144,13 +144,6 @@ step "mongo is running" do ||
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_mongo:/data/db",
     "-p 27017"
   ]
-end
-
-step ":host is listening on :port" do |host, port|
-  eventually(timeout: 10) {
-    %x(nc -z #{host} #{port} 2> /dev/null)
-    expect($?).to be_success
-  }
 end
 
 step ":host is healthy" do |host|
