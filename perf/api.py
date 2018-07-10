@@ -8,19 +8,6 @@ import requests
 import ujson as json
 from utils import with_deadline
 
-requests.packages.urllib3.disable_warnings()
-
-import ssl
-
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    # Legacy Python that doesn't verify HTTPS certificates by default
-    pass
-else:
-    # Handle target environment that doesn't support HTTPS verification
-    ssl._create_default_https_context = _create_unverified_https_context
-
 secure_random = random.SystemRandom()
 
 def get_url_data(uri, max_tries=10):
@@ -82,4 +69,4 @@ def prepare_create_account(account_name, is_ballance_check):
     "isBalanceCheck": is_ballance_check
   }
 
-  return (url, json.dumps(body), tenant_choice)
+  return (url, body, json.dumps(body), tenant_choice)
