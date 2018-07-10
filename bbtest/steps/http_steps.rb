@@ -6,7 +6,7 @@ step "I call :http_method :url" do |http_method, url, body = nil|
 end
 
 step "response status should be :http_status" do |http_status|
-  expect(@resp.status).to eq(http_status)
+  expect(@resp.code.to_i).to eq(http_status)
 end
 
 step "response content should be:" do |content|

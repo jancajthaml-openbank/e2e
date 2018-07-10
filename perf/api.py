@@ -13,8 +13,9 @@ secure_random = random.SystemRandom()
 def get_url_data(uri, max_tries=10):
   for n in range(max_tries):
     try:
-      return requests.get(uri, timeout=1)
-    except (requests.exceptions.ConnectionError, requests.exceptions.RequestException):
+      return requests.get(uri, timeout=1, verify=False)
+    except (requests.exceptions.ConnectionError, requests.exceptions.RequestException) as e:
+      print("error", e)
       if n == max_tries - 1:
         raise
       sleep(1)
@@ -43,7 +44,7 @@ def prepare_transaction(tenant_name, number_of_transfers, credit_account_choice,
   for _ in range(number_of_transfers):
     transfers.extend(prepare_transfer(credit_account_choice, debit_acount_choice, amount_choice))
 
-  url = site + '/v1/sparrow/transaction/' + tenant_name
+  url = site + '/transaction/' + tenant_name
 
   body = {
     "transfers": transfers
@@ -52,7 +53,7 @@ def prepare_transaction(tenant_name, number_of_transfers, credit_account_choice,
   return (url, body, json.dumps(body), tenant_name)
 
 def prepare_get_balance(tenant_name, account_name, reference):
-  url = site + '/v1/sparrow/account/' + tenant_name + '/' + account_name
+  url = site + '/account/' + tenant_name + '/' + account_name
   return (url, reference)
 
 def prepare_health_check():
@@ -60,7 +61,7 @@ def prepare_health_check():
 
 def prepare_create_account(account_name, is_ballance_check):
   tenant_choice = secure_random.choice(tenants)
-  url = site + '/v1/sparrow/account/' + tenant_choice
+  url = site + '/account/' + tenant_choice
 
   body = {
     "accountNumber": account_name,
@@ -68,4 +69,4 @@ def prepare_create_account(account_name, is_ballance_check):
     "isBalanceCheck": is_ballance_check
   }
 
-  return (url, json.dumps(body), tenant_choice)
+  return (url, body, json.dumps(body), tenant_choice)

@@ -33,7 +33,7 @@ RSpec.configure do |config|
     print "\n[ suite ending   ]\n"
 
     get_containers = lambda do |image|
-      containers = %x(docker ps -a | awk '$2 ~ "#{image}" {print $1}' 2>/dev/null)
+      containers = %x(docker ps -a --filter ancestor=#{image} --format "{{.ID}}")
       return ($? == 0 ? containers.split("\n") : [])
     end
 

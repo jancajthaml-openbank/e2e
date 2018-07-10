@@ -11,11 +11,11 @@ import grequests
 import requests
 from requests.adapters import HTTPAdapter
 from utils import with_deadline
-from constants import tenants, site, limit, tty, info, progress, warn, success, took
+from constants import tenants, site, limit, info, progress, warn, success, took
 import api
+from http_client import ParallelHttpClient
 
 info("parallelism set to {0}".format(limit))
-info("running in tty {0}".format(tty))
 
 class StressTest:
 
@@ -32,114 +32,81 @@ class StressTest:
 
   @staticmethod
   def health_check_spam():
-    num_of_requests = max(100, limit * 2)
+    num_of_requests = 100
 
     info("preparing creation of {0} health check spams".format(num_of_requests))
     prepared = [ api.prepare_health_check() for x in range(num_of_requests) ]
 
+    def on_progress(processed, passed, failed):
+      progress('processed: {0}, passed: {1}, failed: {2}'.format(processed, passed, failed))
+
+    client = ParallelHttpClient()
+
     info('sending {0} requests'.format(len(prepared)))
 
-    session = requests.Session()
-    session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
-    reqs = [grequests.get(url, session=session, timeout=2) for url in prepared]
-    s_passed = 0
-    s_failed = 0
-    s_processed = 0
+    passed, failed, duration = client.get(prepared, on_progress)
 
-    start = time.time()
-    for resp in grequests.imap(reqs, size=limit):
-      s_processed += 1
-      if resp is None:
-        s_failed += 1
-      else:
-        s_passed += 1
-
-      progress('processed: {0}, passed: {1}, failed: {2}'.format(s_processed, s_passed, s_failed))
-
-    ok = s_passed
-    fail = num_of_requests - ok
-
-    if fail:
-      took('{0} health check passed, {1} failed                             '.format(ok, fail), time.time() - start, num_of_requests, warn)
+    if failed:
+      took('{0} health check passed, {1} failed                             '.format(passed, failed), duration, num_of_requests, warn)
     else:
-      took('all passed                                                      ', time.time() - start, num_of_requests, success)
+      took('all passed                                                      ', duration, num_of_requests, success)
 
     ############################################################################
 
     return True
 
-  @with_deadline(timeout=120)
   def create_random_accounts_parallel(self):
-    num_of_accounts = int(1e2) # fixme to env
+    num_of_accounts = 100
 
-    info("preparing creation of {0} accounts in parallel of {1}".format(num_of_accounts, limit))
+    info("preparing creation of {0} accounts in parallel".format(num_of_accounts))
     prepared = [ api.prepare_create_account("par_" + str(x + 1), bool(secure_random.getrandbits(1))) for x in range(num_of_accounts) ]
 
-    def partial(cb, request, tenant):
-      def wrapper(response, *extra_args, **kwargs):
-        return cb(response, request, tenant)
-      return wrapper
-
-    def account_callback(response, req, tenant):
-      if response.status_code == 200:
-        request = json.loads(req)
-        self.g_accounts.setdefault(tenant, {})[request['accountNumber']] = {
-          'active': request['isBalanceCheck'],
-          'balance': 0,
-          'transactions': [],
-          'currency': request['currency']
-        }
-        return response
-      else:
+    def callback(response, url, request, tenant):
+      if response.status_code != 200:
         return None
+
+      self.g_accounts.setdefault(tenant, {})[request['accountNumber']] = {
+        'active': request['isBalanceCheck'],
+        'balance': 0,
+        'transactions': [],
+        'currency': request['currency']
+      }
+      return response
+
+    def on_progress(processed, passed, failed):
+      progress('processed: {0}, passed: {1}, failed: {2}'.format(processed, passed, failed))
+
+    client = ParallelHttpClient()
 
     info('sending {0} requests'.format(len(prepared)))
 
-    session = requests.Session()
-    session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
-    reqs = [grequests.post(url, data=body, session=session, hooks={'response': partial(account_callback, body, tenant)}) for url, body, tenant in prepared]
+    passed, failed, duration = client.post(prepared, callback, on_progress)
 
-    ok = 0
-    s_processed = 0
-
-    start = time.time()
-    for resp in grequests.imap(reqs, size=limit):
-      s_processed += 1
-      if resp and resp.status_code == 200:
-        ok += 1
-
-      progress('processed: {0}, passed: {1}, failed: {2}'.format(s_processed, ok, s_processed - ok))
-
-    fail = num_of_accounts - ok
-
-    if fail:
-      took('{0} accounts created, {1} failed                             '.format(ok, fail), time.time() - start, num_of_accounts, warn)
+    if failed:
+      took('{0} accounts created, {1} failed                             '.format(passed, failed), duration, num_of_accounts, warn)
     else:
-      took('all passed                                                      ', time.time() - start, num_of_accounts, success)
-
-    ############################################################################
+      took('all passed                                                      ', duration, num_of_accounts, success)
 
     return True
 
   @with_deadline(timeout=120)
   def create_random_accounts_serial(self):
-    num_of_accounts = int(1e1) # fixme to env
+    num_of_accounts = 10
 
     info("preparing creation of {0} accounts one by one".format(num_of_accounts))
     prepared = [ api.prepare_create_account("ser_" + str(x + 1), bool(secure_random.getrandbits(1))) for x in range(num_of_accounts) ]
 
-    def account_callback(response, req, tenant):
-      if response.status_code == 200:
-        request = json.loads(req)
-        self.g_accounts.setdefault(tenant, {})[request['accountNumber']] = {
-          'active': request['isBalanceCheck'],
-          'balance': 0,
-          'transactions': [],
-          'currency': request['currency']
-        }
-        return response
-      else:
+    def callback(response, url, request, tenant):
+      if response.status_code != 200:
         return None
+
+      self.g_accounts.setdefault(tenant, {})[request['accountNumber']] = {
+        'active': request['isBalanceCheck'],
+        'balance': 0,
+        'transactions': [],
+        'currency': request['currency']
+      }
+      return response
 
     info('sending {0} requests'.format(len(prepared)))
 
@@ -148,10 +115,10 @@ class StressTest:
 
     start = time.time()
 
-    for url, body, tenant in prepared:
-      resp = requests.post(url, data=body)
+    for url, body, payload, tenant in prepared:
+      resp = requests.post(url, data=payload, verify=False, timeout=1)
       s_processed += 1
-      account_callback(resp, body, tenant)
+      callback(resp, url, body, tenant)
 
       if resp and resp.status_code == 200:
         ok += 1
@@ -169,9 +136,8 @@ class StressTest:
 
     return True
 
-  @with_deadline(timeout=120)
   def create_random_transactions_parallel(self):
-    num_of_transactions = int(3*1e2) # fixme to env
+    num_of_transactions = 100
     partitions = []
     chunks = len(self.g_accounts)
 
@@ -191,65 +157,50 @@ class StressTest:
       credit_accounts = [i for i in all_accounts if self.g_accounts[tenant_name][i]['active']]
       debit_account = [i for i in all_accounts if not self.g_accounts[tenant_name][i]['active']]
 
-      info("preparing creation of {0} transactions one by one for tenant {1}".format(will_generate_transactions, tenant_name))
+      info("preparing creation of {0} transactions in parallel for tenant {1}".format(will_generate_transactions, tenant_name))
 
       prepared.extend(api.prepare_transaction(tenant_name, secure_random.randint(self.transfers["min"], self.transfers["max"]), credit_accounts, debit_account, self.accounts["max_amount"]) for x in range(0, will_generate_transactions, 1))
 
-    def partial(cb, request, tenant_name):
-      def wrapper(response, *extra_args, **kwargs):
-        return cb(response, request, tenant_name)
-      return wrapper
-
-    def transaction_callback(response, request, tenant_name):
-      if response.status_code == 200:
-        transaction = response.json()['transaction']
-
-        for transfer in request['transfers']:
-          amount = transfer['amount']
-          credit = transfer['credit']
-          debit = transfer['debit']
-
-          self.g_accounts[tenant_name][credit]['balance'] += float(amount)
-          self.g_accounts[tenant_name][debit]['balance'] -= float(amount)
-
-          self.g_accounts[tenant_name][credit]['transactions'].append(transaction)
-          self.g_accounts[tenant_name][debit]['transactions'].append(transaction)
-
-        return response
-      else:
+    def callback(response, url, request, tenant_name):
+      if response.status_code != 200:
         return None
+
+      transaction = response.json()['transaction']
+
+      for transfer in request['transfers']:
+        amount = transfer['amount']
+        credit = transfer['credit']
+        debit = transfer['debit']
+
+        self.g_accounts[tenant_name][credit]['balance'] += float(amount)
+        self.g_accounts[tenant_name][debit]['balance'] -= float(amount)
+
+        self.g_accounts[tenant_name][credit]['transactions'].append(transaction)
+        self.g_accounts[tenant_name][debit]['transactions'].append(transaction)
+
+      return response
 
     ############################################################################
 
+    def on_progress(processed, passed, failed):
+      progress('processed: {0}, passed: {1}, failed: {2}'.format(processed, passed, failed))
+
+    client = ParallelHttpClient()
+
     info('sending {0} requests'.format(len(prepared)))
 
-    session = requests.Session()
-    session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
-    reqs = [grequests.post(url, data=body, session=session, hooks={'response': partial(transaction_callback, request, tenant_name)}) for url, request, body, tenant_name in prepared]
+    passed, failed, duration = client.post(prepared, callback, on_progress)
 
-    ok = 0
-    s_processed = 0
-
-    start = time.time()
-    for resp in grequests.imap(reqs, size=limit):
-      s_processed += 1
-      if resp and resp.status_code == 200:
-        ok += 1
-
-      progress('processed: {0}, passed: {1}, failed: {2}'.format(s_processed, ok, s_processed - ok))
-
-    fail = num_of_transactions - ok
-
-    if fail:
-      took('{0} transactions created, {1} failed                             '.format(ok, fail), time.time() - start, num_of_transactions, warn)
+    if failed:
+      took('{0} transactions created, {1} failed                             '.format(passed, failed), duration, num_of_transactions, warn)
     else:
-      took('all passed                                                      ', time.time() - start, num_of_transactions, success)
+      took('all passed                                                      ', duration, num_of_transactions, success)
 
     return True
 
   @with_deadline(timeout=120)
   def create_random_transactions_serial(self):
-    num_of_transactions = int(3*1e1) # fixme to env
+    num_of_transactions = 10
     partitions = []
     chunks = len(self.g_accounts)
 
@@ -272,24 +223,24 @@ class StressTest:
 
       prepared.extend(api.prepare_transaction(tenant_name, secure_random.randint(self.transfers["min"], self.transfers["max"]), credit_accounts, debit_account, self.accounts["max_amount"]) for x in range(0, will_generate_transactions, 1))
 
-    def transaction_callback(response, request, tenant_name):
-      if response.status_code == 200:
-        transaction = response.json()['transaction']
-
-        for transfer in request['transfers']:
-          amount = transfer['amount']
-          credit = transfer['credit']
-          debit = transfer['debit']
-
-          self.g_accounts[tenant_name][credit]['balance'] += float(amount)
-          self.g_accounts[tenant_name][debit]['balance'] -= float(amount)
-
-          self.g_accounts[tenant_name][credit]['transactions'].append(transaction)
-          self.g_accounts[tenant_name][debit]['transactions'].append(transaction)
-
-        return response
-      else:
+    def callback(response, request, tenant_name):
+      if response.status_code != 200:
         return None
+
+      transaction = response.json()['transaction']
+
+      for transfer in request['transfers']:
+        amount = transfer['amount']
+        credit = transfer['credit']
+        debit = transfer['debit']
+
+        self.g_accounts[tenant_name][credit]['balance'] += float(amount)
+        self.g_accounts[tenant_name][debit]['balance'] -= float(amount)
+
+        self.g_accounts[tenant_name][credit]['transactions'].append(transaction)
+        self.g_accounts[tenant_name][debit]['transactions'].append(transaction)
+
+      return response
 
     ######
 
@@ -299,10 +250,10 @@ class StressTest:
     s_processed = 0
 
     start = time.time()
-    for url, request, body, tenant_name in prepared:
-      resp = requests.post(url, data=body)
+    for url, body, payload, tenant_name in prepared:
+      resp = requests.post(url, data=payload, verify=False)
       s_processed += 1
-      transaction_callback(resp, request, tenant_name)
+      callback(resp, body, tenant_name)
       if resp and resp.status_code == 200:
         ok += 1
 
@@ -361,7 +312,7 @@ class StressTest:
     s_processed = 0
     start = time.time()
     for url, reference in prepared:
-      resp = requests.get(url)
+      resp = requests.get(url, verify=False)
       s_processed += 1
       account_callback(resp, reference)
 
@@ -391,7 +342,7 @@ class StressTest:
         num_of_accounts+=1
         prepared.append(api.prepare_get_balance(tenant_name, account_name, reference))
 
-    info("prepared checking balance of {0} accounts in parallel of {1}".format(num_of_accounts, limit))
+    info("prepared checking balance of {0} accounts in parallel".format(num_of_accounts))
 
     def partial(cb, reference):
       def wrapper(response, *extra_args, **kwargs):
@@ -412,8 +363,11 @@ class StressTest:
 
     info('sending {0} requests'.format(len(prepared)))
 
+    # fixme use httpclient
+
     session = requests.Session()
-    session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
+    session.verify = False
+    session.mount('https://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
     reqs = [grequests.get(url, session=session, hooks={'response': partial(account_callback, reference)}) for url, reference in prepared]
     ok = 0
     s_processed = 0

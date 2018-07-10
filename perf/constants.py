@@ -9,41 +9,34 @@ try:
 except ValueError:
   limit = 200
 
-tty = os.getenv('TTY', 'yes') == 'yes'
 tenant = os.getenv('TENANT', 'test')
 tenants = []
-hostname = os.getenv('HTTP_ENTRYPOINT', '127.0.0.1:8080')
-site = 'http://' + hostname
+hostname = os.getenv('HTTP_ENTRYPOINT', '127.0.0.1')
+site = 'https://' + hostname + ':443'
 
 def debug(msg):
   sys.stdout.write('\033[97m  debug | \033[0m{0}\n'.format(msg))
-  if tty:
-    sys.stdout.flush()
+  sys.stdout.flush()
 
 def info(msg):
   sys.stdout.write('\033[95m   info | \033[0m{0}\n'.format(msg))
-  if tty:
-    sys.stdout.flush()
+  sys.stdout.flush()
 
 def progress(msg):
-  if tty:
-    sys.stdout.write('\033[95m   info | \033[0m{0}\r'.format(msg))
-    sys.stdout.flush()
+  sys.stdout.write('\033[95m   info | \033[0m{0}\r'.format(msg))
+  sys.stdout.flush()
 
 def error(msg):
   sys.stdout.write('\033[91m! error | {0}\033[0m\n'.format(msg))
-  if tty:
-    sys.stdout.flush()
+  sys.stdout.flush()
 
 def success(msg):
   sys.stdout.write('\033[92m   pass | {0}\033[0m\n'.format(msg))
-  if tty:
-    sys.stdout.flush()
+  sys.stdout.flush()
 
 def warn(msg):
   sys.stdout.write('\033[93m   warn | {0}\033[0m\n'.format(msg))
-  if tty:
-    sys.stdout.flush()
+  sys.stdout.flush()
 
 def took(msg, elapsed, units, cb = info):
   if not units:
@@ -83,6 +76,5 @@ def took(msg, elapsed, units, cb = info):
     else:
       sys.stdout.write('\033[90m          {0} ... {1} per unit\033[0m\n'.format(time_to_s(elapsed), time_to_s(elapsed / units)))
 
-  if tty:
-    sys.stdout.flush()
+  sys.stdout.flush()
 

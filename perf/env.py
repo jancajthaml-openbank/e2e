@@ -18,7 +18,8 @@ def run_command(bash_command, silent=False):
 
 def discover_containers():
   containers = {}
-  nodes = run_command("docker ps -a | grep performance | awk -F \" \" '{ print $2,$1 }'")
+  nodes = run_command("docker ps -a --format \"{{.Image}} {{.ID}}\" --filter \"name=^/performance_\"")
+
   for node in nodes:
     alias, container = node.split(' ')
     name = alias.split("/")[-1].split(":")[0]

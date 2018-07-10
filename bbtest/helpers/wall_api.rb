@@ -3,11 +3,10 @@ require_relative 'rest_service'
 class WallAPI
   include RESTServiceHelper
 
-  attr_reader :public_uri, :private_uri
+  attr_reader :uri_base
 
   def initialize()
-    @public_uri = "http://wall:8080"
-    @private_uri = "http://wall:8888"
+    @uri_base = "https://wall:443"
   end
 
   ######################################################### account methods ####
@@ -18,11 +17,11 @@ class WallAPI
       currency: currency,
       isBalanceCheck: activity
     }
-    post("#{public_uri}/account/#{tenant_id}", body)
+    post("#{uri_base}/account/#{tenant_id}", body)
   end
 
   def get_balance(tenant_id, account_name)
-    get("#{public_uri}/account/#{tenant_id}/#{account_name}")
+    get("#{uri_base}/account/#{tenant_id}/#{account_name}")
   end
 
   ##################################################### transaction methods ####
@@ -38,7 +37,7 @@ class WallAPI
     }
 
     body["id"] = id unless id.nil?
-    post("#{public_uri}/transaction/#{tenant_id}", body)
+    post("#{uri_base}/transaction/#{tenant_id}", body)
   end
 
   def multi_transfer(tenant_id, transaction_id, transfers)
@@ -46,7 +45,7 @@ class WallAPI
       id: transaction_id,
       transfers: transfers
     }
-    post("#{public_uri}/transaction/#{tenant_id}", body)
+    post("#{uri_base}/transaction/#{tenant_id}", body)
   end
 
   def forward_transfer(tenant_id, transaction_id, transfer_id, side, account)
@@ -55,11 +54,11 @@ class WallAPI
       side: side,
       targetAccount: account
     }
-    patch("#{public_uri}/transaction/#{tenant_id}/#{transaction_id}/#{transfer_id}", body)
+    patch("#{uri_base}/transaction/#{tenant_id}/#{transaction_id}/#{transfer_id}", body)
   end
 
   def health_check()
-    get("#{private_uri}/health")
+    get("#{uri_base}/health")
   end
 
 end

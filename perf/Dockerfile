@@ -19,13 +19,7 @@ RUN apk update && \
     ujson==1.35 \
     grequests==0.3.0
 
-COPY main.py /etc/perf/main.py
-COPY stress.py /etc/perf/stress.py
-COPY env.py /etc/perf/env.py
-COPY constants.py /etc/perf/constants.py
-COPY utils.py /etc/perf/utils.py
-COPY api.py /etc/perf/api.py
-
+COPY . /etc/perf/
 WORKDIR /etc/perf
 
 ENTRYPOINT ["python3"]
