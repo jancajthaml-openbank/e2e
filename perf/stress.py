@@ -32,7 +32,7 @@ class StressTest:
 
   @staticmethod
   def health_check_spam():
-    num_of_requests = max(100, limit * 2)
+    num_of_requests = 100
 
     info("preparing creation of {0} health check spams".format(num_of_requests))
     prepared = [ api.prepare_health_check() for x in range(num_of_requests) ]
@@ -56,9 +56,9 @@ class StressTest:
     return True
 
   def create_random_accounts_parallel(self):
-    num_of_accounts = int(400)
+    num_of_accounts = 100
 
-    info("preparing creation of {0} accounts in parallel of {1}".format(num_of_accounts, limit))
+    info("preparing creation of {0} accounts in parallel".format(num_of_accounts))
     prepared = [ api.prepare_create_account("par_" + str(x + 1), bool(secure_random.getrandbits(1))) for x in range(num_of_accounts) ]
 
     def callback(response, url, request, tenant):
@@ -91,22 +91,22 @@ class StressTest:
 
   @with_deadline(timeout=120)
   def create_random_accounts_serial(self):
-    num_of_accounts = int(1e1) # fixme to env
+    num_of_accounts = 10
 
     info("preparing creation of {0} accounts one by one".format(num_of_accounts))
     prepared = [ api.prepare_create_account("ser_" + str(x + 1), bool(secure_random.getrandbits(1))) for x in range(num_of_accounts) ]
 
-    def account_callback(response, request, tenant):
-      if response.status_code == 200:
-        self.g_accounts.setdefault(tenant, {})[request['accountNumber']] = {
-          'active': request['isBalanceCheck'],
-          'balance': 0,
-          'transactions': [],
-          'currency': request['currency']
-        }
-        return response
-      else:
+    def callback(response, url, request, tenant):
+      if response.status_code != 200:
         return None
+
+      self.g_accounts.setdefault(tenant, {})[request['accountNumber']] = {
+        'active': request['isBalanceCheck'],
+        'balance': 0,
+        'transactions': [],
+        'currency': request['currency']
+      }
+      return response
 
     info('sending {0} requests'.format(len(prepared)))
 
@@ -115,10 +115,10 @@ class StressTest:
 
     start = time.time()
 
-    for url, body, tenant in prepared:
-      resp = requests.post(url, data=body, verify=False)
+    for url, body, payload, tenant in prepared:
+      resp = requests.post(url, data=payload, verify=False, timeout=1)
       s_processed += 1
-      account_callback(resp, body, tenant)
+      callback(resp, url, body, tenant)
 
       if resp and resp.status_code == 200:
         ok += 1
@@ -136,9 +136,8 @@ class StressTest:
 
     return True
 
-  @with_deadline(timeout=120)
   def create_random_transactions_parallel(self):
-    num_of_transactions = int(3*1e2) # fixme to env
+    num_of_transactions = 100
     partitions = []
     chunks = len(self.g_accounts)
 
@@ -158,7 +157,7 @@ class StressTest:
       credit_accounts = [i for i in all_accounts if self.g_accounts[tenant_name][i]['active']]
       debit_account = [i for i in all_accounts if not self.g_accounts[tenant_name][i]['active']]
 
-      info("preparing creation of {0} transactions one by one for tenant {1}".format(will_generate_transactions, tenant_name))
+      info("preparing creation of {0} transactions in parallel for tenant {1}".format(will_generate_transactions, tenant_name))
 
       prepared.extend(api.prepare_transaction(tenant_name, secure_random.randint(self.transfers["min"], self.transfers["max"]), credit_accounts, debit_account, self.accounts["max_amount"]) for x in range(0, will_generate_transactions, 1))
 
@@ -201,7 +200,7 @@ class StressTest:
 
   @with_deadline(timeout=120)
   def create_random_transactions_serial(self):
-    num_of_transactions = int(3*1e1) # fixme to env
+    num_of_transactions = 10
     partitions = []
     chunks = len(self.g_accounts)
 
@@ -224,24 +223,24 @@ class StressTest:
 
       prepared.extend(api.prepare_transaction(tenant_name, secure_random.randint(self.transfers["min"], self.transfers["max"]), credit_accounts, debit_account, self.accounts["max_amount"]) for x in range(0, will_generate_transactions, 1))
 
-    def transaction_callback(response, request, tenant_name):
-      if response.status_code == 200:
-        transaction = response.json()['transaction']
-
-        for transfer in request['transfers']:
-          amount = transfer['amount']
-          credit = transfer['credit']
-          debit = transfer['debit']
-
-          self.g_accounts[tenant_name][credit]['balance'] += float(amount)
-          self.g_accounts[tenant_name][debit]['balance'] -= float(amount)
-
-          self.g_accounts[tenant_name][credit]['transactions'].append(transaction)
-          self.g_accounts[tenant_name][debit]['transactions'].append(transaction)
-
-        return response
-      else:
+    def callback(response, request, tenant_name):
+      if response.status_code != 200:
         return None
+
+      transaction = response.json()['transaction']
+
+      for transfer in request['transfers']:
+        amount = transfer['amount']
+        credit = transfer['credit']
+        debit = transfer['debit']
+
+        self.g_accounts[tenant_name][credit]['balance'] += float(amount)
+        self.g_accounts[tenant_name][debit]['balance'] -= float(amount)
+
+        self.g_accounts[tenant_name][credit]['transactions'].append(transaction)
+        self.g_accounts[tenant_name][debit]['transactions'].append(transaction)
+
+      return response
 
     ######
 
@@ -251,10 +250,10 @@ class StressTest:
     s_processed = 0
 
     start = time.time()
-    for url, request, body, tenant_name in prepared:
-      resp = requests.post(url, data=body, verify=False)
+    for url, body, payload, tenant_name in prepared:
+      resp = requests.post(url, data=payload, verify=False)
       s_processed += 1
-      transaction_callback(resp, request, tenant_name)
+      callback(resp, body, tenant_name)
       if resp and resp.status_code == 200:
         ok += 1
 
@@ -343,7 +342,7 @@ class StressTest:
         num_of_accounts+=1
         prepared.append(api.prepare_get_balance(tenant_name, account_name, reference))
 
-    info("prepared checking balance of {0} accounts in parallel of {1}".format(num_of_accounts, limit))
+    info("prepared checking balance of {0} accounts in parallel".format(num_of_accounts))
 
     def partial(cb, reference):
       def wrapper(response, *extra_args, **kwargs):
@@ -363,6 +362,8 @@ class StressTest:
         return None
 
     info('sending {0} requests'.format(len(prepared)))
+
+    # fixme use httpclient
 
     session = requests.Session()
     session.verify = False
@@ -404,15 +405,15 @@ class StressTest:
     self.balance_cancel_out_check()
 
   def stress_run(self):
-    #self.create_random_accounts_serial()
+    self.create_random_accounts_serial()
     self.create_random_accounts_parallel()
 
-    #self.create_random_transactions_serial()
+    self.create_random_transactions_serial()
     self.create_random_transactions_parallel()
 
-    #self.check_balances_serial()
-    #self.check_balances_parallel()
+    self.check_balances_serial()
+    self.check_balances_parallel()
 
-    #self.balance_cancel_out_check()
+    self.balance_cancel_out_check()
 
     ############################################################################

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
 import grequests
 import requests
 
@@ -22,7 +21,7 @@ from utils import with_deadline, Counter
 
 class ParallelHttpClient:
 
-  limit = 10
+  limit = 30
 
   def __init__(self):
     adapter = requests.adapters.HTTPAdapter(pool_connections=ParallelHttpClient.limit, pool_maxsize=ParallelHttpClient.limit)
@@ -41,20 +40,19 @@ class ParallelHttpClient:
 
     prepared = [grequests.post(
       url,
-      timeout=1,
+      timeout=2,
       data=payload,
       session=self.session,
       hooks={'response': partial(pre_process, url, body, tenant)}
     ) for url, body, payload, tenant in reqs]
 
-    total = len(prepared)
     ok = Counter()
     fails = Counter()
     progress = Counter()
 
     start = time.time()
 
-    for resp in grequests.imap(prepared, size=ParallelHttpClient.limit):
+    for resp in grequests.imap(prepared, size=10):
       progress.inc()
       if resp and resp.status_code == 200:
         ok.inc()
@@ -70,18 +68,17 @@ class ParallelHttpClient:
 
     prepared = [grequests.get(
       url,
-      timeout=1,
+      timeout=2,
       session=self.session
     ) for url in reqs]
 
-    total = len(prepared)
     ok = Counter()
     fails = Counter()
     progress = Counter()
 
     start = time.time()
 
-    for resp in grequests.imap(prepared, size=ParallelHttpClient.limit):
+    for resp in grequests.imap(prepared, size=10):
       progress.inc()
       if resp and resp.status_code == 200:
         ok.inc()
@@ -90,4 +87,3 @@ class ParallelHttpClient:
       on_progress(progress.value, ok.value, fails.value)
 
     return ok.value, fails.value, time.time() - start
-
