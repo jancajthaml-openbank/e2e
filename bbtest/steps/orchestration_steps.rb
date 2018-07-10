@@ -124,16 +124,14 @@ end
 step "wall is running" do ||
   send ":container :version is started with", "openbank/wall", "master", "wall", [
     "-e WALL_STORAGE=/data",
-    "-e WALL_HTTP_PRIVATE_PORT=8888",
-    "-e WALL_HTTP_PUBLIC_PORT=8080",
+    "-e WALL_HTTP_PORT=443",
     "-e WALL_LOG_LEVEL=DEBUG",
     "-e WALL_LAKE_HOSTNAME=lake",
     "-e WALL_METRICS_REFRESHRATE=1s",
     "-e WALL_METRICS_OUTPUT=/metrics/e2e_wall_metrics.json",
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_journal:/data",
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_metrics:/metrics",
-    "-p 8080",
-    "-p 8888"
+    "-p 443"
   ]
 end
 
@@ -149,15 +147,15 @@ end
 step ":host is healthy" do |host|
   case host
   when "wall"
-    expect(HttpClient.wall.health_check().status).to eq(200)
+    expect(HttpClient.wall.health_check().code.to_i).to eq(200)
   when "vault"
-    expect(HttpClient.vault.health_check().status).to eq(200)
+    expect(HttpClient.vault.health_check().code.to_i).to eq(200)
   when "lake"
     with_deadline(timeout: 1) {
       ZMQHelper.lake_handshake()
     }
   when "search"
-    expect(HttpClient.search.health_check().status).to eq(200)
+    expect(HttpClient.search.health_check().code.to_i).to eq(200)
   when "mongo"
     %x(nc -z mongodb 27017 2> /dev/null)
     expect($?).to be_success

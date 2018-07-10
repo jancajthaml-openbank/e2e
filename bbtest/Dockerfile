@@ -31,7 +31,6 @@ RUN gem install \
         turnip_formatter:0.5.0 \
         rspec_junit_formatter:0.3.0 \
         rspec-instafail:1.0.0 \
-        excon:0.61.0 \
         bigdecimal:1.3.4 \
         byebug:10.0.1 \
         ffi-rzmq:2.0.4

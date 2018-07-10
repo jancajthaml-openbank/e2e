@@ -189,6 +189,7 @@ jobs:
                 -e WALL_LAKE_HOSTNAME=lake \
                 -e WALL_STORAGE=/data \
                 -e WALL_LOG_LEVEL=INFO \
+                -e WALL_HTTP_PORT=443 \
                 -e WALL_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
                 -v ${PERSISTENCE_PATH}:/data \
                 -v ${LOGS_PATH}:/logs \
@@ -196,7 +197,7 @@ jobs:
                 --net=e2e_bridge \
                 --net-alias=${name} \
                 --name=performance_${name} \
-                --publish 8080:8080 \
+                --publish 443 \
               \
               openbank/wall:master
             }

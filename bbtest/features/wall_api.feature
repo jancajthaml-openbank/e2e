@@ -8,7 +8,7 @@ Feature: Wall API test
     And   vault is running
 
   Scenario: Account API - account doesn't exist
-    When  I call GET http://wall:8080/account/WALL/xxx
+    When  I call GET https://wall:443/account/WALL/xxx
     Then  response status should be 404
     And   response content should be:
     """
@@ -16,7 +16,7 @@ Feature: Wall API test
     """
 
   Scenario: Account API - account created
-    When  I call POST http://wall:8080/account/WALL
+    When  I call POST https://wall:443/account/WALL
     """
       {
         "accountNumber": "xxx",
@@ -31,7 +31,7 @@ Feature: Wall API test
     """
 
   Scenario: Account API - account already exists
-    When  I call POST http://wall:8080/account/WALL
+    When  I call POST https://wall:443/account/WALL
     """
       {
         "accountNumber": "yyy",
@@ -45,7 +45,7 @@ Feature: Wall API test
       {}
     """
 
-    When  I call POST http://wall:8080/account/WALL
+    When  I call POST https://wall:443/account/WALL
     """
       {
         "accountNumber": "yyy",
@@ -60,7 +60,7 @@ Feature: Wall API test
     """
 
   Scenario: Account API - get account balance
-    When  I call GET http://wall:8080/account/WALL/xxx
+    When  I call GET https://wall:443/account/WALL/xxx
     Then  response status should be 200
     And   response content should be:
     """
@@ -73,7 +73,7 @@ Feature: Wall API test
     """
 
   Scenario: Transaction API - invalid transaction side
-    When  I call POST http://wall:8080/transaction/WALL
+    When  I call POST https://wall:443/transaction/WALL
     """
       {
         "transfers": [{
@@ -91,14 +91,14 @@ Feature: Wall API test
     """
 
   Scenario: Transaction API - new transaction, valid resend, invalid resend
-    When  I call GET http://wall:8080/transaction/WALL/unique_transaction_id
+    When  I call GET https://wall:443/transaction/WALL/unique_transaction_id
     Then  response status should be 404
     And   response content should be:
     """
       {}
     """
 
-    When  I call POST http://wall:8080/transaction/WALL
+    When  I call POST https://wall:443/transaction/WALL
     """
       {
         "id": "unique_transaction_id",
@@ -123,7 +123,7 @@ Feature: Wall API test
       }
     """
 
-    When  I call POST http://wall:8080/transaction/WALL
+    When  I call POST https://wall:443/transaction/WALL
     """
       {
         "id": "unique_transaction_id",
@@ -147,7 +147,7 @@ Feature: Wall API test
         ]
       }
     """
-    And   I call GET http://wall:8080/transaction/WALL/unique_transaction_id
+    And   I call GET https://wall:443/transaction/WALL/unique_transaction_id
     Then  response status should be 200
     And   response content should be:
     """
@@ -164,7 +164,7 @@ Feature: Wall API test
       }
     """
 
-    When  I call POST http://wall:8080/transaction/WALL
+    When  I call POST https://wall:443/transaction/WALL
     """
       {
         "id": "unique_transaction_id",

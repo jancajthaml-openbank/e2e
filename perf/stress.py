@@ -40,7 +40,8 @@ class StressTest:
     info('sending {0} requests'.format(len(prepared)))
 
     session = requests.Session()
-    session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
+    session.verify = False
+    session.mount('https://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
     reqs = [grequests.get(url, session=session, timeout=2) for url in prepared]
     s_passed = 0
     s_failed = 0
@@ -96,7 +97,8 @@ class StressTest:
     info('sending {0} requests'.format(len(prepared)))
 
     session = requests.Session()
-    session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
+    session.verify = False
+    session.mount('https://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
     reqs = [grequests.post(url, data=body, session=session, hooks={'response': partial(account_callback, body, tenant)}) for url, body, tenant in prepared]
 
     ok = 0
@@ -149,7 +151,7 @@ class StressTest:
     start = time.time()
 
     for url, body, tenant in prepared:
-      resp = requests.post(url, data=body)
+      resp = requests.post(url, data=body, verify=False)
       s_processed += 1
       account_callback(resp, body, tenant)
 
@@ -224,7 +226,8 @@ class StressTest:
     info('sending {0} requests'.format(len(prepared)))
 
     session = requests.Session()
-    session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
+    session.verify = False
+    session.mount('https://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
     reqs = [grequests.post(url, data=body, session=session, hooks={'response': partial(transaction_callback, request, tenant_name)}) for url, request, body, tenant_name in prepared]
 
     ok = 0
@@ -300,7 +303,7 @@ class StressTest:
 
     start = time.time()
     for url, request, body, tenant_name in prepared:
-      resp = requests.post(url, data=body)
+      resp = requests.post(url, data=body, verify=False)
       s_processed += 1
       transaction_callback(resp, request, tenant_name)
       if resp and resp.status_code == 200:
@@ -361,7 +364,7 @@ class StressTest:
     s_processed = 0
     start = time.time()
     for url, reference in prepared:
-      resp = requests.get(url)
+      resp = requests.get(url, verify=False)
       s_processed += 1
       account_callback(resp, reference)
 
@@ -413,7 +416,8 @@ class StressTest:
     info('sending {0} requests'.format(len(prepared)))
 
     session = requests.Session()
-    session.mount('http://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
+    session.verify = False
+    session.mount('https://', HTTPAdapter(pool_connections=limit, pool_maxsize=limit))
     reqs = [grequests.get(url, session=session, hooks={'response': partial(account_callback, reference)}) for url, reference in prepared]
     ok = 0
     s_processed = 0

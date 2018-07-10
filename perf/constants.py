@@ -12,8 +12,8 @@ except ValueError:
 tty = os.getenv('TTY', 'yes') == 'yes'
 tenant = os.getenv('TENANT', 'test')
 tenants = []
-hostname = os.getenv('HTTP_ENTRYPOINT', '127.0.0.1:8080')
-site = 'http://' + hostname
+hostname = os.getenv('HTTP_ENTRYPOINT', '127.0.0.1')
+site = 'https://' + hostname + ':443'
 
 def debug(msg):
   sys.stdout.write('\033[97m  debug | \033[0m{0}\n'.format(msg))
