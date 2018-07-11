@@ -3,7 +3,7 @@
 
 from gevent import sleep
 import random
-from constants import tenants, site
+from constants import site
 import requests
 import ujson as json
 from utils import with_deadline
@@ -22,7 +22,7 @@ def get_url_data(uri, max_tries=10):
 
 @with_deadline(timeout=10)
 def ping():
-  url = prepare_health_check()
+  url, _, _ = prepare_health_check()
   return get_url_data(url, max_tries=200).status_code == 200
 
 def prepare_transfer(credit_account_choice, debit_acount_choice, amount_choice):
@@ -54,14 +54,13 @@ def prepare_transaction(tenant_name, number_of_transfers, credit_account_choice,
 
 def prepare_get_balance(tenant_name, account_name, reference):
   url = site + '/account/' + tenant_name + '/' + account_name
-  return (url, reference)
+  return (url, reference, tenant_name)
 
 def prepare_health_check():
-  return site + '/health'
+  return (site + '/health', None, None)
 
-def prepare_create_account(account_name, is_ballance_check):
-  tenant_choice = secure_random.choice(tenants)
-  url = site + '/account/' + tenant_choice
+def prepare_create_account(tenant_name, account_name, is_ballance_check):
+  url = site + '/account/' + tenant_name
 
   body = {
     "accountNumber": account_name,
@@ -69,4 +68,4 @@ def prepare_create_account(account_name, is_ballance_check):
     "isBalanceCheck": is_ballance_check
   }
 
-  return (url, body, json.dumps(body), tenant_choice)
+  return (url, body, json.dumps(body), tenant_name)

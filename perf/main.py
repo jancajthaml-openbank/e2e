@@ -50,7 +50,7 @@ def main():
     })
 
     api.ping()
-    st.check_balances_parallel()
+    st.check_balances()
 
     #debug("TDB audit from database")
     # fixme audit here
