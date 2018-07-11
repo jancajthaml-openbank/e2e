@@ -4,11 +4,6 @@
 import os
 import sys
 
-try:
-  limit = int(os.getenv('MAX_PARALLELISM', '10'))
-except ValueError:
-  limit = 200
-
 tenant = os.getenv('TENANT', 'test')
 tenants = []
 hostname = os.getenv('HTTP_ENTRYPOINT', '127.0.0.1')

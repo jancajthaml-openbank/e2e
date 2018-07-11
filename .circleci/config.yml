@@ -138,11 +138,6 @@ jobs:
               echo -n "$var"
             }
 
-            # FIXME currently unused but will be used in future for random tenant name
-            rand_alnum() {
-              LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 13 ; echo
-            }
-
             spawn() {
               local image="${1}"
               local args="${@:2}"
@@ -160,12 +155,11 @@ jobs:
               # FIXME as a part of e2e testing "publish" and "subscribe" of lake should
               # be parametric
 
-              docker run \
+              id=$(docker run \
                 -d \
                 -h lake \
                 -v ${LOGS_PATH}:/logs \
                 -v ${METRICS_PATH}:/opt/metrics \
-                -e LAKE_LOG_LEVEL=INFO \
                 -e LAKE_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
                 --net=e2e_bridge \
                 --net-alias=lake \
@@ -174,7 +168,12 @@ jobs:
                 --publish 5562:5562 \
                 --publish 5561:5561 \
               \
-              openbank/lake:master
+              openbank/lake:master)
+
+              (docker exec ${id} sed -i "s/LOG_LEVEL.*/LOG_LEVEL=ERROR/" /etc/lake/params.conf 2>&1)
+              (docker exec ${id} systemctl restart lake.service 2>&1)
+
+              echo ${id}
             }
 
             spawn_wall() {
@@ -188,7 +187,7 @@ jobs:
                 -e HOSTNAME=${name} \
                 -e WALL_LAKE_HOSTNAME=lake \
                 -e WALL_STORAGE=/data \
-                -e WALL_LOG_LEVEL=INFO \
+                -e WALL_LOG_LEVEL=ERROR \
                 -e WALL_HTTP_PORT=443 \
                 -e WALL_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
                 -v ${PERSISTENCE_PATH}:/data \
@@ -210,7 +209,7 @@ jobs:
                 -h ${name} \
                 -e VAULT_LAKE_HOSTNAME=lake \
                 -e VAULT_STORAGE=/data \
-                -e VAULT_LOG_LEVEL=INFO \
+                -e VAULT_LOG_LEVEL=ERROR \
                 -e VAULT_JOURNAL_SATURATION=10 \
                 -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
                 -e VAULT_TENANT=${TENANT}_${1} \
@@ -286,7 +285,7 @@ jobs:
 
             lake_container=$(spawn lake 1)
 
-            for ((i=1;i<=5;i++)) ; do
+            for ((i=1;i<=6;i++)) ; do
               VAULTS+=($(spawn vault $i))
             done
 
@@ -295,9 +294,8 @@ jobs:
             docker run \
               -t \
               -e LAKE_HOSTNAME=lake \
-              -e HTTP_ENTRYPOINT=wall_1:8080 \
+              -e HTTP_ENTRYPOINT=wall_1 \
               -e TENANT=${TENANT} \
-              -e MAX_PARALLELISM=${MAX_PARALLELISM} \
               -e TTY=${TTY} \
               -v /var/run/docker.sock:/var/run/docker.sock \
               -v ${PERSISTENCE_PATH}:/data \

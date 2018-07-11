@@ -19,19 +19,71 @@ else:
 
 from utils import with_deadline, Counter
 
-class ParallelHttpClient:
+class HttpClient:
 
-  limit = 30
+  limit = 100
 
   def __init__(self):
-    adapter = requests.adapters.HTTPAdapter(pool_connections=ParallelHttpClient.limit, pool_maxsize=ParallelHttpClient.limit)
+    adapter = requests.adapters.HTTPAdapter(pool_connections=HttpClient.limit, pool_maxsize=HttpClient.limit)
     session = requests.Session()
     session.verify = False
     session.mount('https://', adapter)
     self.session = session
 
+class SerialHttpClient(HttpClient):
+
   @with_deadline(timeout=120)
-  def post(self, reqs, pre_process, on_progress):
+  def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
+    ok = Counter()
+    fails = Counter()
+    progress = Counter()
+
+    start = time.time()
+
+    for url, body, payload, tenant in reqs:
+      try:
+        resp = self.session.post(url, data=payload, verify=False, timeout=(1, 1))
+        if resp and resp.status_code == 200:
+          ok.inc()
+          pre_process(resp, url, body, tenant)
+        else:
+          fails.inc()
+      except (requests.exceptions.ConnectionError, requests.exceptions.RequestException):
+        fails.inc()
+      finally:
+        progress.inc()
+        on_progress(progress.value, ok.value, fails.value)
+
+    return ok.value, fails.value, time.time() - start
+
+  @with_deadline(timeout=120)
+  def get(self, reqs, pre_process, on_progress):
+    ok = Counter()
+    fails = Counter()
+    progress = Counter()
+
+    start = time.time()
+
+    for url, *args in reqs:
+      try:
+        resp = self.session.get(url, verify=False, timeout=(1, 1))
+        if resp and resp.status_code == 200:
+          ok.inc()
+          pre_process(resp, url, *args)
+        else:
+          fails.inc()
+      except (requests.exceptions.ConnectionError, requests.exceptions.RequestException):
+        fails.inc()
+      finally:
+        progress.inc()
+        on_progress(progress.value, ok.value, fails.value)
+
+    return ok.value, fails.value, time.time() - start
+
+class ParallelHttpClient(HttpClient):
+
+  @with_deadline(timeout=120)
+  def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
 
     def partial(cb, url, request, tenant):
       def wrapper(response, *extra_args, **kwargs):
@@ -64,13 +116,19 @@ class ParallelHttpClient:
     return ok.value, fails.value, time.time() - start
 
   @with_deadline(timeout=120)
-  def get(self, reqs, on_progress):
+  def get(self, reqs, pre_process, on_progress):
+
+    def partial(cb, url, request, tenant):
+      def wrapper(response, *extra_args, **kwargs):
+        return cb(response, url, request, tenant)
+      return wrapper
 
     prepared = [grequests.get(
       url,
       timeout=2,
-      session=self.session
-    ) for url in reqs]
+      session=self.session,
+      hooks={'response': partial(pre_process, url, *args)}
+    ) for url, *args in reqs]
 
     ok = Counter()
     fails = Counter()
@@ -84,6 +142,7 @@ class ParallelHttpClient:
         ok.inc()
       else:
         fails.inc()
-      on_progress(progress.value, ok.value, fails.value)
+      if on_progress:
+        on_progress(progress.value, ok.value, fails.value)
 
     return ok.value, fails.value, time.time() - start
