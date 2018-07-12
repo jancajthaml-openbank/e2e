@@ -19,15 +19,15 @@ else
 fi
 
 if [ -z ${PERSISTENCE_PATH} ] ; then
-  PERSISTENCE_PATH="$(pwd)/journal/perf"
+  PERSISTENCE_PATH="$(pwd)/reports/perf_journal"
 fi
 
 if [ -z ${LOGS_PATH} ] ; then
-  LOGS_PATH="$(pwd)/logs"
+  LOGS_PATH="$(pwd)/reports/perf_logs"
 fi
 
 if [ -z ${METRICS_PATH} ] ; then
-  METRICS_PATH="$(pwd)/metrics"
+  METRICS_PATH="$(pwd)/reports/perf_metrics"
 fi
 
 network=e2e_bridge
@@ -36,11 +36,19 @@ network=e2e_bridge
 
 mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
 
-################################################################################
+if [ "$(ls -A ${LOGS_PATH})" ] ; then
+  rm -rf ${LOGS_PATH}/*
+fi
 
 if [ "$(ls -A ${PERSISTENCE_PATH})" ] ; then
   rm -rf ${PERSISTENCE_PATH}/*
 fi
+
+if [ "$(ls -A ${METRICS_PATH})" ] ; then
+  rm -rf ${METRICS_PATH}/*
+fi
+
+################################################################################
 
 trim() {
   local var="$*"
@@ -76,7 +84,7 @@ spawn_lake() {
     -d \
     -h lake \
     -v ${LOGS_PATH}:/logs \
-    -v ${METRICS_PATH}:/opt/metrics \
+    -v ${METRICS_PATH}:/opt/lake/metrics \
     --net=$network \
     --net-alias=lake \
     --privileged \
