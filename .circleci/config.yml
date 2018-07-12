@@ -73,6 +73,10 @@ jobs:
 
             git clone git@github.com:jancajthaml-openbank/health-check.git
 
+            if [ "$(ls -A health-check/reports)" ] ; then
+              rm -rf health-check/reports/*
+            fi
+
             cp -r ${METRICS_PATH} health-check/reports
 
             cd health-check
