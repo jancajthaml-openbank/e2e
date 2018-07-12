@@ -19,7 +19,7 @@ RSpec.configure do |config|
 
     ZMQHelper.start()
 
-    ["/data", "/metrics", "/reports"].each { |folder|
+    ["/data", "/logs", "/metrics", "/reports/logs", "/reports/metrics"].each { |folder|
       FileUtils.mkdir_p folder
       FileUtils.rm_rf Dir.glob("#{folder}/*")
     }
@@ -42,7 +42,7 @@ RSpec.configure do |config|
       label = ($? == 0 ? label.strip : container)
 
       %x(docker kill --signal="TERM" #{container} >/dev/null 2>&1 || :)
-      %x(docker logs #{container} >/reports/#{label}.log 2>&1)
+      %x(docker logs #{container} > /logs/#{label}.log 2>&1)
       %x(docker rm -f #{container} &>/dev/null || :)
     end
 
@@ -51,21 +51,21 @@ RSpec.configure do |config|
       label = ($? == 0 ? label.strip : container)
 
       %x(docker exec #{container} systemctl stop lake.service 2>&1)
-      %x(docker exec #{container} journalctl -o short-precise -u lake.service --no-pager >/reports/#{label}.log 2>&1)
+      %x(docker exec #{container} journalctl -o short-precise -u lake.service --no-pager > /logs/#{label}.log 2>&1)
       %x(docker rm -f #{container} &>/dev/null || :)
     end
 
     begin
       Timeout.timeout(20) do
         (
-          get_containers.call("openbank/wall") <<
-          get_containers.call("openbank/search") <<
-          get_containers.call("openbank/vault")
+          get_containers.call("openbank/wall:master") <<
+          get_containers.call("openbank/search:master") <<
+          get_containers.call("openbank/vault:master")
         ).flatten.each { |container|
           teardown_binary_container.call(container)
         }
 
-        get_containers.call("openbank/lake").each { |container|
+        get_containers.call("openbank/lake:master").each { |container|
           teardown_service_container.call(container)
         }
       end
@@ -73,8 +73,9 @@ RSpec.configure do |config|
       #
     end
 
-    FileUtils.cp_r '/metrics/.', '/reports'
-    ["/data", "/metrics"].each { |folder|
+    FileUtils.cp_r '/logs/.', '/reports/logs'
+    FileUtils.cp_r '/metrics/.', '/reports/metrics'
+    ["/data", "/logs", "/metrics"].each { |folder|
       FileUtils.rm_rf Dir.glob("#{folder}/*")
     }
 
