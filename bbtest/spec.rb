@@ -56,11 +56,11 @@ RSpec.configure do |config|
     end
 
     begin
-      Timeout.timeout(20) do
+      Timeout.timeout(10) do
         (
           get_containers.call("openbank/wall:master") <<
-          get_containers.call("openbank/search:master") <<
-          get_containers.call("openbank/vault:master")
+          get_containers.call("openbank/vault:master") <<
+          get_containers.call("openbank/search:master")
         ).flatten.each { |container|
           teardown_binary_container.call(container)
         }
