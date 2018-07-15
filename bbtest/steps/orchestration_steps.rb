@@ -8,7 +8,7 @@ step "storage is empty" do
   FileUtils.rm_rf Dir.glob("/data/*")
 end
 
-# fixme rename cointaer to image 
+# fixme rename cointaer to image
 step "no :container :label is running" do |container, label|
   containers = %x(docker ps -a -f name=#{label} | awk '$2 ~ "#{container}" {print $1}' 2>/dev/null)
   expect($?).to be_success
@@ -25,16 +25,8 @@ step "no :container :label is running" do |container, label|
       label = ($? == 0 ? label.strip : id)
 
       if container == "openbank/lake"
-        File.open("/logs/#{label}.log", "w") {
-
-        }
-
         %x(docker exec #{id} journalctl -u lake.service -b | cat > /logs/#{label}.log 2>&1)
       else
-        File.open("/logs/#{label}.log", "w") {
-
-        }
-
         %x(docker logs #{id} > /logs/#{label}.log 2>&1)
       end
 
@@ -99,18 +91,10 @@ step "search is running" do ||
   send ":container :version is started with", "openbank/search", "master", "search_#{$tenant_id}", [
     "-e SEARCH_LAKE_HOSTNAME=lake",
     "-e SEARCH_MONGO_HOSTNAME=mongodb",
+    "-e SEARCH_LOG_LEVEL=DEBUG",
     "-e SEARCH_HTTP_PORT=8080",
     "-e SEARCH_TENANT=#{$tenant_id}",
     "-p 8080"
-  ]
-end
-
-step "lake is running" do ||
-  send ":container :version is started with", "openbank/lake", "master", "lake", [
-    "-v #{ENV["COMPOSE_PROJECT_NAME"]}_metrics:/opt/lake/metrics",
-    "-p 5561",
-    "-p 5562",
-    "-p 9999"
   ]
 end
 
@@ -127,7 +111,6 @@ step "vault is running" do ||
     "-e VAULT_METRICS_OUTPUT=/metrics/e2e_vault_#{$tenant_id}_metrics.json",
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_journal:/data",
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_metrics:/metrics",
-    "-v #{ENV["COMPOSE_PROJECT_NAME"]}_logs:/logs",
     "-p 8080"
   ]
 end
@@ -143,6 +126,15 @@ step "wall is running" do ||
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_journal:/data",
     "-v #{ENV["COMPOSE_PROJECT_NAME"]}_metrics:/metrics",
     "-p 443"
+  ]
+end
+
+step "lake is running" do ||
+  send ":container :version is started with", "openbank/lake", "master", "lake", [
+    "-v #{ENV["COMPOSE_PROJECT_NAME"]}_metrics:/opt/lake/metrics",
+    "-p 5561",
+    "-p 5562",
+    "-p 9999"
   ]
 end
 
