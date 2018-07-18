@@ -2,7 +2,6 @@ Feature: Integrity test
 
   Scenario: Replay same transaction
     Given lake is running
-    And   mongo is running
     And   wall is running
     And   tenant is INTEGRITY
     And   vault is running

@@ -4,3 +4,4 @@ logs
 journal
 metrics
 TODO.md
+npm-debug*

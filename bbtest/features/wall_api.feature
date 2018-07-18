@@ -2,7 +2,6 @@ Feature: Wall API test
 
   Background: Appliance
     Given lake is running
-    And   mongo is running
     And   wall is running
     And   tenant is WALL
     And   vault is running

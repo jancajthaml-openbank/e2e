@@ -10,7 +10,11 @@ step "metrics should report :count created accounts" do |count|
       raise "file:  #{abspath} is a directory" if File.directory?(abspath)
       raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}"
     end
-    contents = JSON.parse(File.open(abspath, 'r').read)
+
+    contents = File.open(abspath, 'r') { |f|
+      JSON.parse(f.read())
+    }
+
     expect(contents["createdAccounts"]).to eq(count), "in #{contents}"
   }
 end
@@ -23,7 +27,11 @@ step "metrics events should cancel out" do ||
       raise "file:  #{abspath} is a directory" if File.directory?(abspath)
       raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}"
     end
-    contents = JSON.parse(File.open(abspath, 'r').read)
+
+    contents = File.open(abspath, 'r') { |f|
+      JSON.parse(f.read())
+    }
+
     raise "no promises in #{contents}" unless contents["promisesAccepted"] > 0
 
     initials = contents["promisesAccepted"]

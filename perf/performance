@@ -4,23 +4,8 @@
 
 ################################################################################
 
-MAX_PARALLELISM=${MAX_PARALLELISM:=10}
 VERSION=${VERSION:=latest}
-TENANT=${TENANT:=performance}
 LOG_LEVEL=${LOG_LEVEL:=ERROR}
-VAULTS=()
-
-if [ -n "$TTY" ] ; then
-  TTY="$TTY"
-elif [ -t 1 ] ; then
-  TTY="yes"
-else
-  TTY="no"
-fi
-
-if [ -z ${PERSISTENCE_PATH} ] ; then
-  PERSISTENCE_PATH="$(pwd)/reports/perf_journal"
-fi
 
 if [ -z ${LOGS_PATH} ] ; then
   LOGS_PATH="$(pwd)/reports/perf_logs"
@@ -32,173 +17,11 @@ fi
 
 network=e2e_bridge
 
-################################################################################
-
-mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
-
-if [ "$(ls -A ${LOGS_PATH})" ] ; then
-  rm -rf ${LOGS_PATH}/*
-fi
-
-if [ "$(ls -A ${PERSISTENCE_PATH})" ] ; then
-  rm -rf ${PERSISTENCE_PATH}/*
-fi
-
-if [ "$(ls -A ${METRICS_PATH})" ] ; then
-  rm -rf ${METRICS_PATH}/*
-fi
-
-################################################################################
-
-trim() {
-  local var="$*"
-
-  var="${var#"${var%%[![:space:]]*}"}"
-  var="${var%"${var##*[![:space:]]}"}"
-  echo -n "$var"
-}
-
-# FIXME currently unused but will be used in future for random tenant name
-rand_alnum() {
-  LC_ALL=C tr -dc 'A-Z0-9' </dev/urandom | head -c 13 ; echo
-}
-
-spawn() {
-  local image="${1}"
-  local args="${@:2}"
-  container=$(spawn_${image} ${args})
-  if [ -z ${container} ] && [[ $(trim $(docker inspect -f "{{.State.Running}}" ${container} 2>/dev/null)) != "true" ]] ; then
-    exit 1
-  fi
-
-  echo ${container}
-}
-
-spawn_lake() {
-  local name="lake_$1"
-
-  # FIXME as a part of e2e testing "publish" and "subscribe" of lake should
-  # be parametric
-
-  id=$(docker run \
-    -d \
-    -h lake \
-    -v ${LOGS_PATH}:/logs \
-    -v ${METRICS_PATH}:/opt/lake/metrics \
-    --net=$network \
-    --net-alias=lake \
-    --privileged \
-    --name=performance_${name} \
-    --publish 5562:5562 \
-    --publish 5561:5561 \
-  \
-  openbank/lake:master)
-
-  (docker exec ${id} sed -i "s/LOG_LEVEL.*/LOG_LEVEL=${LOG_LEVEL}/" /etc/lake/params.conf 2>&1)
-  (docker exec ${id} systemctl restart lake.service 2>&1)
-
-  echo ${id}
-}
-
-spawn_wall() {
-  local name="wall_$1"
-
-  # FIXME not ideal to have single wall and hardcoded http port, consider haproxy
-
-  docker run \
-    -d \
-    -h ${name} \
-    -e HOSTNAME=${name} \
-    -e WALL_LAKE_HOSTNAME=lake \
-    -e WALL_STORAGE=/data \
-    -e WALL_HTTP_PORT=443 \
-    -e WALL_LOG_LEVEL=${LOG_LEVEL} \
-    -e WALL_METRICS_OUTPUT=/opt/metrics/${name}_perf.json \
-    -v ${PERSISTENCE_PATH}:/data \
-    -v ${LOGS_PATH}:/logs \
-    -v ${METRICS_PATH}:/opt/metrics \
-    --net=$network \
-    --net-alias=${name} \
-    --name=performance_${name} \
-    --publish 443 \
-  \
-  openbank/wall:master
-}
-
-spawn_vault() {
-  local name="vault_$1"
-
-  docker run \
-    -d \
-    -h ${name} \
-    -e VAULT_LAKE_HOSTNAME=lake \
-    -e VAULT_STORAGE=/data \
-    -e VAULT_LOG_LEVEL=${LOG_LEVEL} \
-    -e VAULT_JOURNAL_SATURATION=10 \
-    -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
-    -e VAULT_TENANT=${TENANT}_${1} \
-    -e VAULT_METRICS_REFRESHRATE=10s \
-    -e VAULT_METRICS_OUTPUT=/opt/metrics/${name}_perf.json \
-    -v ${PERSISTENCE_PATH}:/data \
-    -v ${LOGS_PATH}:/logs \
-    -v ${METRICS_PATH}:/opt/metrics \
-    --net=$network \
-    --net-alias=${name} \
-    --name=performance_${name} \
-  \
-  openbank/vault:master
-}
-
-teardown_service() {
-  local name="${1}"
-  local container="${2}"
-
-  if [ -z ${container} ] || [[ "${container}" =~ [^a-z0-9] ]] ; then
-    return
-  fi
-
-  echo "stopping $name container gracefully"
-  (docker kill --signal="TERM" ${container} >/dev/null 2>&1 || :)
-  echo "storing logs to ${LOGS_PATH}/perf_${name}.log"
-  docker logs $container &> ${LOGS_PATH}/perf_${name}.log
-  echo "deleting ${name} container $container"
-  (docker kill $container &> /dev/null || :)
-  (docker rm -f $container &> /dev/null || :)
-}
-
-teardown_lake() {
-  local name="${1}"
-  local container="${2}"
-
-  if [ -z ${container} ] || [[ "${container}" =~ [^a-z0-9] ]] ; then
-    return
-  fi
-
-  echo "stopping $name container gracefully"
-  (docker kill --signal="TERM" ${container} >/dev/null 2>&1 || :)
-  echo "storing logs to ${LOGS_PATH}/perf_${name}.log"
-  docker logs $container &> ${LOGS_PATH}/perf_${name}.log
-  (docker exec $container journalctl -u lake.service -b | cat >>${LOGS_PATH}/perf_${name}.log 2>&1) 2>/dev/null
-  echo "deleting $name container $container"
-  (docker kill $container &> /dev/null || :)
-  (docker rm -f $container &> /dev/null || :)
-}
-
 post_stop() {
   if [ -z $at_most_once ] ; then
-    echo ""
+    echo -en '\033[0m'
 
     at_most_once=true
-
-    teardown_service wall ${wall_container}
-
-    for i in "${!VAULTS[@]}"; do
-      teardown_service vault_$((i+1)) ${VAULTS[$i]}
-    done
-
-    teardown_lake lake ${lake_container}
-
-    teardown_service test $(docker ps -a | grep openbank/dev:perf | awk '{print $1}')
 
     echo "deleting network $network"
     (docker network rm $network &> /dev/null || :)
@@ -216,22 +39,11 @@ trap post_stop EXIT
 
 docker network create ${network} &> /dev/null || :
 
-lake_container=$(spawn lake 1)
-
-for ((i=1;i<=6;i++)) ; do
-  VAULTS+=($(spawn vault $i))
-done
-
-wall_container=$(spawn wall 1 1)
-
 docker run \
-  -t \
-  -e LAKE_HOSTNAME=lake \
-  -e HTTP_ENTRYPOINT=wall_1 \
-  -e TENANT=${TENANT} \
-  -e TTY=${TTY} \
+  -it \
+  -e LOG_LEVEL=${LOG_LEVEL} \
+  -e VERSION=${VERSION} \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -v ${PERSISTENCE_PATH}:/data \
   -v ${LOGS_PATH}:/logs \
   -v ${METRICS_PATH}:/opt/metrics \
   --net=${network} \

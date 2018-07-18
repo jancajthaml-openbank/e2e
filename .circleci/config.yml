@@ -77,7 +77,8 @@ jobs:
               rm -rf health-check/reports/*
             fi
 
-            cp -r ${METRICS_PATH} health-check/reports
+            cp -v ${METRICS_PATH}/all* health-check/reports/
+            ls -1 health-check/reports/
 
             cd health-check
             python generate_metrics_report.py > README.md
@@ -99,7 +100,6 @@ jobs:
     machine: true
 
     environment:
-      - PERSISTENCE_PATH: /home/circleci/project/data
       - LOGS_PATH: /home/circleci/project/logs
       - METRICS_PATH: /home/circleci/project/metrics
       - TENANT: performance
@@ -112,7 +112,7 @@ jobs:
       - checkout
 
       - run:
-          name: Prepare performance tests
+          name: Fetch images for performance tests
           command: |
             pull() {
               echo "pulling ${1}:${2}"
@@ -127,188 +127,26 @@ jobs:
 
             cd perf && docker build -t e2e_perf .
 
-            mkdir -p ${LOGS_PATH} ${PERSISTENCE_PATH} ${METRICS_PATH}
+      - run: mkdir -p ${LOGS_PATH} ${METRICS_PATH}
+
+      - run: docker network create e2e_bridge
 
       - run:
           name: Run performance tests
           command: |
-            VAULTS=()
-
-            trim() {
-              local var="$*"
-
-              var="${var#"${var%%[![:space:]]*}"}"
-              var="${var%"${var##*[![:space:]]}"}"
-              echo -n "$var"
-            }
-
-            spawn() {
-              local image="${1}"
-              local args="${@:2}"
-              container=$(spawn_${image} ${args})
-              if [ -z ${container} ] && [[ $(trim $(docker inspect -f "{{.State.Running}}" ${container} 2>/dev/null)) != "true" ]] ; then
-                exit 1
-              fi
-
-              echo ${container}
-            }
-
-            spawn_lake() {
-              local name="lake_$1"
-
-              # FIXME as a part of e2e testing "publish" and "subscribe" of lake should
-              # be parametric
-
-              id=$(docker run \
-                -d \
-                -h lake \
-                -v ${LOGS_PATH}:/logs \
-                -v ${METRICS_PATH}:/opt/metrics \
-                -e LAKE_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
-                --net=e2e_bridge \
-                --net-alias=lake \
-                --privileged \
-                --name=performance_${name} \
-                --publish 5562:5562 \
-                --publish 5561:5561 \
-              \
-              openbank/lake:master)
-
-              (docker exec ${id} sed -i "s/LOG_LEVEL.*/LOG_LEVEL=ERROR/" /etc/lake/params.conf 2>&1)
-              (docker exec ${id} systemctl restart lake.service 2>&1)
-
-              echo ${id}
-            }
-
-            spawn_wall() {
-              local name="wall_$1"
-
-              # FIXME not ideal to have single wall and hardcoded http port, consider haproxy
-
-              docker run \
-                -d \
-                -h ${name} \
-                -e HOSTNAME=${name} \
-                -e WALL_LAKE_HOSTNAME=lake \
-                -e WALL_STORAGE=/data \
-                -e WALL_LOG_LEVEL=ERROR \
-                -e WALL_HTTP_PORT=443 \
-                -e WALL_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
-                -v ${PERSISTENCE_PATH}:/data \
-                -v ${LOGS_PATH}:/logs \
-                -v ${METRICS_PATH}:/opt/metrics \
-                --net=e2e_bridge \
-                --net-alias=${name} \
-                --name=performance_${name} \
-                --publish 443 \
-              \
-              openbank/wall:master
-            }
-
-            spawn_vault() {
-              local name="vault_$1"
-
-              docker run \
-                -d \
-                -h ${name} \
-                -e VAULT_LAKE_HOSTNAME=lake \
-                -e VAULT_STORAGE=/data \
-                -e VAULT_LOG_LEVEL=ERROR \
-                -e VAULT_JOURNAL_SATURATION=10 \
-                -e VAULT_SNAPSHOT_SCANINTERVAL=1s \
-                -e VAULT_TENANT=${TENANT}_${1} \
-                -e VAULT_METRICS_REFRESHRATE=10s \
-                -e VAULT_METRICS_OUTPUT=/opt/metrics/metrics_perf_${name}.json \
-                -v ${PERSISTENCE_PATH}:/data \
-                -v ${LOGS_PATH}:/logs \
-                -v ${METRICS_PATH}:/opt/metrics \
-                --net=e2e_bridge \
-                --net-alias=${name} \
-                --name=performance_${name} \
-              \
-              openbank/vault:master
-            }
-
-            teardown_service() {
-              local name="${1}"
-              local container="${2}"
-
-              if [ -z ${container} ] || [[ "${container}" =~ [^a-z0-9] ]] ; then
-                return
-              fi
-
-              echo "stopping $name container gracefully"
-              (docker kill --signal="TERM" ${container} >/dev/null 2>&1 || :)
-              echo "storing logs to ${LOGS_PATH}/perf_${name}.log"
-              docker logs $container &> ${LOGS_PATH}/perf_${name}.log
-            }
-
-            teardown_lake() {
-              local name="${1}"
-              local container="${2}"
-
-              if [ -z ${container} ] || [[ "${container}" =~ [^a-z0-9] ]] ; then
-                return
-              fi
-
-              echo "stopping $name container gracefully"
-              (docker kill --signal="TERM" ${container} >/dev/null 2>&1 || :)
-              echo "storing logs to ${LOGS_PATH}/perf_${name}.log"
-              docker logs $container &> ${LOGS_PATH}/perf_${name}.log
-              (docker exec $container journalctl -u lake.service -b | cat >>${LOGS_PATH}/perf_${name}.log 2>&1) 2>/dev/null
-            }
-
-            post_stop() {
-              if [ -z $at_most_once ] ; then
-                echo ""
-
-                at_most_once=true
-
-                teardown_service wall ${wall_container}
-
-                for i in "${!VAULTS[@]}"; do
-                  teardown_service vault_$((i+1)) ${VAULTS[$i]}
-                done
-
-                teardown_lake lake ${lake_container}
-
-                teardown_service test $(docker ps -a | grep openbank/dev:perf | awk '{print $1}')
-
-                exit 0
-              fi
-            }
-
-            ################################################################################
-
-            trap exit INT TERM
-            trap post_stop EXIT
-
-            ################################################################################
-
-            docker network create e2e_bridge &> /dev/null || :
-
-            lake_container=$(spawn lake 1)
-
-            for ((i=1;i<=6;i++)) ; do
-              VAULTS+=($(spawn vault $i))
-            done
-
-            wall_container=$(spawn wall 1 1)
-
             docker run \
               -t \
-              -e LAKE_HOSTNAME=lake \
-              -e HTTP_ENTRYPOINT=wall_1 \
-              -e TENANT=${TENANT} \
-              -e TTY=${TTY} \
+              -e LOG_LEVEL=ERROR \
+              -e VERSION=master \
               -v /var/run/docker.sock:/var/run/docker.sock \
-              -v ${PERSISTENCE_PATH}:/data \
               -v ${LOGS_PATH}:/logs \
               -v ${METRICS_PATH}:/opt/metrics \
               --net=e2e_bridge \
               e2e_perf
 
       - run: (docker rm -f $(docker ps -aq) 2> /dev/null || :) &> /dev/null
+
+      - run: docker network rm e2e_bridge
 
       - store_artifacts:
           path: /home/circleci/project/metrics
