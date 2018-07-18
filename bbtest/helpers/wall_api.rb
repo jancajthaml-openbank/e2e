@@ -57,6 +57,8 @@ class WallAPI
     patch("#{uri_base}/transaction/#{tenant_id}/#{transaction_id}/#{transfer_id}", body)
   end
 
+  ###################################################### management methods ####
+
   def health_check()
     get("#{uri_base}/health")
   end

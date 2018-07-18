@@ -2,7 +2,6 @@ Feature: Transaction workflow NORDEA
 
   Scenario: Trivial transfer
     Given lake is running
-    And   mongo is running
     And   wall is running
     And   tenant is NORDEA
     And   vault is running

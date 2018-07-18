@@ -4,15 +4,12 @@ class RestfulAPI
   include RESTServiceHelper
 
   def call(http_method, url, data = {})
-    case http_method.downcase
-    when "get"
-      return get(url)
-    when "post"
-      return post(url, data)
-    when "patch"
-      return patch(url, data)
-    when "delete"
-      return post(url)
+    m = http_method.downcase
+    case m
+    when "get", "delete"
+      return method(m).call(url)
+    when "post", "put", "patch"
+      return method(m).call(url, data)
     else
       raise "undefined method #{http_method.upcase}"
     end

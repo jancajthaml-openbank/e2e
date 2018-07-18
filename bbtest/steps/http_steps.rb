@@ -2,7 +2,9 @@ require 'json'
 require_relative '../shims/deep_diff'
 
 step "I call :http_method :url" do |http_method, url, body = nil|
-  @resp = HttpClient.any.call(http_method, url, body)
+  with_deadline(timeout: 3) {
+    @resp = HttpClient.any.call(http_method, url, body)
+  }
 end
 
 step "response status should be :http_status" do |http_status|

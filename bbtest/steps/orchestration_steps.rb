@@ -60,13 +60,11 @@ step ":container :version is started with" do |container, version, label, params
   my_id = %x(cat /etc/hostname).strip
   simplename = container.split("/")[-1]
   args = [
-    "docker",
-    "run",
-    "-d",
+    "/usr/bin/docker", "run", "-d",
+    "-h", label,
     "--net=#{prefix}_default",
     "--volumes-from=#{my_id}",
     "--log-driver=json-file",
-    "-h #{label}",
     "--net-alias=#{label}",
     "--name=#{label}",
     "--privileged"

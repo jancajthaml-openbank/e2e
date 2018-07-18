@@ -40,7 +40,7 @@ perf:
 	@(docker rm -f $$(docker ps -aq) 2> /dev/null || :) &> /dev/null
 	@echo "[info] running"
 	@cd perf && docker build -t e2e_perf .
-	@LOG_LEVEL=DEBUG ./perf/performance
+	@LOG_LEVEL=INFO ./perf/performance
 	@echo "[info] cleaning"
 	@(docker rm -f $$(docker ps -aq) 2> /dev/null || :) &> /dev/null
 

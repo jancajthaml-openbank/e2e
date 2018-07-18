@@ -1,80 +1,146 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import api
-from constants import debug, error, info
-
 import sys
-import os
 
-from stress import StressTest
+from functools import partial
+from utils import debug, warn, info, interrupt_stdout, clear_dir
+from metrics_aggregator import MetricsAggregator
+from containers_manager import ContainersManager
+from integration.integration import Integration
+from steps import Steps
+import traceback
+from async.pool import Pool
+
+from async.monkey_patch import patch_thread_join
+patch_thread_join()
+
+class metrics():
+
+  def __init__(self, label):
+    self.__label = label
+    self.__metrics = MetricsAggregator("/opt/metrics")
+    self.__ready = False
+    self.__fn = lambda *args: None
+
+  def __get__(self, instance, *args):
+    return partial(self.__call__, instance)
+
+  def __call__(self, *args, **kwargs):
+    if not self.__ready:
+      self.__fn = args[0]
+      self.__ready = True
+      return self
+
+    with self:
+      return self.__fn(*args, **kwargs)
+
+  def __enter__(self):
+    self.__metrics.start()
+
+  def __exit__(self, *args):
+    self.__metrics.stop()
+    self.__metrics.join()
+    self.__metrics.persist(self.__label)
 
 def main():
+  debug("starting")
 
-  containers = None
+  debug("asserting empty journal, logs and metrics")
+
+  # fixme in parallel please
+  clear_dir("/data")
+  clear_dir("/logs")
+  clear_dir("/opt/metrics")
+
+  manager = ContainersManager()
+  integration = Integration(manager)
+
+  def eventually_ready():
+    def one_ready(node):
+      if not node.is_healthy:
+        raise RuntimeError('Health check of {0} failed. Aborting test'.format(node))
+
+    p = Pool()
+
+    debug("waiting until everyone is ready")
+    for container, nodes in manager.items():
+      for node in nodes:
+        p.enqueue(node)
+
+    p.run()
+    p.join()
 
   try:
-    import env
+    # fixme in parallel please :/
 
-    # fixme delete previous journal
+    # fixme when spawning wall and vault provide parameter if it should run in memory on be persistant
 
-    info("discovering containers")
-    containers = env.discover_containers()
-    if not containers:
-      error('no containers found')
-      sys.exit(1)
-    else:
-      for container, images in containers.items():
-        info("found {0}({1}x)".format(container, len(images)))
+    # with memory boundaries we could test long running (several days running) tests and determine failures
 
-    # fixme add timeout
-    debug("waiting until services are UP")
-    api.ping()
+    debug("spawning components")
+    manager.spawn_lake()
+
+    for _ in range(2):
+      manager.spawn_vault()
+
+    for _ in range(1):
+      manager.spawn_wall()
+
+    for container, images in manager.items():
+        info("provisioned {0}({1}x)".format(container, len(images)))
+
+    eventually_ready()
 
     info("start tests")
-    st = StressTest()
 
-    debug("reference test of http API")
-    st.stress_run_health_reference()
+    steps = Steps(integration)
 
-    #debug("random accounts")
-    #st.stress_run_accounts_only()
+    with metrics('random_uniform'):
+      steps.random_uniform_accounts(100)
+      steps.random_uniform_transactions()
+      steps.check_balances()
+      manager.reset()
 
-    #if False:
-    debug("random accounts from scratch with random transactions")
-    st.stress_run()
+    eventually_ready()
 
-    debug("reset vault / verify rehydration")
-    env.reset_dockers({
-      'vault': containers['vault']
-    })
+    with metrics('accounts_10'):
+      for node in manager['vault']:
+        steps.random_targeted_accounts(node.tenant, 10)
+      manager.reset()
 
-    api.ping()
-    st.check_balances()
+    eventually_ready()
 
-    #debug("TDB audit from database")
-    # fixme audit here
-    sys.exit(0)
+    with metrics('accounts_100'):
+      for node in manager['vault']:
+        steps.random_targeted_accounts(node.tenant, 100)
+      manager.reset()
+
+    eventually_ready()
+
+    with metrics('accounts_1000'):
+      for node in manager['vault']:
+        steps.random_targeted_accounts(node.tenant, 1000)
+      manager.reset()
+
+    eventually_ready()
+
+    # integrity checks
+    steps.check_balances()
+    steps.balance_cancel_out_check()
+
+    debug("end tests")
 
   except KeyboardInterrupt:
-    print(" detected, exiting")
+    interrupt_stdout()
+    warn('Interrupt')
+  except Exception as ex:
+    print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
   finally:
-    #if containers:
-      # fixme trap keyboard interupt here
-      #info("truncate cassandra tables")
-      #env.clean_cassandra(containers['cassandra'])
+    debug("gracefull teardown components")
+    manager.teardown()
 
-      #info("truncate mongo tables")
-      #env.clean_mongo(containers['mongo'])
-    pass
-
-    #info("dumping logs")
-    #env.print_logs()
-
-    #info("stop system")
-    #env.stop_system()
+    debug("terminated")
 
 if __name__ == "__main__":
-  debug("starting tests")
   main()
-  debug("ending tests")

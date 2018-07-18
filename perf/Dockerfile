@@ -14,10 +14,9 @@ RUN apk update && \
       openssh && \
     pip install --upgrade pip && \
     pip install \
-    gevent==1.1rc3 \
-		requests \
+		requests==2.19.1 \
     ujson==1.35 \
-    grequests==0.3.0
+    inotify_simple
 
 COPY . /etc/perf/
 WORKDIR /etc/perf

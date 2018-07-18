@@ -8,7 +8,9 @@ step "snapshot :path should be" do |path, expectation|
   abspath = "/data/#{$tenant_id}#{path}"
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
-  contents = File.open(abspath, 'rb').read
+  contents = File.open(abspath, 'rb') { |f|
+    f.read()
+  }
 
   version = contents[0..4].unpack('L')[0]
   lines = contents[4..-1].split("\n").map(&:strip)
@@ -35,7 +37,9 @@ step "meta data :path should be" do |path, expectation|
   abspath = "/data/#{$tenant_id}#{path}"
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
-  contents = File.open(abspath, 'r').read
+  contents = File.open(abspath, 'r') { |f|
+    f.read()
+  }
   balance_check = contents[0] != 'f'
   currency = contents[1..3]
   account_name = contents[4..-1]
@@ -51,9 +55,10 @@ step "transaction :path should be" do |path, expectation|
   abspath = "/data/#{$tenant_id}#{path}"
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
-  lines = File.open(abspath, 'r').read.split("\n")
+  lines = File.open(abspath, 'r') { |f|
+    f.read().split("\n")
+  }
 
-  id = lines[0]
   now = DateTime.now
 
   transactions = []
