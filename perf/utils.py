@@ -25,9 +25,11 @@ this.__progress_running = False
 
 termios.tcsetattr(fd, termios.TCSADRAIN, new)
 
+__TTY = sys.stdout.isatty() and int(os.environ.get('NO_TTY', 0)) == 1
+
 def interrupt_stdout() -> None:
   termios.tcsetattr(fd, termios.TCSADRAIN, old)
-  if this.__progress_running and sys.stdout.isatty():
+  if this.__progress_running and __TTY:
     sys.stdout.write('\n')
     sys.stdout.flush()
   this.__progress_running = False
@@ -49,7 +51,7 @@ def info(msg) -> None:
   sys.stdout.flush()
 
 def progress(msg) -> None:
-  if not sys.stdout.isatty():
+  if not __TTY:
     return
   this.__progress_running = True
   sys.stdout.write('\033[94m        | {0}\r'.format(msg))
