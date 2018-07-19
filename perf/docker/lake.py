@@ -8,7 +8,7 @@ class Lake(Container):
   @property
   def hostname(self) -> str:
     return self._hostname
-  
+
   @property
   def container(self) -> str:
     return self._container
