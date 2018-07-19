@@ -17,7 +17,7 @@ workflows:
   rolling_contract:
     triggers:
       - schedule:
-          cron: "0,5,10,15,20,25,30,35,40,45,50,55 * * * *"
+          cron: "5,20,35,50 * * * *"
           filters:
             branches:
               only:
@@ -28,7 +28,7 @@ workflows:
   rolling_performance:
     triggers:
       - schedule:
-          cron: "0,15,30,45 * * * *"
+          cron: "10,40 * * * *"
           filters:
             branches:
               only:
@@ -66,8 +66,6 @@ jobs:
               exit 1
             fi
 
-            ls -1 ${METRICS_PATH}
-
             git config --global user.email "jan.cajthaml@gmail.com"
             git config --global user.name "CircleCI e2e rolling update"
 
@@ -78,15 +76,27 @@ jobs:
             fi
 
             cp -v ${METRICS_PATH}/all* health-check/reports/
-            ls -1 health-check/reports/
 
             cd health-check
-            python generate_metrics_report.py > README.md
+
+            pyenv global 3.5.2
+
+            pip3 install --user -r requirements.txt
+
+            mkdir -p tmp
+            find tmp -type f -exec rm '{}' \;
+            find . -type f -name \*.png -exec rm '{}' \;
+
+            largest=$(find reports -type f -exec ls -al {} \; | sort -nr -k5 | head -n 1 | awk '{print $NF}')
+
+            cp $largest tmp/$(basename $largest)
+
+            python3 generate_metrics_report.py > README.md
 
             git checkout --orphan rolling
 
             git add -A
-            git commit -am "circleci e2e rolling update of reports"
+            git commit -am "auto-commit performance result update"
             git push -f origin rolling
             git branch -D master
             git branch -m master
@@ -136,6 +146,7 @@ jobs:
           command: |
             docker run \
               -t \
+              -e NO_TTY=1 \
               -e LOG_LEVEL=ERROR \
               -e VERSION=master \
               -v /var/run/docker.sock:/var/run/docker.sock \

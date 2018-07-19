@@ -104,13 +104,6 @@ def main():
 
     eventually_ready()
 
-    with metrics('accounts_10'):
-      for node in manager['vault']:
-        steps.random_targeted_accounts(node.tenant, 10)
-      manager.reset()
-
-    eventually_ready()
-
     with metrics('accounts_100'):
       for node in manager['vault']:
         steps.random_targeted_accounts(node.tenant, 100)
@@ -121,6 +114,13 @@ def main():
     with metrics('accounts_1000'):
       for node in manager['vault']:
         steps.random_targeted_accounts(node.tenant, 1000)
+      manager.reset()
+
+    eventually_ready()
+
+    with metrics('accounts_10000'):
+      for node in manager['vault']:
+        steps.random_targeted_accounts(node.tenant, 10000)
       manager.reset()
 
     eventually_ready()
