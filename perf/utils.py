@@ -4,8 +4,6 @@
 import collections
 import threading
 import sys
-import subprocess
-import time
 import os
 import stat
 import shutil

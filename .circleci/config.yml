@@ -85,13 +85,13 @@ jobs:
 
             mkdir -p tmp
             find tmp -type f -exec rm '{}' \;
-            find . -type f -name \*.png -exec rm '{}' \;
+            find . -type f -name \*.svg -exec rm '{}' \;
 
             largest=$(find reports -type f -exec ls -al {} \; | sort -nr -k5 | head -n 1 | awk '{print $NF}')
 
             cp $largest tmp/$(basename $largest)
 
-            python3 generate_metrics_report.py > README.md
+            python3 generate_metrics_report.py
 
             git checkout --orphan rolling
 

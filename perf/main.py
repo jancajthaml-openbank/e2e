@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import sys
-
 from functools import partial
 from utils import debug, warn, info, interrupt_stdout, clear_dir
 from metrics_aggregator import MetricsAggregator
@@ -64,9 +62,9 @@ def main():
     p = Pool()
 
     debug("waiting until everyone is ready")
-    for container, nodes in manager.items():
+    for nodes in manager.values():
       for node in nodes:
-        p.enqueue(node)
+        p.enqueue(one_ready, node)
 
     p.run()
     p.join()

@@ -85,6 +85,9 @@ step "transaction state :path should be" do |path, expectation|
   abspath = "/data/#{$tenant_id}#{path}"
   raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
 
-  contents = File.open(abspath, 'r').read
+  contents = File.open(abspath, 'r') { |f|
+    f.read()
+  }
+
   expect(contents).to eq(expectation.strip)
 end

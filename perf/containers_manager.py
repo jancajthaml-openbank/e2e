@@ -29,6 +29,9 @@ class ContainersManager(object):
   def items(self) -> list:
     return self.containers.items()
 
+  def values(self) -> list:
+    return self.containers.values()
+
   def reset(self, key=None) -> None:
     if not key:
       for name in list(self.containers):

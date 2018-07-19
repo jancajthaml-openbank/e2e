@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import subprocess
-import sys
 from queue import Queue
 from threading import Thread, Event
 from time import sleep

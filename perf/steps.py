@@ -35,7 +35,7 @@ class Steps:
       progress('{0} [ passed: {1}, failed: {2} ]'.format(processed, passed, failed))
 
     tenants = self.integration.tenants
-      
+
     if not number_of_accounts:
       min_accounts = max(len(tenants) * 10, 100)
       max_accounts = min_accounts * 4
@@ -44,7 +44,7 @@ class Steps:
     prepared = []
     active = True
     info("preparing creation of {0} account for tenant {1}".format(number_of_accounts, tenant_name))
-    for x in range(number_of_accounts):
+    for _ in range(number_of_accounts):
       prepared.append(self.integration.prepare_create_account(tenant_name, "s_" + str(self.__acc_counter.inc()), active))
       active = not active
 
@@ -147,7 +147,7 @@ class Steps:
     partitions = list(partitions)
 
     prepared = []
-    for tenant_name, accounts in self.integration.get_accounts().items():
+    for tenant_name in self.integration.get_accounts().keys():
       will_generate_transactions = partitions.pop()
       credit_accounts = self.integration.get_credit_accounts(tenant_name)
       debit_account =  self.integration.get_debit_accounts(tenant_name)
