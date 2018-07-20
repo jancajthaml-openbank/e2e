@@ -23,7 +23,7 @@ this.__progress_running = False
 
 termios.tcsetattr(fd, termios.TCSADRAIN, new)
 
-__TTY = sys.stdout.isatty() and int(os.environ.get('NO_TTY', 0)) == 1
+__TTY = sys.stdout.isatty() and (int(os.environ.get('NO_TTY', 0)) == 0)
 
 def interrupt_stdout() -> None:
   termios.tcsetattr(fd, termios.TCSADRAIN, old)
