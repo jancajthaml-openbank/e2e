@@ -26,7 +26,7 @@ class HttpClient(object):
     session.mount('https://', adapter)
     self.session = session
 
-  @with_deadline(5*60)
+  @with_deadline(10*60)
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     ok = Counter()
     fails = Counter()
@@ -68,7 +68,7 @@ class HttpClient(object):
 
     return ok.value, fails.value, time.time() - start
 
-  @with_deadline(5*60)
+  @with_deadline(10*60)
   def get(self, reqs, pre_process, on_progress):
     ok = Counter()
     fails = Counter()
