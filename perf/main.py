@@ -79,7 +79,7 @@ def main():
     debug("spawning components")
     manager.spawn_lake()
 
-    for _ in range(3):
+    for _ in range(4):
       manager.spawn_vault()
 
     for _ in range(1):
@@ -116,9 +116,9 @@ def main():
 
     eventually_ready()
 
-    with metrics('accounts_50000'):
+    with metrics('accounts_5000'):
       for node in manager['vault']:
-        steps.random_targeted_accounts(node.tenant, 50000)
+        steps.random_targeted_accounts(node.tenant, 5000)
       manager.reset()
 
     eventually_ready()
