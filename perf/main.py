@@ -79,7 +79,7 @@ def main():
     debug("spawning components")
     manager.spawn_lake()
 
-    number_of_vaults = 4
+    number_of_vaults = 3
     for _ in range(number_of_vaults):
       manager.spawn_vault()
 
@@ -96,26 +96,40 @@ def main():
     steps = Steps(integration)
 
     with metrics('random_uniform'):
+      integration.reset()
       steps.random_uniform_accounts(100)
       steps.random_uniform_transactions()
       steps.check_balances()
-      manager.reset()
+      manager.teardown('vault')
 
-    eventually_ready()
+    for _ in range(number_of_vaults):
+      manager.spawn_vault()
 
     with metrics('s1_new_account_latencies_5000'):
+      integration.reset()
       for node in manager['vault']:
         steps.random_targeted_accounts(node.tenant, 5000)
-      manager.reset()
+      manager.teardown('vault')
+
+    for _ in range(number_of_vaults):
+      manager.spawn_vault()
 
     eventually_ready()
+    integration.reset()
 
-    with metrics('s2_get_account_latencies_{0}'.format(5000*number_of_vaults)):
-      steps.random_uniform_accounts(5000*number_of_vaults)
-      steps.check_balances()
-      manager.reset()
+    for step in range(100, 1000, 100):
+      with metrics('s2_get_account_latencies_{0}'.format(step*number_of_vaults)):
+        steps.random_uniform_accounts(step*number_of_vaults)
+        manager.reset()
+        eventually_ready()
+        steps.check_balances()
+        manager.reset('wall')
+      eventually_ready()
 
-    eventually_ready()
+    #for _ in range(number_of_vaults):
+    #  manager.spawn_vault()
+
+    #eventually_ready()
 
     # fixme implement targeted transactions with transfer param
 
@@ -123,8 +137,8 @@ def main():
     # maybe event is needed
 
     # integrity checks
-    steps.check_balances()
-    steps.balance_cancel_out_check()
+    #steps.check_balances()
+    #steps.balance_cancel_out_check()
 
     debug("end tests")
 
