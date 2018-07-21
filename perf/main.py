@@ -100,31 +100,31 @@ def main():
       steps.random_uniform_accounts(100)
       steps.random_uniform_transactions()
       steps.check_balances()
-      manager.teardown('vault')
+      #manager.teardown('vault')
 
     for _ in range(number_of_vaults):
       manager.spawn_vault()
 
-    with metrics('s1_new_account_latencies_5000'):
-      integration.reset()
-      for node in manager['vault']:
-        steps.random_targeted_accounts(node.tenant, 5000)
-      manager.teardown('vault')
-
-    for _ in range(number_of_vaults):
-      manager.spawn_vault()
-
-    eventually_ready()
     integration.reset()
+    eventually_ready()
 
-    for step in range(100, 1000, 100):
-      with metrics('s2_get_account_latencies_{0}'.format(step*number_of_vaults)):
-        steps.random_uniform_accounts(step*number_of_vaults)
+    with metrics('s1_new_account_latencies_1000'):
+      for node in manager['vault']:
+        steps.random_targeted_accounts(node.tenant, 1000)
+      manager.teardown('vault')
+
+    manager.spawn_vault()
+    integration.reset()
+    eventually_ready()
+
+    for step in range(1,11,1):
+      with metrics('s2_get_account_latencies_{0}'.format(100*step)):
+        steps.random_uniform_accounts(100)
         manager.reset()
         eventually_ready()
         steps.check_balances()
         manager.reset('wall')
-      eventually_ready()
+        eventually_ready()
 
     #for _ in range(number_of_vaults):
     #  manager.spawn_vault()

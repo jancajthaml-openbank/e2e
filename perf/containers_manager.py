@@ -43,7 +43,7 @@ class ContainersManager(object):
       node.restart()
 
   def teardown(self, key=None) -> None:
-    if not key:
+    if key:
       del self[key]
     else:
       for name in list(self.containers):
