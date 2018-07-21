@@ -103,15 +103,15 @@ def main():
 
     eventually_ready()
 
-    with metrics('s1_new_account_latencies_20000'):
+    with metrics('s1_new_account_latencies_5000'):
       for node in manager['vault']:
-        steps.random_targeted_accounts(node.tenant, 20000)
+        steps.random_targeted_accounts(node.tenant, 5000)
       manager.reset()
 
     eventually_ready()
 
-    with metrics('s2_get_account_latencies_{0}'.format(20000*number_of_vaults)):
-      steps.random_uniform_accounts(20000*number_of_vaults)
+    with metrics('s2_get_account_latencies_{0}'.format(5000*number_of_vaults)):
+      steps.random_uniform_accounts(5000*number_of_vaults)
       steps.check_balances()
       manager.reset()
 
