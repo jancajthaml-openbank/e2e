@@ -141,7 +141,7 @@ jobs:
             docker run \
               -t \
               -e NO_TTY=1 \
-              -e LOG_LEVEL=ERROR \
+              -e LOG_LEVEL=INFO \
               -e VERSION=master \
               -v /var/run/docker.sock:/var/run/docker.sock \
               -v ${LOGS_PATH}:/logs \

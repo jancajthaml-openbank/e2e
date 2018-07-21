@@ -14,6 +14,10 @@ class Integration(object):
     self.__accounts = OrderedDict()
     self.__lock = Lock()
 
+  def reset(self):
+    with self.__lock:
+      self.__accounts = OrderedDict()
+
   def charge_transactions(self, tenant, transaction, transfers) -> None:
     for transfer in transfers:
       amount = transfer['amount']
