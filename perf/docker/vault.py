@@ -33,7 +33,7 @@ class Vault(Container):
       "-e", "VAULT_STORAGE=/data",
       "-e", "VAULT_LOG_LEVEL={0}".format(Container.get_log_level()),
       "-e", "VAULT_JOURNAL_SATURATION=10",
-      "-e", "VAULT_SNAPSHOT_SCANINTERVAL=1s",
+      "-e", "VAULT_SNAPSHOT_SCANINTERVAL=1h",
       "-e", "VAULT_TENANT={0}".format(self.tenant),
       "-e", "VAULT_METRICS_REFRESHRATE=1s",
       "-e", "VAULT_METRICS_OUTPUT=/opt/metrics/{0}.json".format(self.label),

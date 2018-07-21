@@ -79,7 +79,8 @@ def main():
     debug("spawning components")
     manager.spawn_lake()
 
-    for _ in range(4):
+    number_of_vaults = 4
+    for _ in range(number_of_vaults):
       manager.spawn_vault()
 
     for _ in range(1):
@@ -102,26 +103,24 @@ def main():
 
     eventually_ready()
 
-    with metrics('accounts_100'):
+    with metrics('s1_new_account_latencies_20000'):
       for node in manager['vault']:
-        steps.random_targeted_accounts(node.tenant, 100)
+        steps.random_targeted_accounts(node.tenant, 20000)
       manager.reset()
 
     eventually_ready()
 
-    with metrics('accounts_1000'):
-      for node in manager['vault']:
-        steps.random_targeted_accounts(node.tenant, 1000)
+    with metrics('s2_get_account_latencies_{0}'.format(20000*number_of_vaults)):
+      steps.random_uniform_accounts(20000*number_of_vaults)
+      steps.check_balances()
       manager.reset()
 
     eventually_ready()
 
-    with metrics('accounts_5000'):
-      for node in manager['vault']:
-        steps.random_targeted_accounts(node.tenant, 5000)
-      manager.reset()
+    # fixme implement targeted transactions with transfer param
 
-    eventually_ready()
+    # fixme implement snapshot saturation scenario, implement step that waits for snapshot update
+    # maybe event is needed
 
     # integrity checks
     steps.check_balances()
