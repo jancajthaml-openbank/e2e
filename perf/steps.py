@@ -164,7 +164,6 @@ class Steps:
     else:
       took('all passed                                                      ', duration, number_of_transactions, success)
 
-
     return True
 
   def check_balances(self):

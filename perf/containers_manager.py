@@ -42,9 +42,12 @@ class ContainersManager(object):
     for node in self[key]:
       node.restart()
 
-  def teardown(self) -> None:
-    for name in list(self.containers):
-      del self[name]
+  def teardown(self, key=None) -> None:
+    if key:
+      del self[key]
+    else:
+      for name in list(self.containers):
+        del self[name]
 
   def spawn_vault(self, *args) -> None:
     instance = Vault(*args)
