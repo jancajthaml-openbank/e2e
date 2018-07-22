@@ -76,45 +76,36 @@ def main():
 
     # with memory boundaries we could test long running (several days running) tests and determine failures
 
-    debug("spawning components")
     manager.spawn_lake()
+    manager.spawn_wall()
 
-    number_of_vaults = 3
-    for _ in range(number_of_vaults):
-      manager.spawn_vault()
-
-    for _ in range(1):
-      manager.spawn_wall()
-
-    for container, images in manager.items():
-        info("provisioned {0}({1}x)".format(container, len(images)))
-
-    eventually_ready()
 
     info("start tests")
 
     steps = Steps(integration)
 
-    with metrics('random_uniform'):
-      integration.reset()
-      steps.random_uniform_accounts(100)
-      steps.random_uniform_transactions()
-      steps.check_balances()
-      #manager.teardown('vault')
-
-    for _ in range(number_of_vaults):
+    for _ in range(4):
       manager.spawn_vault()
 
     integration.reset()
+
+    for container, images in manager.items():
+      info("provisioned {0}({1}x)".format(container, len(images)))
+
     eventually_ready()
 
-    with metrics('s1_new_account_latencies_1000'):
+    with metrics('s1_new_account_latencies_4000'):
       for node in manager['vault']:
         steps.random_targeted_accounts(node.tenant, 1000)
       manager.teardown('vault')
 
     manager.spawn_vault()
+
     integration.reset()
+
+    for container, images in manager.items():
+      info("provisioned {0}({1}x)".format(container, len(images)))
+
     eventually_ready()
 
     for step in range(1,11,1):
