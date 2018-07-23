@@ -10,6 +10,7 @@ import shutil
 import termios
 import copy
 import signal
+import time
 from functools import partial
 
 this = sys.modules[__name__]
@@ -70,46 +71,45 @@ def warn(msg) -> None:
   sys.stdout.write('\033[93m   warn | {0}\033[0m\n'.format(msg))
   sys.stdout.flush()
 
-def took(msg, elapsed, units, cb = info) -> None:
-  this.__progress_running = False
-  if not units:
-    units = 1
 
-  # fixme measure average per unit
+class timeit():
 
-  def time_to_s(e):
-    h = e // 3600 % 24
-    m = e // 60 % 60
-    s = int(e % 60)
-    ms = int((e % 60) * 1000) - (s * 1000)
-    ys = int((e % 60) * 1000000) - (ms * 1000)
+  def __init__(self, label):
+    self.__label = label
 
-    if h:
-      c = '%01d hour %01d min %01d sec %01d ms ' % (h, m, s, ms)
-    elif m:
-      c = '%01d min %01d sec %01d ms ' % (m, s, ms)
-    elif s:
-      c = '%01d sec %01d ms ' % (s, ms)
-    elif ms:
-      c = '%01d ms' % ms
-    else:
-      c = '%3.4f ys' % ys
+  def __call__(self, f, *args, **kwargs):
+    self.__enter__()
+    result = f(*args, **kwargs)
+    self.__exit__()
+    return result
 
-    return c
+  def __enter__(self):
+    self.ts = time.time()
 
-  if msg == '':
-    if units == 1:
-      sys.stdout.write('\033[90m          {0}\033[0m\n'.format(time_to_s(elapsed)))
-    else:
-      sys.stdout.write('\033[90m          {0} ... {1} per unit\033[0m\n'.format(time_to_s(elapsed), time_to_s(elapsed / units)))
-  else:
-    cb(msg)
-    if units == 1:
-      sys.stdout.write('\033[90m          {0}\033[0m\n'.format(time_to_s(elapsed)))
-    else:
-      sys.stdout.write('\033[90m          {0} ... {1} per unit\033[0m\n'.format(time_to_s(elapsed), time_to_s(elapsed / units)))
+  def __exit__(self, *args):
+    te = time.time()
+    sys.stdout.write('\033[90m          {0} took {1}\033[0m\n'.format(self.__label, human_readable_duration((te - self.ts)*1e3)))
+    sys.stdout.flush()
 
-  sys.stdout.flush()
+def human_readable_duration(ms):
+  if ms < 1:
+    return "0 ms"
+
+  s, ms = divmod(ms, 1e3)
+  m, s = divmod(s, 60)
+  h, m = divmod(m, 60)
+
+  h = int(h)
+  m = int(m)
+  s = int(s)
+  ms = int(ms)
+
+  return ' '.join(u'{h}{m}{s}{ms}'.format(
+    h=str(h) + " h " if h > 0 else '',
+    m=str(m) + " m " if m > 0 else '',
+    s=str(s) + " s " if s > 0 else '',
+    ms=str(ms) + " ms " if ms > 0 else ''
+  ).strip().split(" ")[:4])
 
 class with_deadline():
 

@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 from functools import partial
-from utils import debug, warn, info, interrupt_stdout, clear_dir
+from utils import debug, warn, info, interrupt_stdout, clear_dir, timeit
 from metrics_aggregator import MetricsAggregator
 from containers_manager import ContainersManager
 from integration.integration import Integration
@@ -41,6 +41,23 @@ class metrics():
     self.__metrics.join()
     self.__metrics.persist(self.__label)
 
+def eventually_ready(manager):
+  debug("waiting until everyone is ready")
+
+  with timeit('eventually_ready'):
+    def one_ready(node):
+      if not node.is_healthy:
+        raise RuntimeError('Health check of {0} failed. Aborting test'.format(node))
+
+    p = Pool()
+
+    for nodes in manager.values():
+      for node in nodes:
+        p.enqueue(one_ready, node)
+
+    p.run()
+    p.join()
+
 def main():
   debug("starting")
 
@@ -53,21 +70,7 @@ def main():
 
   manager = ContainersManager()
   integration = Integration(manager)
-
-  def eventually_ready():
-    def one_ready(node):
-      if not node.is_healthy:
-        raise RuntimeError('Health check of {0} failed. Aborting test'.format(node))
-
-    p = Pool()
-
-    debug("waiting until everyone is ready")
-    for nodes in manager.values():
-      for node in nodes:
-        p.enqueue(one_ready, node)
-
-    p.run()
-    p.join()
+  steps = Steps(integration)
 
   try:
     # fixme in parallel please :/
@@ -77,59 +80,57 @@ def main():
     # with memory boundaries we could test long running (several days running) tests and determine failures
 
     manager.spawn_lake()
-    manager.spawn_wall()
-
 
     info("start tests")
 
-    steps = Steps(integration)
+    ############################################################################
 
-    for _ in range(4):
+    with timeit('new accounts scenario'):
+      manager.spawn_wall()
+
+      for _ in range(4):
+        manager.spawn_vault()
+
+      integration.reset()
+
+      for container, images in manager.items():
+        info("provisioned {0}({1}x)".format(container, len(images)))
+
+      eventually_ready(manager)
+
+      with metrics('s1_new_account_latencies_20000'):
+        steps.random_uniform_accounts(20000)
+        manager.teardown('vault')
+
+    ############################################################################
+
+    with timeit('get accounts scenario'):
       manager.spawn_vault()
+      manager.reset('wall')
+      integration.reset()
 
-    integration.reset()
+      for container, images in manager.items():
+        info("provisioned {0}({1}x)".format(container, len(images)))
 
-    for container, images in manager.items():
-      info("provisioned {0}({1}x)".format(container, len(images)))
+      eventually_ready(manager)
 
-    eventually_ready()
+      absolute_total = 2*1e3
+      splits = 20
+      chunk = int(absolute_total/splits)
+      absolute_total = splits*chunk
+      currents = chunk
 
-    with metrics('s1_new_account_latencies_4000'):
-      for node in manager['vault']:
-        steps.random_targeted_accounts(node.tenant, 1000)
-      manager.teardown('vault')
+      while currents <= absolute_total:
+        with metrics('s2_get_account_latencies_{0}'.format(currents)):
+          steps.random_uniform_accounts(chunk)
+          manager.reset('vault')
+          #eventually_ready(manager)
+          steps.check_balances()
+          manager.reset()
+          #eventually_ready(manager)
+        currents += chunk
 
-    manager.spawn_vault()
-
-    integration.reset()
-
-    for container, images in manager.items():
-      info("provisioned {0}({1}x)".format(container, len(images)))
-
-    eventually_ready()
-
-    for step in range(1,11,1):
-      with metrics('s2_get_account_latencies_{0}'.format(100*step)):
-        steps.random_uniform_accounts(100)
-        manager.reset()
-        eventually_ready()
-        steps.check_balances()
-        manager.reset('wall')
-        eventually_ready()
-
-    #for _ in range(number_of_vaults):
-    #  manager.spawn_vault()
-
-    #eventually_ready()
-
-    # fixme implement targeted transactions with transfer param
-
-    # fixme implement snapshot saturation scenario, implement step that waits for snapshot update
-    # maybe event is needed
-
-    # integrity checks
-    #steps.check_balances()
-    #steps.balance_cancel_out_check()
+    ############################################################################
 
     debug("end tests")
 
@@ -145,4 +146,5 @@ def main():
     debug("terminated")
 
 if __name__ == "__main__":
-  main()
+  with timeit('test run'):
+    main()
