@@ -84,6 +84,7 @@ jobs:
             pip3 install --user -r requirements.txt
 
             find . -type f -name \*.svg -exec rm '{}' \;
+            find . -type f -name \*.png -exec rm '{}' \;
 
             python3 generate_metrics_report.py
 
