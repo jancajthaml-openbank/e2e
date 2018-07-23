@@ -9,7 +9,6 @@ from integration.integration import Integration
 from steps import Steps
 import traceback
 from async.pool import Pool
-import time
 
 from async.monkey_patch import patch_thread_join
 patch_thread_join()

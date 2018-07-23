@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import time
 
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -61,12 +60,10 @@ class HttpClient(object):
     for item in reqs:
       p.enqueue(process_one, *item)
 
-    start = time.time()
-
     p.run()
     p.join()
 
-    return ok.value, fails.value, time.time() - start
+    return ok.value, fails.value
 
   @with_deadline(10*60)
   def get(self, reqs, pre_process, on_progress):
@@ -103,9 +100,7 @@ class HttpClient(object):
     for item in reqs:
       p.enqueue(process_one, *item)
 
-    start = time.time()
-
     p.run()
     p.join()
 
-    return ok.value, fails.value, time.time() - start
+    return ok.value, fails.value

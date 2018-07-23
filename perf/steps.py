@@ -5,7 +5,7 @@ import random
 secure_random = random.SystemRandom()
 
 import time
-from utils import debug, info, progress, warn, success, Counter, timeit
+from utils import info, progress, warn, success, Counter, timeit
 from http_client import HttpClient
 
 class Steps:
@@ -50,7 +50,7 @@ class Steps:
         active = not active
 
       client = HttpClient()
-      passed, failed, duration = client.post(prepared, callback, on_progress)
+      passed, failed = client.post(prepared, callback, on_progress)
 
       if failed:
         warn('{0} accounts created, {1} failed                             '.format(passed, failed))
@@ -107,7 +107,7 @@ class Steps:
           active = not active
 
       client = HttpClient()
-      passed, failed, duration = client.post(prepared, callback, on_progress)
+      passed, failed = client.post(prepared, callback, on_progress)
 
       if failed:
         warn('{0} accounts created, {1} failed                             '.format(passed, failed))
@@ -160,7 +160,7 @@ class Steps:
         prepared.extend(self.integration.prepare_transaction(tenant_name, secure_random.randint(1, 10), credit_accounts, debit_account) for x in range(0, will_generate_transactions, 1))
 
       client = HttpClient()
-      passed, failed, duration = client.post(prepared, callback, on_progress)
+      passed, failed = client.post(prepared, callback, on_progress)
 
       if failed:
         warn('{0} transactions created, {1} failed                             '.format(passed, failed))
@@ -196,7 +196,7 @@ class Steps:
         progress('{0} [ passed: {1}, failed: {2} ]'.format(processed, passed, failed))
 
       client = HttpClient()
-      passed, failed, duration = client.get(prepared, callback, on_progress)
+      passed, failed = client.get(prepared, callback, on_progress)
 
       if failed:
         warn('{0} balance validated, {1} failed                             '.format(passed, failed))
