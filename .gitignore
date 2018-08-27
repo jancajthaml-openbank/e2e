@@ -1,7 +1,4 @@
 reports
-data
-logs
-journal
-metrics
-TODO.md
 npm-debug*
+__py__cache__*
+*.pyc

@@ -16,7 +16,6 @@ class Steps:
 
   def random_targeted_accounts(self, tenant_name, number_of_accounts=None):
     with timeit('random_targeted_accounts(_, {0}, {1})'.format(tenant_name, num_of_accounts)):
-      #debug("random targeted accounts to {0}".format(tenant_name))
 
       def callback(response, url, request, tenant):
         if response.status_code != 200:

@@ -8,8 +8,13 @@ workflows:
 
   commit:
     jobs:
-      - performance
-      - bbtest
+      - setup
+      - performance:
+          requires:
+            - setup
+      - bbtest:
+          requires:
+            - setup
       - report:
           requires:
             - performance
@@ -45,20 +50,36 @@ jobs:
 
   # -------------------------------------------------------------------------- #
 
-  report:
-
-    machine: true
-
-    environment:
-      - METRICS_PATH: /home/circleci/project/reports/metrics
-
-    working_directory: /home/circleci/project
-
+  setup:
+    docker:
+      - image: docker:17.09.0-ce-git
+        environment:
+          - LANG: C.UTF-8
     steps:
+      - checkout
+      - setup_remote_docker
+      - run: docker build -t openbankdev/e2e_candidate .
+      - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
+      - deploy:
+          name: Push dev docker images to DockerHUB
+          command: |
+            upload_to_docker_hub() {
+              docker tag ${1} "${1}:${2}"
+              docker push "${1}:${2}"
+            }
 
+            upload_to_docker_hub openbankdev/e2e_candidate latest
+
+  # -------------------------------------------------------------------------- #
+
+  report:
+    machine: true
+    environment:
+      - METRICS_PATH: /home/circleci/project/reports/perf_metrics
+    working_directory: /home/circleci/project
+    steps:
       - attach_workspace:
-          at: /home/circleci/project/reports
-
+          at: /home/circleci/project
       - run:
           name: Regenerate reports
           command: |
@@ -75,7 +96,7 @@ jobs:
               rm -rf health-check/reports/*
             fi
 
-            cp -v ${METRICS_PATH}/all* health-check/reports/
+            cp -v ${METRICS_PATH}/* health-check/reports/
 
             cd health-check
 
@@ -101,128 +122,59 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   performance:
-
     machine: true
-
     environment:
-      - LOGS_PATH: /home/circleci/project/logs
-      - METRICS_PATH: /home/circleci/project/metrics
-      - TENANT: performance
-      - MAX_PARALLELISM: 10
-
+      - LANG: C.UTF-8
+      - NO_TTY: 1
     working_directory: /home/circleci/project
-
     steps:
-
       - checkout
-
-      - run:
-          name: Fetch images for performance tests
-          command: |
-            pull() {
-              echo "pulling ${1}:${2}"
-              docker pull ${1}:${2}
-            }
-
-            pull openbank/vault master &
-            pull openbank/lake master &
-            pull openbank/wall master &
-            pull openbank/search master &
-            wait
-
-            cd perf && docker build -t e2e_perf .
-
-      - run: mkdir -p ${LOGS_PATH} ${METRICS_PATH}
-
-      - run: docker network create e2e_bridge
-
+      - run: docker build -t e2e/perf -f ./bbtest/Dockerfile .
       - run:
           name: Run performance tests
           command: |
-            docker run \
-              -t \
-              -e NO_TTY=1 \
-              -e LOG_LEVEL=INFO \
-              -e VERSION=master \
-              -v /var/run/docker.sock:/var/run/docker.sock \
-              -v ${LOGS_PATH}:/logs \
-              -v ${METRICS_PATH}:/opt/metrics \
-              --net=e2e_bridge \
-              e2e_perf
-
-      - run: (docker rm -f $(docker ps -aq) 2> /dev/null || :) &> /dev/null
-
-      - run: docker network rm e2e_bridge
-
+            docker exec -it $(\
+              docker run -d -ti \
+                -e NO_TTY=${NO_TTY} \
+                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                -v /home/circleci/project/perf:/opt/perf \
+                -v /home/circleci/project/reports:/reports \
+              e2e/perf \
+            ) python3 /opt/perf/main.py
       - store_artifacts:
-          path: /home/circleci/project/metrics
-          destination: metrics
-
-      - store_artifacts:
-          path: /home/circleci/project/logs
-          destination: logs
-
+          path: /home/circleci/project/reports
+          destination: reports
       - persist_to_workspace:
-          root: .
+          root: /home/circleci/project
           paths:
-            - metrics
-            - logs
+            - reports
 
   # -------------------------------------------------------------------------- #
 
   bbtest:
-
     machine: true
-
     working_directory: /home/circleci/project
-
     steps:
-
       - checkout
-
-      - run:
-          name: Prepare blackbox tests
-          command: |
-            pull() {
-              echo "pulling ${1}:${2}"
-              docker pull ${1}:${2}
-            }
-
-            pull openbank/vault master &
-            pull openbank/lake master &
-            pull openbank/wall master &
-            pull openbank/search master &
-            pull mongo latest &
-            wait
-
-            (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
-
-            docker-compose build bbtest
-
+      - run: docker build -t e2e/bbtest -f ./bbtest/Dockerfile .
       - run:
           name: Run blackbox tests
           command: |
-            mkdir -p /tmp
-            VERSION=master \
-            \
-            docker-compose run --rm bbtest
-
-      - run : if [ ! -d reports ] ; then exit 1 ; fi
-
+            docker exec -it $(\
+              docker run -d -ti \
+                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                -v /home/circleci/project/bbtest:/opt/bbtest \
+                -v /home/circleci/project/reports:/reports \
+              e2e/bbtest \
+            ) rspec --require /opt/bbtest/spec.rb \
+              --format documentation \
+              --format RspecJunitFormatter \
+              --out junit.xml \
+              --pattern /opt/bbtest/features/*.feature
       - store_test_results:
           path: /home/circleci/project/bbtest
-
       - store_artifacts:
           path: /home/circleci/project/reports
           destination: reports
-
-      - persist_to_workspace:
-          root: .
-          paths:
-            - reports
-
-      - run: (docker rm -f $(docker-compose ps -q) 2> /dev/null || :) &> /dev/null
-
-      - run: (docker rm -f $(docker ps -aqf "name=bbtest") || :) &> /dev/null
 
 # ---------------------------------------------------------------------------- #

@@ -1,7 +1,5 @@
 require 'turnip/rspec'
-require 'json'
 require 'thread'
-require 'timeout'
 
 Thread.abort_on_exception = true
 
@@ -11,20 +9,21 @@ RSpec.configure do |config|
 
   Dir.glob("./helpers/*_helper.rb") { |f| load f }
   config.include EventuallyHelper, :type => :feature
-  config.include DeadlineHelper, :type => :feature
+  #config.include Journal, :type => :feature
+  #config.include Docker, :type => :feature
   Dir.glob("./steps/*_steps.rb") { |f| load f, true }
+
+  $appliance = ApplianceHelper.new()
 
   config.before(:suite) do |_suite|
     print "[ suite starting ]\n"
 
-    ZMQHelper.start()
-
-    ["/data", "/logs", "/metrics", "/reports/logs", "/reports/metrics"].each { |folder|
-      FileUtils.mkdir_p folder
-      FileUtils.rm_rf Dir.glob("#{folder}/*")
+    ["/data", "/reports/logs", "/reports/metrics"].each { |folder|
+      %x(mkdir -p #{folder})
+      %x(rm -rf #{folder}/*)
     }
 
-    $tenant_id = nil
+    $appliance.start()
 
     print "[ suite started  ]\n"
   end
@@ -32,54 +31,7 @@ RSpec.configure do |config|
   config.after(:suite) do |_suite|
     print "\n[ suite ending   ]\n"
 
-    get_containers = lambda do |image|
-      containers = %x(docker ps -a --filter ancestor=#{image} --format "{{.ID}}")
-      return ($? == 0 ? containers.split("\n") : [])
-    end
-
-    teardown_binary_container = lambda do |container|
-      label = %x(docker inspect --format='{{.Name}}' #{container})
-      label = ($? == 0 ? label.strip : container)
-
-      %x(docker kill --signal="TERM" #{container} >/dev/null 2>&1 || :)
-      %x(docker logs #{container} > /logs/#{label}.log 2>&1)
-      %x(docker rm -f #{container} &>/dev/null || :)
-    end
-
-    teardown_service_container = lambda do |container|
-      label = %x(docker inspect -f '{{.Name}}' #{container})
-      label = ($? == 0 ? label.strip : container)
-
-      %x(docker exec #{container} systemctl stop lake.service 2>&1)
-      %x(docker exec #{container} journalctl -o short-precise -u lake.service --no-pager > /logs/#{label}.log 2>&1)
-      %x(docker rm -f #{container} &>/dev/null || :)
-    end
-
-    begin
-      Timeout.timeout(10) do
-        (
-          get_containers.call("openbank/wall:master") <<
-          get_containers.call("openbank/vault:master") <<
-          get_containers.call("openbank/search:master")
-        ).flatten.each { |container|
-          teardown_binary_container.call(container)
-        }
-
-        get_containers.call("openbank/lake:master").each { |container|
-          teardown_service_container.call(container)
-        }
-      end
-    rescue Timeout::Error
-      #
-    end
-
-    FileUtils.cp_r '/logs/.', '/reports/logs'
-    FileUtils.cp_r '/metrics/.', '/reports/metrics'
-    ["/data", "/logs", "/metrics"].each { |folder|
-      FileUtils.rm_rf Dir.glob("#{folder}/*")
-    }
-
-    ZMQHelper.stop()
+    $appliance.teardown()
 
     print "[ suite ended    ]"
   end

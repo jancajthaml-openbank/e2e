@@ -1,98 +1,102 @@
 Feature: Journal integrity test
 
-  Background: Appliance
-    Given lake is running
-    And   wall is running
-    And   tenant is JOURNAL
-    And   vault is running
+  Scenario: setup
+    Given appliance is running
+    And   vault JOURNAL is onbdoarded
 
   Scenario: Creation of account
-    When  pasive EUR account Euro is created
-    Then  snapshot /account/Euro/snapshot/0000000000 should be
+    When  pasive EUR account JOURNAL/Euro is created
+    Then snapshot JOURNAL/Euro version 0 should be
     """
-        {
-            "version": 0,
-            "balance": 0,
-            "promised": 0,
-            "promiseBuffer": []
-        }
-    """
-    And  meta data /account/Euro/meta should be
-    """
-        {
-            "accountName": "Euro",
-            "isBalanceCheck": false,
-            "currency": "EUR"
-        }
+      {
+        "version": 0,
+        "accountName": "Euro",
+        "isBalanceCheck": false,
+        "currency": "EUR",
+        "balance": "0",
+        "promised": "0",
+        "promiseBuffer": []
+      }
     """
 
-    When  active XRP account Ripple is created
-    Then  snapshot /account/Ripple/snapshot/0000000000 should be
+    When  active XRP account JOURNAL/Ripple is created
+    Then snapshot JOURNAL/Ripple version 0 should be
     """
-        {
-            "version": 0,
-            "balance": 0,
-            "promised": 0,
-            "promiseBuffer": []
-        }
-    """
-    And  meta data /account/Ripple/meta should be
-    """
-        {
-            "accountName": "Ripple",
-            "isBalanceCheck": true,
-            "currency": "XRP"
-        }
+      {
+        "version": 0,
+        "accountName": "Ripple",
+        "isBalanceCheck": true,
+        "currency": "XRP",
+        "balance": "0",
+        "promised": "0",
+        "promiseBuffer": []
+      }
     """
 
   Scenario: Creating of transaction comitted
-    When  pasive XXX account A is created
-    And   active XXX account B is created
-    And   123456789123313.000422901124 XXX is transfered from A to B with id xxx
-
-    Then  transaction /transaction/xxx should be
+    When  pasive XXX account JOURNAL/A is created
+    And   active XXX account JOURNAL/B is created
+    And   following transaction is created for tenant JOURNAL
     """
-        [
-            {
-                "accountFrom": "A",
-                "accountTo": "B",
-                "amount": "123456789123313.000422901124",
-                "currency": "XXX"
-            }
-        ]
+      {
+        "id": "xxx",
+        "transfers": [{
+          "credit": "B",
+          "debit": "A",
+          "amount": "123456789123313.000422901124",
+          "currency": "XXX"
+        }]
+      }
     """
-    And   transaction state /transaction_state/xxx should be
+    Then transaction xxx of JOURNAL should be
     """
-        committed
+      {
+        "id": "xxx",
+        "transfers": [{
+          "credit": "B",
+          "debit": "A",
+          "amount": "123456789123313.000422901124",
+          "currency": "XXX"
+        }]
+      }
     """
-    And directory /account/A/events/0000000000 should contain 2 files
-    And file /account/A/events/0000000000/0_-123456789123313.000422901124_xxx should exist
-    And file /account/A/events/0000000000/1_-123456789123313.000422901124_xxx should exist
-    And directory /account/B/events/0000000000 should contain 2 files
-    And file /account/B/events/0000000000/0_123456789123313.000422901124_xxx should exist
-    And file /account/B/events/0000000000/1_123456789123313.000422901124_xxx should exist
+    And transaction xxx state of JOURNAL should be committed
+    And directory /data/JOURNAL/account/A/events/0000000000 should contain 2 files
+    And file /data/JOURNAL/account/A/events/0000000000/0_-123456789123313.000422901124_xxx should exist
+    And file /data/JOURNAL/account/A/events/0000000000/1_-123456789123313.000422901124_xxx should exist
+    And directory /data/JOURNAL/account/B/events/0000000000 should contain 2 files
+    And file /data/JOURNAL/account/B/events/0000000000/0_123456789123313.000422901124_xxx should exist
+    And file /data/JOURNAL/account/B/events/0000000000/1_123456789123313.000422901124_xxx should exist
 
   Scenario: Creating of transaction rejected (insufficient funds)
-    When  pasive XXX account C is created
-    And   active XXX account D is created
-    And   123456789123313.000422901124 XXX is transfered from D to C with id yyy
-
-    Then  transaction /transaction/yyy should be
+    When pasive XXX account JOURNAL/C is created
+    And active XXX account JOURNAL/D is created
+    And following transaction is created for tenant JOURNAL
     """
-        [
-            {
-                "accountFrom": "D",
-                "accountTo": "C",
-                "amount": "123456789123313.000422901124",
-                "currency": "XXX"
-            }
-        ]
+      {
+        "id": "yyy",
+        "transfers": [{
+          "credit": "C",
+          "debit": "D",
+          "amount": "123456789123313.000422901124",
+          "currency": "XXX"
+        }]
+      }
     """
-    And   transaction state /transaction_state/yyy should be
+    Then transaction yyy of JOURNAL should be
     """
-        rollbacked
+      {
+        "id": "yyy",
+        "transfers": [{
+          "credit": "C",
+          "debit": "D",
+          "amount": "123456789123313.000422901124",
+          "currency": "XXX"
+        }]
+      }
     """
-    And directory /account/C/events/0000000000 should contain 2 files
-    And file /account/C/events/0000000000/0_123456789123313.000422901124_yyy should exist
-    And file /account/C/events/0000000000/2_123456789123313.000422901124_yyy should exist
-    And directory /account/D/events/0000000000 should contain 0 files
+    And transaction yyy state of JOURNAL should be rollbacked
+    And directory /data/JOURNAL/account/C/events/0000000000 should contain 2 files
+    And file /data/JOURNAL/account/C/events/0000000000/0_123456789123313.000422901124_yyy should exist
+    And file /data/JOURNAL/account/C/events/0000000000/2_123456789123313.000422901124_yyy should exist
+    And directory /data/JOURNAL/account/D/events/0000000000 should contain 0 files

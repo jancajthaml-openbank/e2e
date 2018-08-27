@@ -1,93 +1,45 @@
 require_relative 'placeholders'
 
-require 'bigdecimal'
-require 'json'
-require 'date'
-
-step "snapshot :path should be" do |path, expectation|
-  abspath = "/data/#{$tenant_id}#{path}"
-  raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
-
-  contents = File.open(abspath, 'rb') { |f|
-    f.read()
-  }
-
-  version = contents[0..4].unpack('L')[0]
-  lines = contents[4..-1].split("\n").map(&:strip)
-
-  balance = BigDecimal.new(lines[0]).to_s('F')
-  promised = BigDecimal.new(lines[1]).to_s('F')
-  buffer = lines[1..-2]
-
+step "snapshot :account version :count should be" do |account, version, expectation|
+  (tenant, account) = account.split('/')
+  actual = Journal.account_snapshot(tenant, account, version)
   expectation = JSON.parse(expectation)
 
-  expected_version = expectation["version"].to_i
-  expect(version).to eq(expected_version)
-
-  expected_balance = BigDecimal.new(expectation["balance"]).to_s('F')
-  expect(balance).to eq(expected_balance)
-
-  expected_promised = BigDecimal.new(expectation["promised"]).to_s('F')
-  expect(promised).to eq(expected_promised)
-
-  expect(buffer).to match_array(expectation["promiseBuffer"])
+  expect(actual["version"]).to eq(expectation["version"])
+  expect(actual["balance"]).to eq(expectation["balance"])
+  expect(actual["promised"]).to eq(expectation["promised"])
+  expect(actual["accountName"]).to eq(expectation["accountName"])
+  expect(actual["isBalanceCheck"]).to eq(expectation["isBalanceCheck"])
+  expect(actual["currency"]).to eq(expectation["currency"])
+  expect(actual["promiseBuffer"]).to match_array(expectation["promiseBuffer"])
 end
 
-step "meta data :path should be" do |path, expectation|
-  abspath = "/data/#{$tenant_id}#{path}"
-  raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
-
-  contents = File.open(abspath, 'r') { |f|
-    f.read()
-  }
-  balance_check = contents[0] != 'f'
-  currency = contents[1..3]
-  account_name = contents[4..-1]
-
+step "transaction :id of :tenant should be" do |id, tenant, expectation|
+  transaction = Journal.transaction_data(tenant, id)
   expectation = JSON.parse(expectation)
 
-  expect(account_name).to eq(expectation["accountName"])
-  expect(balance_check).to eq(expectation["isBalanceCheck"])
-  expect(currency).to eq(expectation["currency"])
-end
+  expect(transaction["id"]).to eq(expectation["id"]) unless expectation["id"].nil?
 
-step "transaction :path should be" do |path, expectation|
-  abspath = "/data/#{$tenant_id}#{path}"
-  raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
+  expectation["transfers"].each { |e|
+    found = false
+    transaction["transfers"].each { |t|
+      same = true
+      same &&= t["id"] == e["id"] unless e["id"].nil?
+      same &&= t["credit"] == e["credit"] unless e["credit"].nil?
+      same &&= t["debit"] == e["debit"] unless e["debit"].nil?
+      same &&= t["valueDate"] == e["valueDate"] unless e["valueDate"].nil?
+      same &&= t["amount"] == e["amount"] unless e["amount"].nil?
+      same &&= t["currency"] == e["currency"] unless e["currency"].nil?
 
-  lines = File.open(abspath, 'r') { |f|
-    f.read().split("\n")
-  }
-
-  now = DateTime.now
-
-  transactions = []
-  lines[1..-1].each { |line|
-    _, to, from, value_date, amount, currency = line.strip.split(" ")
-
-    delta_seconds = ((now - Time.at(value_date.to_i).to_datetime) * 24 * 60 * 60).to_i
-    raise "invalid valueDate" if delta_seconds > 60
-
-    transactions << {
-      "accountFrom" => from,
-      "accountTo" => to,
-      "amount" => BigDecimal.new(amount).to_s('F'),
-      "currency" => currency
+      if same
+        found = true
+        break
+      end
     }
+    raise "#{e} not found in #{transaction}" unless found
   }
-
-  expectation = JSON.parse(expectation)
-
-  expect(transactions).to match_array(expectation)
 end
 
-step "transaction state :path should be" do |path, expectation|
-  abspath = "/data/#{$tenant_id}#{path}"
-  raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}" unless File.file?(abspath)
-
-  contents = File.open(abspath, 'r') { |f|
-    f.read()
-  }
-
-  expect(contents).to eq(expectation.strip)
+step "transaction :id state of :tenant should be :state" do |id, tenant, state|
+  expect(Journal.transaction_state(tenant, id)).to eq(state)
 end

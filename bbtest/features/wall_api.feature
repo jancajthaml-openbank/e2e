@@ -1,21 +1,18 @@
 Feature: Wall API test
 
-  Background: Appliance
-    Given lake is running
-    And   wall is running
-    And   tenant is WALL
-    And   vault is running
+  Scenario: setup
+    Given appliance is running
+    And   vault WALL is onbdoarded
 
   Scenario: Account API - account doesn't exist
-    When  I call GET https://wall:443/account/WALL/xxx
-    Then  response status should be 404
-    And   response content should be:
+    When I request wall GET /account/WALL/xxx
+    Then wall responds with 404
     """
       {}
     """
 
   Scenario: Account API - account created
-    When  I call POST https://wall:443/account/WALL
+    When I request wall POST /account/WALL
     """
       {
         "accountNumber": "xxx",
@@ -23,14 +20,13 @@ Feature: Wall API test
         "isBalanceCheck": false
       }
     """
-    Then  response status should be 200
-    And   response content should be:
+    Then wall responds with 200
     """
       {}
     """
 
   Scenario: Account API - account already exists
-    When  I call POST https://wall:443/account/WALL
+    When I request wall POST /account/WALL
     """
       {
         "accountNumber": "yyy",
@@ -38,13 +34,12 @@ Feature: Wall API test
         "isBalanceCheck": false
       }
     """
-    Then  response status should be 200
-    And   response content should be:
+    Then wall responds with 200
     """
       {}
     """
 
-    When  I call POST https://wall:443/account/WALL
+    When I request wall POST /account/WALL
     """
       {
         "accountNumber": "yyy",
@@ -52,16 +47,25 @@ Feature: Wall API test
         "isBalanceCheck": false
       }
     """
-    Then  response status should be 409
-    And   response content should be:
+    Then wall responds with 409
     """
       {}
     """
 
   Scenario: Account API - get account balance
-    When  I call GET https://wall:443/account/WALL/xxx
-    Then  response status should be 200
-    And   response content should be:
+    When I request wall GET /account/WALL/xxx
+    Then wall responds with 200
+    """
+      {
+        "currency": "XXX",
+        "balance": "0",
+        "blocking": "0",
+        "isBalanceCheck": false
+      }
+    """
+
+    When I request wall GET /account/WALL/yyy
+    Then wall responds with 200
     """
       {
         "currency": "XXX",
@@ -72,7 +76,7 @@ Feature: Wall API test
     """
 
   Scenario: Transaction API - invalid transaction side
-    When  I call POST https://wall:443/transaction/WALL
+    When I request wall POST /transaction/WALL
     """
       {
         "transfers": [{
@@ -83,21 +87,36 @@ Feature: Wall API test
         }]
       }
     """
-    Then  response status should be 417
-    And   response content should be:
+    Then wall responds with 417
+    """
+      {}
+    """
+
+  Scenario: Transaction API - currency mismatch
+    When I request wall POST /transaction/WALL
+    """
+      {
+        "transfers": [{
+          "credit": "xxx",
+          "debit": "yyy",
+          "amount": "1.0",
+          "currency": "YYY"
+        }]
+      }
+    """
+    Then wall responds with 417
     """
       {}
     """
 
   Scenario: Transaction API - new transaction, valid resend, invalid resend
-    When  I call GET https://wall:443/transaction/WALL/unique_transaction_id
-    Then  response status should be 404
-    And   response content should be:
+    When I request wall GET /transaction/WALL/unique_transaction_id
+    Then wall responds with 404
     """
       {}
     """
 
-    When  I call POST https://wall:443/transaction/WALL
+    When I request wall POST /transaction/WALL
     """
       {
         "id": "unique_transaction_id",
@@ -111,8 +130,7 @@ Feature: Wall API test
         }]
       }
     """
-    Then  response status should be 200
-    And   response content should be:
+    Then wall responds with 200
     """
       {
         "transaction": "unique_transaction_id",
@@ -122,7 +140,7 @@ Feature: Wall API test
       }
     """
 
-    When  I call POST https://wall:443/transaction/WALL
+    When I request wall POST /transaction/WALL
     """
       {
         "id": "unique_transaction_id",
@@ -136,8 +154,7 @@ Feature: Wall API test
         }]
       }
     """
-    Then  response status should be 200
-    And   response content should be:
+    Then wall responds with 200
     """
       {
         "transaction": "unique_transaction_id",
@@ -146,9 +163,9 @@ Feature: Wall API test
         ]
       }
     """
-    And   I call GET https://wall:443/transaction/WALL/unique_transaction_id
-    Then  response status should be 200
-    And   response content should be:
+
+    When I request wall GET /transaction/WALL/unique_transaction_id
+    Then wall responds with 200
     """
       {
         "id": "unique_transaction_id",
@@ -163,7 +180,7 @@ Feature: Wall API test
       }
     """
 
-    When  I call POST https://wall:443/transaction/WALL
+    When I request wall GET /transaction/WALL
     """
       {
         "id": "unique_transaction_id",
@@ -177,8 +194,7 @@ Feature: Wall API test
         }]
       }
     """
-    Then  response status should be 409
-    And   response content should be:
+    Then wall responds with 409
     """
       {}
     """

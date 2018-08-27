@@ -13,7 +13,7 @@ except AttributeError:
 else:
     ssl._create_default_https_context = _create_unverified_https_context
 
-from utils import with_deadline, Counter
+from utils import with_deadline, ProgressCounter
 from async.pool import Pool
 
 class HttpClient(object):
@@ -27,9 +27,7 @@ class HttpClient(object):
 
   @with_deadline(10*60)
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
-    ok = Counter()
-    fails = Counter()
-    progress = Counter()
+    counter = ProgressCounter()
 
     def try_post(url, payload) -> requests.Response:
       try:
@@ -44,16 +42,15 @@ class HttpClient(object):
       try:
         resp = try_post(url, payload)
         if resp and resp.status_code == 200:
-          ok.inc()
+          counter.ok()
           pre_process(resp, url, body, tenant)
         else:
-          fails.inc()
+          counter.fail()
       except Exception as ex:
         print(ex)
-        fails.inc()
+        counter.fail()
       finally:
-        progress.inc()
-        on_progress(progress.value, ok.value, fails.value)
+        on_progress(counter.progress, counter.success, counter.failure)
 
     p = Pool()
 
@@ -63,13 +60,11 @@ class HttpClient(object):
     p.run()
     p.join()
 
-    return ok.value, fails.value
+    return counter.success, counter.failure
 
   @with_deadline(10*60)
   def get(self, reqs, pre_process, on_progress):
-    ok = Counter()
-    fails = Counter()
-    progress = Counter()
+    counter = ProgressCounter()
 
     def try_get(url) -> requests.Response:
       try:
@@ -84,16 +79,14 @@ class HttpClient(object):
       try:
         resp = try_get(url)
         if resp and resp.status_code == 200:
-          ok.inc()
+          counter.ok()
           pre_process(resp, url, *args)
         else:
-          fails.inc()
+          counter.fail()
       except Exception as ex:
         print(ex)
-        fails.inc()
       finally:
-        progress.inc()
-        on_progress(progress.value, ok.value, fails.value)
+        on_progress(counter.progress, counter.success, counter.failure)
 
     p = Pool()
 
@@ -103,4 +96,4 @@ class HttpClient(object):
     p.run()
     p.join()
 
-    return ok.value, fails.value
+    return counter.success, counter.failure

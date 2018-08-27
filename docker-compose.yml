@@ -6,38 +6,45 @@ services:
 
   # -------------------------------------------------------------------------- #
 
+  candidate:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: openbankdev/e2e_candidate
+
+  # -------------------------------------------------------------------------- #
+
   bbtest:
     build:
       context: .
       dockerfile: bbtest/Dockerfile
-    image: e2e_dev
+    image: e2e/bbtest
     working_dir: /opt/bbtest
     environment:
-      - PERSISTENCE_PATH=/data
-      - TENANT=test
       - COMPOSE_PROJECT_NAME
     volumes:
       - ./reports:/reports
-      - logs:/logs
       - journal:/data
-      - metrics:/metrics
       - ./bbtest:/opt/bbtest
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers
 
   # -------------------------------------------------------------------------- #
 
-  lake:
-    image: openbank/lake:master
-    container_name: e2e_lake
-    restart: "no"
+  perf:
+    build:
+      context: .
+      dockerfile: perf/Dockerfile
+    image: e2e/perf
+    working_dir: /opt/perf
     environment:
-      - LAKE_LOG_LEVEL=DEBUG
-    ports:
-      - "5562"
-      - "5561"
-    logging:
-      driver: json-file
+      - COMPOSE_PROJECT_NAME
+    volumes:
+      - ./reports:/reports
+      - journal:/data
+      - ./perf:/opt/perf
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers
 
   # -------------------------------------------------------------------------- #
 
@@ -52,47 +59,6 @@ services:
       - SEARCH_TENANT=test
     ports:
       - "8080"
-    logging:
-      driver: json-file
-
-  # -------------------------------------------------------------------------- #
-
-  wall:
-    image: openbank/wall:master
-    restart: unless-stopped
-    container_name: e2e_wall
-    environment:
-      - WALL_STORAGE=/data
-      - WALL_LAKE_HOSTNAME=lake
-      - WALL_LOG_LEVEL=DEBUG
-      - WALL_METRICS_REFRESHRATE=1s
-      - WALL_METRICS_OUTPUT=/metrics/metrics_bbtest_wall.json
-    volumes:
-      - journal:/data
-      - metrics:/metrics
-    ports:
-      - "8080"
-    logging:
-      driver: json-file
-
-  # -------------------------------------------------------------------------- #
-
-  vault:
-    image: openbank/vault:master
-    container_name: e2e_vault_test
-    restart: unless-stopped
-    environment:
-      - VAULT_STORAGE=/data
-      - VAULT_LOG_LEVEL=DEBUG
-      - VAULT_TENANT=test
-      - VAULT_JOURNAL_SATURATION=1
-      - VAULT_SNAPSHOT_SCANINTERVAL=1s
-      - VAULT_LAKE_HOSTNAME=lake
-      - VAULT_METRICS_REFRESHRATE=1s
-      - VAULT_METRICS_OUTPUT=/metrics/metrics_bbtest_vault_test.json
-    volumes:
-      - journal:/data
-      - metrics:/metrics
     logging:
       driver: json-file
 
@@ -117,10 +83,6 @@ services:
 volumes:
 
   journal:
-    driver: local
-  metrics:
-    driver: local
-  logs:
     driver: local
   mongo:
     driver: local

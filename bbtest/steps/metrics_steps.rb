@@ -2,41 +2,28 @@ require_relative 'placeholders'
 
 require 'json'
 
-step "metrics should report :count created accounts" do |count|
-  abspath = "/metrics/e2e_vault_#{$tenant_id}_metrics.json"
+step "metrics for tenant :tenant should report :count created accounts" do |tenant, count|
+  metrics = $appliance.get_metrics("vault@#{tenant}")
+  expect(metrics["createdAccounts"]).to eq(count)
+end
 
+step "metrics should report :count created transfers" do |count|
   eventually(timeout: 3) {
-    unless File.file?(abspath)
-      raise "file:  #{abspath} is a directory" if File.directory?(abspath)
-      raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}"
-    end
-
-    contents = File.open(abspath, 'r') { |f|
-      JSON.parse(f.read())
+    createdTransfers = $appliance.get_wall_instances().reduce(0) { |sum, wall|
+      sum + $appliance.get_metrics(wall)["createdTransfers"].to_i
     }
 
-    expect(contents["createdAccounts"]).to eq(count), "in #{contents}"
+    expect(createdTransfers).to eq(count)
   }
 end
 
-step "metrics events should cancel out" do ||
-  abspath = "/metrics/e2e_vault_#{$tenant_id}_metrics.json"
+step "metrics events for tenant :tenant should cancel out" do |tenant|
+  metrics = $appliance.get_metrics("vault@#{tenant}")
 
-  eventually(timeout: 3) {
-    unless File.file?(abspath)
-      raise "file:  #{abspath} is a directory" if File.directory?(abspath)
-      raise "file:  #{abspath} was not found\nfiles: #{Dir[File.dirname(abspath)+"/*"]}"
-    end
+  raise "no promises in #{contents}" unless metrics["promisesAccepted"] > 0
 
-    contents = File.open(abspath, 'r') { |f|
-      JSON.parse(f.read())
-    }
+  initials = metrics["promisesAccepted"]
+  terminals = metrics["commitsAccepted"] + metrics["rollbacksAccepted"]
 
-    raise "no promises in #{contents}" unless contents["promisesAccepted"] > 0
-
-    initials = contents["promisesAccepted"]
-    terminals = contents["commitsAccepted"] + contents["rollbacksAccepted"]
-
-    expect(initials - terminals).to eq(0), "in #{contents}"
-  }
+  expect(initials - terminals).to eq(0), "promises and terminals don't cancel out in: #{contents}"
 end

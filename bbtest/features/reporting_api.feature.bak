@@ -1,13 +1,11 @@
 Feature: Search API test
 
   Scenario: Account search
-    Given lake is running
-    And   mongo is running
-    And   wall is running
-    And   tenant is GRAPH
-    And   vault is running
+    Given appliance is running
+    And   vault SEARCH is onbdoarded
+    Given mongo is running
     And   search is running
-    And   pasive EUR account Sample is created
+    And   pasive EUR account SEARCH/Sample is created
 
     When I request search
       """
