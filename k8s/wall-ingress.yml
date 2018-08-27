@@ -1,9 +1,0 @@
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: wall-ingress
-  namespace: openbank
-spec:
-  backend:
-    serviceName: wall
-    servicePort: 8080

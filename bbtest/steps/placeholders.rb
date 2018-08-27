@@ -5,6 +5,12 @@ placeholder :activity do
   end
 end
 
+placeholder :account do
+  match(/[\S]+\/[\S]+/) do |account|
+    account
+  end
+end
+
 placeholder :side do
   match(/(credit|debit)/) do |side|
     side
@@ -42,7 +48,7 @@ placeholder :http_status do
 end
 
 placeholder :url do
-  match(/https?:\/\/[\S]+/) do |url|
+  match(/\/[\S]+/) do |url|
     url
   end
 end

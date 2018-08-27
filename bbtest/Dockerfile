@@ -12,34 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ruby:2.5.0-stretch
+FROM openbankdev/e2e_candidate
 
 MAINTAINER Jan Cajthaml <jan.cajthaml@gmail.com>
 
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    \
-        netcat-openbsd=1.130-3 \
-        libzmq3-dev=4.2.1-4 \
-    \
-    && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+COPY --from=openbank/lake:master /opt/artifacts /opt/artifacts/lake
 
-RUN gem install \
-    \
-        turnip:2.1.1 \
-        turnip_formatter:0.5.0 \
-        rspec_junit_formatter:0.3.0 \
-        rspec-instafail:1.0.0 \
-        bigdecimal:1.3.4 \
-        byebug:10.0.1 \
-        ffi-rzmq:2.0.4
+RUN find /opt/artifacts/lake -type f -name 'lake_*_amd64.deb' -exec \
+    apt-get -y install --no-install-recommends \
+    -f \{\} \;
 
-RUN curl -L https://download.docker.com/linux/static/stable/x86_64/docker-17.09.0-ce.tgz | \
-    tar -xzvf - --strip-components=1 -C /usr/bin docker/docker && \
-    chmod a+x /usr/bin/docker
+COPY --from=openbank/vault:master /opt/artifacts /opt/artifacts/vault
+
+RUN find /opt/artifacts/vault -type f -name 'vault_*_amd64.deb' -exec \
+    apt-get -y install --no-install-recommends \
+    -f \{\} \;
+
+COPY --from=openbank/wall:master /opt/artifacts /opt/artifacts/wall
+
+RUN find /opt/artifacts/wall -type f -name 'wall_*_amd64.deb' -exec \
+    apt-get -y install --no-install-recommends \
+    -f \{\} \;
+
+COPY etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 
 WORKDIR /opt/bbtest
-
-ENTRYPOINT ["rspec", "--require", "/opt/bbtest/spec.rb"]
-CMD ["--format", "documentation", "--format", "RspecJunitFormatter", "--out", "junit.xml", "--pattern", "/opt/bbtest/features/*.feature"]

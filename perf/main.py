@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
+
 from functools import partial
 from utils import debug, warn, info, interrupt_stdout, clear_dir, timeit
 from metrics_aggregator import MetricsAggregator
-from containers_manager import ContainersManager
+from appliance_manager import ApplianceManager
+
 from integration.integration import Integration
 from steps import Steps
 import traceback
@@ -15,9 +18,9 @@ patch_thread_join()
 
 class metrics():
 
-  def __init__(self, label):
+  def __init__(self, manager, label):
     self.__label = label
-    self.__metrics = MetricsAggregator("/opt/metrics")
+    self.__metrics = MetricsAggregator(manager)
     self.__ready = False
     self.__fn = lambda *args: None
 
@@ -45,15 +48,15 @@ def eventually_ready(manager):
   debug("waiting until everyone is ready")
 
   with timeit('eventually_ready'):
-    def one_ready(node):
-      if not node.is_healthy:
-        raise RuntimeError('Health check of {0} failed. Aborting test'.format(node))
+    def one_ready(unit):
+      if not unit.is_healthy:
+        raise RuntimeError('Health check of {0} failed. Aborting test'.format(unit))
 
     p = Pool()
 
-    for nodes in manager.values():
-      for node in nodes:
-        p.enqueue(one_ready, node)
+    for units in manager.values():
+      for unit in units:
+        p.enqueue(one_ready, unit)
 
     p.run()
     p.join()
@@ -65,10 +68,10 @@ def main():
 
   # fixme in parallel please
   clear_dir("/data")
-  clear_dir("/logs")
-  clear_dir("/opt/metrics")
+  clear_dir("/reports/perf_logs")
+  clear_dir("/reports/perf_metrics")
 
-  manager = ContainersManager()
+  manager = ApplianceManager()
   integration = Integration(manager)
   steps = Steps(integration)
 
@@ -79,56 +82,51 @@ def main():
 
     # with memory boundaries we could test long running (several days running) tests and determine failures
 
-    manager.spawn_lake()
+    #manager.spawn_appliance()
+    #manager.spawn_lake()
 
     info("start tests")
 
     ############################################################################
 
     with timeit('new accounts scenario'):
-      manager.spawn_wall()
-
       for _ in range(4):
-        manager.spawn_vault()
+        manager.onboard_vault()
+      manager.scale_wall(4)
 
       integration.reset()
 
-      for container, images in manager.items():
-        info("provisioned {0}({1}x)".format(container, len(images)))
-
       eventually_ready(manager)
 
-      with metrics('s1_new_account_latencies_20000'):
-        steps.random_uniform_accounts(20000)
+      absolute_total = int(2*1e4)
+      with metrics(manager, 's1_new_account_latencies_{0}'.format(absolute_total)):
+        steps.random_uniform_accounts(absolute_total)
         manager.teardown('vault')
 
-    ############################################################################
+      absolute_total = int(2*1e3)
+      with timeit('get accounts scenario'):
+        manager.onboard_vault()
+        manager.scale_wall(4)
+        integration.reset()
 
-    with timeit('get accounts scenario'):
-      manager.spawn_vault()
-      manager.reset('wall')
-      integration.reset()
+        eventually_ready(manager)
 
-      for container, images in manager.items():
-        info("provisioned {0}({1}x)".format(container, len(images)))
+        splits = 20
+        chunk = int(absolute_total/splits)
+        absolute_total = splits*chunk
+        no_accounts = chunk
 
-      eventually_ready(manager)
-
-      absolute_total = 2*1e3
-      splits = 20
-      chunk = int(absolute_total/splits)
-      absolute_total = splits*chunk
-      currents = chunk
-
-      while currents <= absolute_total:
-        with metrics('s2_get_account_latencies_{0}'.format(currents)):
+        while no_accounts <= absolute_total:
           steps.random_uniform_accounts(chunk)
           manager.reset('vault')
-          #eventually_ready(manager)
-          steps.check_balances()
-          manager.reset()
-          #eventually_ready(manager)
-        currents += chunk
+
+          with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
+            steps.check_balances()
+            manager.reset()
+
+          no_accounts += chunk
+
+        manager.teardown('vault')
 
     ############################################################################
 

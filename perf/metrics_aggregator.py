@@ -7,14 +7,18 @@ from inotify_simple import INotify, flags
 
 from threading import Lock, Thread, Event
 
+#from appliance_manager import ApplianceManager
+
 class MetricsAggregator(Thread):
 
-  def __init__(self, path):
+  def __init__(self, manager):
     super(MetricsAggregator, self).__init__()
     self._stop_event = Event()
-    self.path = path
+    self.__manager = manager
     self.__store = {}
-    self.__inotify = INotify()
+    self.__wall_watch = INotify()
+    self.__lake_watch = INotify()
+    self.__vault_watch = INotify()
     self.__lock = Lock()
     self.__store = {}
 
@@ -37,14 +41,26 @@ class MetricsAggregator(Thread):
         f.close()
 
   def persist(self, label) -> None:
-    with open('{0}/all_{1}.json'.format(self.path, label), mode='w', encoding="ascii") as f:
+    with open('{0}/{1}.json'.format('/reports/perf_metrics', label), mode='w', encoding="ascii") as f:
       json.dump(self.__store, f, indent=4, sort_keys=True)
 
   def run(self) -> None:
-    self.__inotify.add_watch(self.path, flags.MODIFY | flags.MOVED_TO)
+    self.__wall_watch.add_watch('/opt/wall/metrics', flags.MODIFY | flags.MOVED_TO)
+    self.__lake_watch.add_watch('/opt/lake/metrics', flags.MODIFY | flags.MOVED_TO)
+    self.__vault_watch.add_watch('/opt/vault/metrics', flags.MODIFY | flags.MOVED_TO)
 
     while not self.stopped():
-      for event in self.__inotify.read(timeout=500):
-        if not event.name.endswith("temp") and event.name.startswith("p-"):
-          path = event.name and os.path.join(self.path, event.name) or self.path
+      events = []
+
+      for event in self.__wall_watch.read(timeout=100):
+        if not event.name.endswith("temp"):
+          path = os.path.join('/opt/wall/metrics', event.name)
+          self.__process_change(path)
+      for event in self.__lake_watch.read(timeout=100):
+        if not event.name.endswith("temp"):
+          path = os.path.join('/opt/lake/metrics', event.name)
+          self.__process_change(path)
+      for event in self.__vault_watch.read(timeout=100):
+        if not event.name.endswith("temp"):
+          path = os.path.join('/opt/vault/metrics', event.name)
           self.__process_change(path)
