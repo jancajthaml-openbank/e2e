@@ -54,13 +54,17 @@ class ApplianceHelper
   end
 
   def get_metrics(unit)
-    if unit.include? "@"
-      metrics_file = "/opt/#{unit[/[^@]+/]}/metrics/metrics.json.#{unit[/([^@]+)$/]}"
+    if unit.include?("@")
+      if unit.include?("wall")
+        metrics_file = "/opt/#{unit[/[^@]+/]}/metrics/metrics.json.#{unit[/([^@]+)$/]}"
+      else
+        metrics_file = "/opt/#{unit[/[^@]+/]}/metrics/metrics.#{unit[/([^@]+)$/]}.json"
+      end
     else
       metrics_file = "/opt/#{unit}/metrics/metrics.json"
     end
 
-    return nil unless File.file?(metrics_file)
+    return {} unless File.file?(metrics_file)
     return File.open(metrics_file, 'rb') { |f| JSON.parse(f.read) }
   end
 
@@ -71,8 +75,12 @@ class ApplianceHelper
       %x(systemctl stop #{unit})
       %x(journalctl -o short-precise -u #{unit} --no-pager > /reports/logs/#{unit.gsub('@','_')}.log 2>&1)
 
-      if unit.include? "@"
-        metrics_file = "/opt/#{unit[/[^@]+/]}/metrics/metrics.json.#{unit[/([^@]+)$/]}"
+      if unit.include?("@")
+        if unit.include?("wall")
+          metrics_file = "/opt/#{unit[/[^@]+/]}/metrics/metrics.json.#{unit[/([^@]+)$/]}"
+        else
+          metrics_file = "/opt/#{unit[/[^@]+/]}/metrics/metrics.#{unit[/([^@]+)$/]}.json"
+        end
       else
         metrics_file = "/opt/#{unit}/metrics/metrics.json"
       end

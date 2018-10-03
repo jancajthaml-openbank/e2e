@@ -3,8 +3,10 @@ require_relative 'placeholders'
 require 'json'
 
 step "metrics for tenant :tenant should report :count created accounts" do |tenant, count|
-  metrics = $appliance.get_metrics("vault@#{tenant}")
-  expect(metrics["createdAccounts"]).to eq(count)
+  eventually(timeout: 3) {
+    metrics = $appliance.get_metrics("vault@#{tenant}")
+    expect(metrics["createdAccounts"]).to eq(count)
+  }
 end
 
 step "metrics should report :count created transfers" do |count|
@@ -18,12 +20,14 @@ step "metrics should report :count created transfers" do |count|
 end
 
 step "metrics events for tenant :tenant should cancel out" do |tenant|
-  metrics = $appliance.get_metrics("vault@#{tenant}")
+  eventually(timeout: 3) {
+    metrics = $appliance.get_metrics("vault@#{tenant}")
 
-  raise "no promises in #{contents}" unless metrics["promisesAccepted"] > 0
+    raise "no promises in #{contents}" unless metrics["promisesAccepted"] > 0
 
-  initials = metrics["promisesAccepted"]
-  terminals = metrics["commitsAccepted"] + metrics["rollbacksAccepted"]
+    initials = metrics["promisesAccepted"]
+    terminals = metrics["commitsAccepted"] + metrics["rollbacksAccepted"]
 
-  expect(initials - terminals).to eq(0), "promises and terminals don't cancel out in: #{contents}"
+    expect(initials - terminals).to eq(0), "promises and terminals don't cancel out in: #{contents}"
+  }
 end
