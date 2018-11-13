@@ -196,7 +196,7 @@ class ProgressCounter():
     with self._lock:
       self._failure += 1
       self._progress += 1
-      return self._value
+      return self._progress
 
   @property
   def success(self) -> int:

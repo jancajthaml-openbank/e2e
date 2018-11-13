@@ -35,3 +35,4 @@ Feature: Integrity test
     And  metrics should report 3 created transfers
     And  INTEGRITY/ReplayCredit balance should be 6 EUR
     And  INTEGRITY/ReplayDebit balance should be -6 EUR
+    #And  there should exist following transfers for tenant INTEGRITY

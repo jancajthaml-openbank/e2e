@@ -9,6 +9,7 @@ RSpec.configure do |config|
 
   Dir.glob("./helpers/*_helper.rb") { |f| load f }
   config.include EventuallyHelper, :type => :feature
+  #config.include MongoHelper, :type => :feature
   #config.include Journal, :type => :feature
   #config.include Docker, :type => :feature
   Dir.glob("./steps/*_steps.rb") { |f| load f, true }

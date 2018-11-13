@@ -48,22 +48,6 @@ services:
 
   # -------------------------------------------------------------------------- #
 
-  search:
-    image: openbank/search:master
-    restart: unless-stopped
-    container_name: e2e_search
-    environment:
-      - SEARCH_HTTP_PORT=8080
-      - SEARCH_LAKE_HOSTNAME=lake
-      - SEARCH_MONGO_HOSTNAME=e2e_mongodb
-      - SEARCH_TENANT=test
-    ports:
-      - "8080"
-    logging:
-      driver: json-file
-
-  # -------------------------------------------------------------------------- #
-
   mongodb:
     image: mongo:latest
     restart: "no"
