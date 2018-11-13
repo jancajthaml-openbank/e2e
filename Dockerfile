@@ -17,10 +17,7 @@ FROM debian:stretch
 ENV DEBIAN_FRONTEND=noninteractive \
     LANG=C.UTF-8
 
-MAINTAINER Jan Cajthaml <jan.cajthaml@gmail.com>
-
 RUN apt-get -y update && \
-    apt-get -y upgrade && \
     apt-get clean && \
     apt-get -y install \
       libzmq3-dev=4.2.1-4 \
@@ -53,6 +50,21 @@ RUN apt-get -y update && \
   sed -i '/imklog/{s/^/#/}' /etc/rsyslog.conf && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
+RUN \
+  curl -sL https://deb.nodesource.com/setup_10.x | bash && \
+  apt-get install -y --no-install-recommends \
+    nodejs && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN \
+  apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4 && \
+    echo "deb http://repo.mongodb.org/apt/debian stretch/mongodb-org/4.0 main" | \
+      tee /etc/apt/sources.list.d/mongodb-org-4.0.list && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+    mongodb-org && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
+
 RUN gem install \
     \
       turnip:2.1.1 \
@@ -60,7 +72,8 @@ RUN gem install \
       rspec_junit_formatter:0.3.0 \
       rspec-instafail:1.0.0 \
       excon:0.61.0 \
-      byebug:10.0.1
+      byebug:10.0.1 \
+      mongo:2.6.2
 
 RUN pip3 install \
     \
@@ -70,9 +83,12 @@ RUN pip3 install \
 
 RUN echo "root:Docker!" | chpasswd
 
-RUN cd /lib/systemd/system/sysinit.target.wants/ && \
-    ls | grep -v systemd-tmpfiles-setup.service | xargs rm -f && \
-    rm -f /lib/systemd/system/sockets.target.wants/*udev* && \
+RUN (\
+      ls /lib/systemd/system/sysinit.target.wants | \
+      grep -v systemd-tmpfiles-setup.service | \
+      xargs rm -f \
+    ) && \
+    (rm -f /lib/systemd/system/sockets.target.wants/*udev*) && \
     systemctl mask -- \
       tmp.mount \
       etc-hostname.mount \
@@ -88,11 +104,15 @@ RUN cd /lib/systemd/system/sysinit.target.wants/ && \
       systemd-remount-fs.service \
       systemd-ask-password-wall.path \
       systemd-logind.service && \
-    systemctl set-default multi-user.target || :
+    systemctl set-default multi-user.target ;:
 
 RUN sed -ri /etc/systemd/journald.conf -e 's!^#?Storage=.*!Storage=volatile!'
 
+RUN systemctl enable mongod
+
 COPY etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
+
+RUN echo "nameserver 1.1.1.1" > /etc/resolv.conf
 
 WORKDIR /opt/bbtest
 

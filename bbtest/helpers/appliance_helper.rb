@@ -1,4 +1,5 @@
 require_relative 'eventually_helper'
+require_relative 'mongo_helper'
 
 require 'timeout'
 
@@ -13,8 +14,15 @@ class ApplianceHelper
     units = %x(systemctl -t service --no-legend | awk '{ print $1 }' | sort -t @ -k 2 -g)
 
     @units = units.split("\n").map(&:strip).reject { |x|
-      x.empty? || !(x.start_with?("vault") || x.start_with?("lake") || x.start_with?("wall"))
+      x.empty? || !(
+        x.start_with?("vault") ||
+        x.start_with?("lake")  ||
+        x.start_with?("wall")  ||
+        x.start_with?("search")
+      )
     }.map { |x| x.chomp(".service") }
+
+    MongoHelper.start("graphql")
   end
 
   def ready?()
@@ -22,7 +30,12 @@ class ApplianceHelper
     raise false unless $? == 0
 
     actual = actual.split("\n").map(&:strip).reject { |x|
-      x.empty? || !(x.start_with?("vault") || x.start_with?("lake") || x.start_with?("wall"))
+      x.empty? || !(
+        x.start_with?("vault") ||
+        x.start_with?("lake")  ||
+        x.start_with?("wall")  ||
+        x.start_with?("search")
+      )
     }.map { |x| x.chomp(".service") }
 
     return @units.all? { |e| actual.include?(e) }
@@ -83,6 +96,8 @@ class ApplianceHelper
         }
       } if File.file?(metrics_file)
     }
+
+    MongoHelper.stop()
   end
 
 end

@@ -14,8 +14,6 @@
 
 FROM openbankdev/e2e_candidate
 
-MAINTAINER Jan Cajthaml <jan.cajthaml@gmail.com>
-
 COPY --from=openbank/lake:master /opt/artifacts /opt/artifacts/lake
 
 RUN find /opt/artifacts/lake -type f -name 'lake_*_amd64.deb' -exec \
@@ -31,6 +29,12 @@ RUN find /opt/artifacts/vault -type f -name 'vault_*_amd64.deb' -exec \
 COPY --from=openbank/wall:master /opt/artifacts /opt/artifacts/wall
 
 RUN find /opt/artifacts/wall -type f -name 'wall_*_amd64.deb' -exec \
+    apt-get -y install --no-install-recommends \
+    -f \{\} \;
+
+COPY --from=openbank/search:master /opt/artifacts /opt/artifacts/search
+
+RUN find /opt/artifacts/search -type f -name 'search_*_all.deb' -exec \
     apt-get -y install --no-install-recommends \
     -f \{\} \;
 
