@@ -76,8 +76,6 @@ class Integration(object):
     for _ in range(number_of_transfers):
       transfers.append(Integration.prepare_transfer(credit_account_choice, debit_acount_choice))
 
-    #random_wall = secure_random.choice(self.__manager['wall'])
-
     url = 'https://127.0.0.1/transaction/' + tenant_name
     body = {
       "transfers": transfers
@@ -86,15 +84,11 @@ class Integration(object):
     return (url, body, json.dumps(body), tenant_name)
 
   def prepare_get_balance(self, tenant_name, account_name, reference):
-    #random_wall = secure_random.choice(self.__manager['wall'])
-
     url = 'https://127.0.0.1/account/' + tenant_name + '/' + account_name
 
     return (url, reference, tenant_name)
 
   def prepare_create_account(self, tenant_name, account_name, is_ballance_check):
-    #random_wall = secure_random.choice(self.__manager['wall'])
-
     url = 'https://127.0.0.1/account/' + tenant_name
     body = {
       "accountNumber": account_name,

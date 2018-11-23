@@ -7,7 +7,6 @@ candidate:
 
 .PHONY: bbtest
 bbtest: candidate
-	@docker-compose build bbtest
 	@echo "removing older bbtest containers if present"
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_bbtest" -q) &> /dev/null || :)
 	@echo "running bbtest container"
@@ -19,8 +18,9 @@ bbtest: candidate
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
 			--security-opt seccomp:unconfined \
-		e2e/bbtest \
-	) rspec --require /opt/bbtest/spec.rb \
+		openbankdev/e2e_candidate \
+	) rspec \
+		--require /opt/bbtest/spec.rb \
 		--format documentation \
 		--format RspecJunitFormatter \
 		--out junit.xml \
@@ -30,7 +30,6 @@ bbtest: candidate
 
 .PHONY: perf
 perf: candidate
-	@docker-compose build perf
 	@echo "removing older perf containers if present"
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_perf" -q) &> /dev/null || :)
 	@echo "running perf container"
@@ -38,12 +37,13 @@ perf: candidate
 		docker run -d -ti \
 		  --name=e2e_perf \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-			-v $$(pwd)/perf:/opt/perf \
+			-v $$(pwd)/perf:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
 			--security-opt seccomp:unconfined \
-		e2e/perf \
-	) python3 /opt/perf/main.py || :)
+		openbankdev/e2e_candidate \
+	) python3 \
+		/opt/bbtest/main.py || :)
 	@echo "removing perf container"
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_perf" -q) &> /dev/null || :)
 
@@ -56,11 +56,9 @@ run: candidate
 		docker run -d -ti \
 		  --name=e2e_run \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-			-v $$(pwd)/perf:/opt/perf \
-			-v $$(pwd)/reports:/reports \
 			--privileged=true \
 			--security-opt seccomp:unconfined \
-		e2e/candidate \
+		openbankdev/e2e_candidate \
 	) bash || :)
 	@echo "removing container"
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_run" -q) &> /dev/null || :)

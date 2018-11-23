@@ -2,7 +2,8 @@
 
 from systemd.vault import Vault
 from systemd.wall import Wall
-
+from systemd.search import Search
+from systemd.lake import Lake
 
 import subprocess
 import string
@@ -15,13 +16,18 @@ class ApplianceManager(object):
     self.store = {}
     self.units = {}
 
-    self.units.setdefault('wall', []).append(Wall())
+    self['wall'] = Wall()
+    self['lake'] = Lake()
+    self['search'] = Search()
 
   def __len__(self):
     return sum([len(x) for x in self.units.values()])
 
   def __getitem__(self, key):
     return self.units.get(str(key), [])
+
+  def __setitem__(self, key, value):
+    self.units.setdefault(str(key), []).append(value)
 
   def __delitem__(self, key):
     # fixme add lock here
@@ -33,6 +39,7 @@ class ApplianceManager(object):
 
     del self.units[str(key)]
 
+  # fixme __iter__
   def items(self) -> list:
     return self.units.items()
 
@@ -42,7 +49,8 @@ class ApplianceManager(object):
   def onboard_vault(self, tenant=None) -> None:
     if not tenant:
       tenant = ''.join(secure_random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
-    self.units.setdefault('vault', []).append(Vault(tenant))
+    #self.units.setdefault('vault', []).append(Vault(tenant))
+    self['vault'] = Vault(tenant)
 
   def scale_wall(self, size) -> None:
     for wall in self['wall']:
