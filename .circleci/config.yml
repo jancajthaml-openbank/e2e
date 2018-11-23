@@ -133,6 +133,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
+      - run: docker pull openbankdev/e2e_candidate:latest
       - run:
           name: Run performance tests
           command: |
@@ -159,6 +160,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
+      - run: docker pull openbankdev/e2e_candidate:latest
       - run:
           name: Run blackbox tests
           command: |
