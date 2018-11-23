@@ -29,12 +29,12 @@ services:
 
   perf:
     extends: candidate
-    working_dir: /opt/perf
+    working_dir: /opt/bbtest
     environment:
       - COMPOSE_PROJECT_NAME
     volumes:
       - ./reports:/reports
-      - ./perf:/opt/perf
+      - ./perf:/opt/bbtest
       - /var/run/docker.sock:/var/run/docker.sock
       - /var/lib/docker/containers:/var/lib/docker/containers
 

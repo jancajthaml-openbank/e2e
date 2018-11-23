@@ -37,13 +37,13 @@ perf: candidate
 		docker run -d -ti \
 		  --name=e2e_perf \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-			-v $$(pwd)/perf:/opt/perf \
+			-v $$(pwd)/perf:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
 			--security-opt seccomp:unconfined \
 		openbankdev/e2e_candidate \
 	) python3 \
-		/opt/perf/main.py || :)
+		/opt/bbtest/main.py || :)
 	@echo "removing perf container"
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_perf" -q) &> /dev/null || :)
 
@@ -56,8 +56,6 @@ run: candidate
 		docker run -d -ti \
 		  --name=e2e_run \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-			-v $$(pwd)/perf:/opt/perf \
-			-v $$(pwd)/reports:/reports \
 			--privileged=true \
 			--security-opt seccomp:unconfined \
 		openbankdev/e2e_candidate \
