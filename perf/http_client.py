@@ -14,12 +14,12 @@ else:
     ssl._create_default_https_context = _create_unverified_https_context
 
 from utils import with_deadline, ProgressCounter
-from async.pool import Pool
+from parallel.pool import Pool
 
 class HttpClient(object):
 
   def __init__(self):
-    adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100, max_retries=0, pool_block=False)
+    adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=0, pool_block=False)
     session = requests.Session()
     session.verify = False
     session.mount('https://', adapter)
@@ -29,14 +29,17 @@ class HttpClient(object):
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     counter = ProgressCounter()
 
-    def try_post(url, payload) -> requests.Response:
+    def try_post(url, payload, bounce=0) -> requests.Response:
       try:
         resp = self.session.post(url, data=payload, verify=False, timeout=(1, 1))
         if resp and resp.status_code == 504:
-          return try_post(url, payload)
-        return resp
+          return try_post(url, payload, bounce)
+        elif resp and resp.status_code != 200 and bounce < 3:
+          return try_post(url, payload, bounce + 1)
+        else:
+          return resp
       except (requests.exceptions.ConnectionError, requests.exceptions.RequestException):
-        return try_post(url, payload)
+        return try_post(url, payload, bounce)
 
     def process_one(url, body, payload, tenant) -> None:
       try:
@@ -66,14 +69,17 @@ class HttpClient(object):
   def get(self, reqs, pre_process, on_progress):
     counter = ProgressCounter()
 
-    def try_get(url) -> requests.Response:
+    def try_get(url, bounce=0) -> requests.Response:
       try:
         resp = self.session.get(url, verify=False, timeout=(1, 1))
         if resp and resp.status_code == 504:
-          return try_get(url)
-        return resp
+          return try_get(url, bounce)
+        elif resp and resp.status_code != 200 and bounce < 3:
+          return try_get(url, bounce + 1)
+        else:
+          return resp
       except (requests.exceptions.ConnectionError, requests.exceptions.RequestException):
-        return try_get(url)
+        return try_get(url, bounce)
 
     def process_one(url, *args) -> None:
       try:

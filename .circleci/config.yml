@@ -129,7 +129,6 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run: docker build -t e2e/perf -f ./bbtest/Dockerfile .
       - run:
           name: Run performance tests
           command: |
@@ -139,7 +138,7 @@ jobs:
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /home/circleci/project/perf:/opt/perf \
                 -v /home/circleci/project/reports:/reports \
-              e2e/perf \
+              openbankdev/e2e_candidate \
             ) python3 /opt/perf/main.py
       - store_artifacts:
           path: /home/circleci/project/reports
@@ -156,7 +155,6 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run: docker build -t e2e/bbtest -f ./bbtest/Dockerfile .
       - run:
           name: Run blackbox tests
           command: |
@@ -165,7 +163,7 @@ jobs:
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /home/circleci/project/bbtest:/opt/bbtest \
                 -v /home/circleci/project/reports:/reports \
-              e2e/bbtest \
+              openbankdev/e2e_candidate \
             ) rspec --require /opt/bbtest/spec.rb \
               --format documentation \
               --format RspecJunitFormatter \

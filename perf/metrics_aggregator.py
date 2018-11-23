@@ -7,8 +7,6 @@ from inotify_simple import INotify, flags
 
 from threading import Lock, Thread, Event
 
-#from appliance_manager import ApplianceManager
-
 class MetricsAggregator(Thread):
 
   def __init__(self, manager):

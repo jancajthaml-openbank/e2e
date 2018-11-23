@@ -11,9 +11,9 @@ from appliance_manager import ApplianceManager
 from integration.integration import Integration
 from steps import Steps
 import traceback
-from async.pool import Pool
+from parallel.pool import Pool
 
-from async.monkey_patch import patch_thread_join
+from parallel.monkey_patch import patch_thread_join
 patch_thread_join()
 
 class metrics():
