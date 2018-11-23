@@ -58,6 +58,10 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
+      - run: docker pull openbank/lake:master
+      - run: docker pull openbank/vault:master
+      - run: docker pull openbank/wall:master
+      - run: docker pull openbank/search:master
       - run: docker build -t openbankdev/e2e_candidate .
       - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
       - deploy:
@@ -129,6 +133,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
+      - run: docker pull openbankdev/e2e_candidate:latest
       - run:
           name: Run performance tests
           command: |
@@ -155,6 +160,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
+      - run: docker pull openbankdev/e2e_candidate:latest
       - run:
           name: Run blackbox tests
           command: |
