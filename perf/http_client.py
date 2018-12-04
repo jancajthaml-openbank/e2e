@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
-import requests
-requests.packages.urllib3.disable_warnings(requests.packages.urllib3.exceptions.InsecureRequestWarning)
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 import ssl
 try:
-    _create_unverified_https_context = ssl._create_unverified_context
+  _create_unverified_https_context = ssl._create_unverified_context
 except AttributeError:
-    pass
+  pass
 else:
-    ssl._create_default_https_context = _create_unverified_https_context
+  ssl._create_default_https_context = _create_unverified_https_context
 
 from utils import with_deadline, ProgressCounter
 from parallel.pool import Pool
@@ -19,32 +18,29 @@ from parallel.pool import Pool
 class HttpClient(object):
 
   def __init__(self):
-    adapter = requests.adapters.HTTPAdapter(pool_connections=10, pool_maxsize=10, max_retries=0, pool_block=False)
-    session = requests.Session()
-    session.verify = False
-    session.mount('https://', adapter)
-    self.session = session
+    http = urllib3.PoolManager()
+    self.http = http
 
   @with_deadline(10*60)
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     counter = ProgressCounter()
 
-    def try_post(url, payload, bounce=0) -> requests.Response:
+    def try_post(url, payload, bounce=0) -> urllib3.HTTPResponse:
       try:
-        resp = self.session.post(url, data=payload, verify=False, timeout=(1, 1))
-        if resp and resp.status_code == 504:
+        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(3, redirect=2))
+        if resp and resp.status == 504:
           return try_post(url, payload, bounce)
-        elif resp and resp.status_code != 200 and bounce < 3:
+        elif resp and resp.status != 200 and bounce < 3:
           return try_post(url, payload, bounce + 1)
         else:
           return resp
-      except (requests.exceptions.ConnectionError, requests.exceptions.RequestException):
+      except (urllib3.exceptions.ConnectionError, urllib3.exceptions.RequestError):
         return try_post(url, payload, bounce)
 
     def process_one(url, body, payload, tenant) -> None:
       try:
         resp = try_post(url, payload)
-        if resp and resp.status_code == 200:
+        if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, body, tenant)
         else:
@@ -69,22 +65,22 @@ class HttpClient(object):
   def get(self, reqs, pre_process, on_progress):
     counter = ProgressCounter()
 
-    def try_get(url, bounce=0) -> requests.Response:
+    def try_get(url, bounce=0) -> urllib3.HTTPResponse:
       try:
-        resp = self.session.get(url, verify=False, timeout=(1, 1))
-        if resp and resp.status_code == 504:
+        resp = self.http.request('GET', url, retries=urllib3.Retry(3, redirect=2))
+        if resp and resp.status == 504:
           return try_get(url, bounce)
-        elif resp and resp.status_code != 200 and bounce < 3:
+        elif resp and resp.status != 200 and bounce < 3:
           return try_get(url, bounce + 1)
         else:
           return resp
-      except (requests.exceptions.ConnectionError, requests.exceptions.RequestException):
+      except (urllib3.exceptions.ConnectionError, urllib3.exceptions.RequestError):
         return try_get(url, bounce)
 
     def process_one(url, *args) -> None:
       try:
         resp = try_get(url)
-        if resp and resp.status_code == 200:
+        if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, *args)
         else:

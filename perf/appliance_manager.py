@@ -28,8 +28,6 @@ class ApplianceManager(object):
     if 'search' in services:
       self['search'] = Search()
 
-    print(self.units)
-
   def __len__(self):
     return sum([len(x) for x in self.units.values()])
 
