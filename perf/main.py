@@ -98,12 +98,12 @@ def main():
 
       eventually_ready(manager)
 
-      absolute_total = int(2*1e3)
+      absolute_total = int(4*1e3)
       with metrics(manager, 's1_new_account_latencies_{0}'.format(absolute_total)):
         steps.random_uniform_accounts(absolute_total)
         manager.teardown('vault')
 
-      absolute_total = int(2*1e3)
+      absolute_total = int(4*1e3)
       with timeit('get accounts scenario'):
         manager.onboard_vault()
         manager.scale_wall(4)
