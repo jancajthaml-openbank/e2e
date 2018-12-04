@@ -4,7 +4,6 @@ from systemd.common import Unit
 import subprocess
 import multiprocessing
 import string
-import requests
 import time
 
 class Lake(Unit):

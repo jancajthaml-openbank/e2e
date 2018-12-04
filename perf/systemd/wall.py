@@ -4,7 +4,6 @@ from systemd.common import Unit
 import subprocess
 import multiprocessing
 import string
-import requests
 import time
 import random
 secure_random = random.SystemRandom()

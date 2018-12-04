@@ -98,7 +98,7 @@ def main():
 
       eventually_ready(manager)
 
-      absolute_total = int(2*1e4)
+      absolute_total = int(2*1e3)
       with metrics(manager, 's1_new_account_latencies_{0}'.format(absolute_total)):
         steps.random_uniform_accounts(absolute_total)
         manager.teardown('vault')
@@ -111,7 +111,7 @@ def main():
 
         eventually_ready(manager)
 
-        splits = 20
+        splits = 10
         chunk = int(absolute_total/splits)
         absolute_total = splits*chunk
         no_accounts = chunk

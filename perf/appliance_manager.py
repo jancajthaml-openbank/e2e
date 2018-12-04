@@ -16,9 +16,17 @@ class ApplianceManager(object):
     self.store = {}
     self.units = {}
 
-    self['wall'] = Wall()
-    self['lake'] = Lake()
-    self['search'] = Search()
+    installed = subprocess.check_output(["systemctl", "-t", "service", "--no-legend"], stderr=subprocess.STDOUT).decode("utf-8").strip()
+    services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in installed.splitlines()])
+
+    if 'wall' in services:
+      self['wall'] = Wall()
+
+    if 'lake' in services:
+      self['lake'] = Lake()
+
+    if 'search' in services:
+      self['search'] = Search()
 
   def __len__(self):
     return sum([len(x) for x in self.units.values()])

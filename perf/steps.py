@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import json
 import random
 secure_random = random.SystemRandom()
 
@@ -18,7 +19,7 @@ class Steps:
     with timeit('random_targeted_accounts(_, {0}, {1})'.format(tenant_name, num_of_accounts)):
 
       def callback(response, url, request, tenant):
-        if response.status_code != 200:
+        if response.status != 200:
           return None
 
         self.integration.update_account(tenant, request['accountNumber'], {
@@ -63,7 +64,7 @@ class Steps:
       #debug("random uniform accounts to all tenants")
 
       def callback(response, url, request, tenant):
-        if response.status_code != 200:
+        if response.status != 200:
           return None
 
         self.integration.update_account(tenant, request['accountNumber'], {
@@ -125,10 +126,10 @@ class Steps:
       max_transactions = min_transactions*10
 
       def callback(response, url, request, tenant_name):
-        if response.status_code != 200:
+        if response.status != 200:
           return None
 
-        transaction = response.json()['transaction']
+        transaction = json.loads(response.data.decode('utf-8'))['transaction']
         self.integration.charge_transactions(tenant_name, transaction, request['transfers'])
 
         return response
@@ -182,10 +183,10 @@ class Steps:
       info("prepared checking balance of {0} accounts".format(num_of_accounts))
 
       def callback(response, url, request, tenant_name):
-        if response.status_code != 200:
+        if response.status != 200:
           return None
 
-        content = response.json()
+        content = json.loads(response.data.decode('utf-8'))
         if content['currency'] == request['currency'] and content['balance'] == request['balance']:
           return response
         else:
