@@ -73,11 +73,11 @@ module Journal
       {
         "isBalanceCheck" => lines[0][0] != 'F',
         "currency" => lines[0][1..3],
-        "accountName" => lines[0][4..-1],
-        "version" => lines[1].to_i,
-        "balance" => lines[2],
-        "promised" => lines[3],
-        "promiseBuffer" => lines[4..-2]
+        "accountName" => account,
+        "version" => version.to_i,
+        "balance" => lines[1],
+        "promised" => lines[2],
+        "promiseBuffer" => lines[3..-2]
       }
     }
   end
@@ -100,11 +100,11 @@ module Journal
       {
         "isBalanceCheck" => lines[0][0] != 'F',
         "currency" => lines[0][1..3],
-        "accountName" => lines[0][4..-1],
-        "version" => lines[1].to_i,
-        "balance" => lines[2],
-        "promised" => lines[3],
-        "promiseBuffer" => lines[4..-2]
+        "accountName" => account,
+        "version" => snapshots[0].to_i,
+        "balance" => lines[1],
+        "promised" => lines[2],
+        "promiseBuffer" => lines[3..-2]
       }
     }
   end
