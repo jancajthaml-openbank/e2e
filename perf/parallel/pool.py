@@ -73,7 +73,7 @@ class Pool(object):
     for a in self.aborts:
       a.set()
     while self.alive():
-      sleep(0.01)
+      sleep(0.1)
 
   def alive(self) -> bool:
     for t in self.threads:
