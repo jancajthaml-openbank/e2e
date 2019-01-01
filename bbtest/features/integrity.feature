@@ -10,29 +10,33 @@ Feature: Integrity test
     """
       {
         "id": "race",
-        "transfers": [{
-          "id": "race_id_1",
-          "credit": "ReplayCredit",
-          "debit": "ReplayDebit",
-          "amount": "1.0",
-          "currency": "EUR"
-        }, {
-          "id": "race_id_2",
-          "credit": "ReplayCredit",
-          "debit": "ReplayDebit",
-          "amount": "2.0",
-          "currency": "EUR"
-        }, {
-          "id": "race_id_3",
-          "credit": "ReplayCredit",
-          "debit": "ReplayDebit",
-          "amount": "3.0",
-          "currency": "EUR"
-        }]
+        "transfers": [
+          {
+            "id": "race_id_1",
+            "credit": "ReplayCredit",
+            "debit": "ReplayDebit",
+            "amount": "1.0",
+            "currency": "EUR"
+          },
+          {
+            "id": "race_id_2",
+            "credit": "ReplayCredit",
+            "debit": "ReplayDebit",
+            "amount": "2.0",
+            "currency": "EUR"
+          },
+          {
+            "id": "race_id_3",
+            "credit": "ReplayCredit",
+            "debit": "ReplayDebit",
+            "amount": "3.0",
+            "currency": "EUR"
+          }
+        ]
       }
     """
-    Then metrics for tenant INTEGRITY should report 2 created accounts
-    And  metrics should report 3 created transfers
-    And  INTEGRITY/ReplayCredit balance should be 6 EUR
-    And  INTEGRITY/ReplayDebit balance should be -6 EUR
-    #And  there should exist following transfers for tenant INTEGRITY
+    Then  metrics for tenant INTEGRITY should report 2 created accounts
+    And   metrics should report 3 created transfers
+    And   INTEGRITY/ReplayCredit balance should be 6 EUR
+    And   INTEGRITY/ReplayDebit balance should be -6 EUR
+    #And   there should exist following transfers for tenant INTEGRITY

@@ -23,6 +23,15 @@ class ApplianceHelper
     }.map { |x| x.chomp(".service") }
 
     MongoHelper.start("graphql")
+
+    return if @units.nil?
+
+    @units.each { |unit|
+      %x(systemctl start #{unit})
+    }
+  end
+
+  def cleanup()
   end
 
   def ready?()

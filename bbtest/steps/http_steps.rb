@@ -2,23 +2,21 @@ require 'json'
 require 'json-diff'
 require 'deepsort'
 
-step "I request search" do |body|
-  query = "{\"query\":\"{" + body.inspect[1..-2] + "}\",\"variables\":null,\"operationName\":null}"
-
+step "I request curl :http_method :url" do |http_method, url, body=nil|
   cmd = ["curl --insecure"]
-  cmd << ["-X POST"]
+  cmd << ["-X #{http_method.upcase}"] unless http_method.upcase == "GET"
   cmd << ["-H \"Content-Type: application/json\""]
-  cmd << ["http://127.0.0.1/graphql -sw \"%{http_code}\""]
-  cmd << ["-d \'#{query}\'"]
+  cmd << ["https://127.0.0.1#{url} -sw \"%{http_code}\""]
+  cmd << ["-d \'#{JSON.parse(body).to_json}\'"] unless body.nil?
 
-  @search_req = cmd.join(" ")
+  @http_req = cmd.join(" ")
 end
 
-step "search responds with :http_status" do |http_status, body = nil|
-  raise if @search_req.nil?
+step "curl responds with :http_status" do |http_status, body = nil|
+  raise if @http_req.nil?
 
   @resp = Hash.new
-  resp = %x(#{@search_req})
+  resp = %x(#{@http_req})
 
   @resp[:code] = resp[resp.length-3...resp.length].to_i
   @resp[:body] = resp[0...resp.length-3] unless resp.nil?
