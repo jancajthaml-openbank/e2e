@@ -8,14 +8,14 @@ Feature: Search API test
     When  active EUR account SEARCH/ReplayCredit is created
     And   pasive EUR account SEARCH/ReplayDebit is created
 
-    When I request search
+    When  I request search
     """
       Accounts(tenant: "SEARCH") {
         name
         currency
       }
     """
-    Then search responds with 200
+    Then  search responds with 200
     """
       {
         "data": {

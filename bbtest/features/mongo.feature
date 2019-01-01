@@ -10,7 +10,7 @@ Feature: Mongo integrity
     And   0.00000000001 EUR is transfered from mine to theirs for tenant MONGO
     And   0.00000000001 EUR is transfered from theirs to mine for tenant MONGO
 
-    Then mongo collection account should contain
+    Then  mongo collection account should contain
       """
         [
           {

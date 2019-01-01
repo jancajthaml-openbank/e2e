@@ -9,9 +9,6 @@ RSpec.configure do |config|
 
   Dir.glob("./helpers/*_helper.rb") { |f| load f }
   config.include EventuallyHelper, :type => :feature
-  #config.include MongoHelper, :type => :feature
-  #config.include Journal, :type => :feature
-  #config.include Docker, :type => :feature
   Dir.glob("./steps/*_steps.rb") { |f| load f, true }
 
   $appliance = ApplianceHelper.new()
@@ -27,6 +24,10 @@ RSpec.configure do |config|
     $appliance.start()
 
     print "[ suite started  ]\n"
+  end
+
+  config.after(:type => :feature) do
+    $appliance.cleanup()
   end
 
   config.after(:suite) do |_suite|

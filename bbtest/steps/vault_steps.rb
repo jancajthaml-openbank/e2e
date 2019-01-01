@@ -6,23 +6,15 @@ require 'bigdecimal'
 step ":activity :currency account :account is created" do |activity, currency, account|
   (tenant, account) = account.split('/')
 
-  body = {
+  send "I request curl :http_method :url", "POST", "/account/#{tenant}", {
     accountNumber: account,
     currency: currency,
     isBalanceCheck: activity
   }.to_json
 
-  cmd = [
-    "curl --insecure",
-    "-X POST",
-    "https://127.0.0.1/account/#{tenant} -sw \"%{http_code}\"",
-    "-d \'#{body}\'",
-  ].join(" ")
-
   resp = nil
-
   eventually() {
-    resp = %x(#{cmd})
+    resp = %x(#{@http_req})
     expect($?).to be_success, resp
   }
 
@@ -33,15 +25,11 @@ end
 step ":account balance should be :amount :currency" do |account, amount, currency|
   (tenant, account) = account.split('/')
 
-  cmd = [
-    "curl --insecure",
-    "https://127.0.0.1/account/#{tenant}/#{account} -sw \"%{http_code}\"",
-  ].join(" ")
+  send "I request curl :http_method :url", "GET", "/account/#{tenant}/#{account}"
 
   response = Hash.new
-  resp = nil
 
-  resp = %x(#{cmd})
+  resp = %x(#{@http_req})
   response[:code] = resp[resp.length-3...resp.length].to_i
   response[:body] = resp[0...resp.length-3] unless resp.nil?
 
@@ -56,12 +44,9 @@ end
 step ":account should exist" do |account|
   (tenant, account) = account.split('/')
 
-  cmd = [
-    "curl --insecure",
-    "https://127.0.0.1/account/#{tenant}/#{account} -sw \"%{http_code}\"",
-  ].join(" ")
+  send "I request curl :http_method :url", "GET", "/account/#{tenant}/#{account}"
 
-  resp = %x(#{cmd})
+  resp = %x(#{@http_req})
   code = resp[resp.length-3...resp.length].to_i
 
   expect(code).to eq(200)
@@ -70,14 +55,10 @@ end
 step ":account should not exist" do |account|
   (tenant, account) = account.split('/')
 
-  cmd = [
-    "curl --insecure",
-    "https://127.0.0.1/account/#{tenant}/#{account} -sw \"%{http_code}\"",
-  ].join(" ")
+  send "I request curl :http_method :url", "GET", "/account/#{tenant}/#{account}"
 
-  resp = %x(#{cmd})
+  resp = %x(#{@http_req})
   code = resp[resp.length-3...resp.length].to_i
 
   expect(code).to eq(404)
-
 end

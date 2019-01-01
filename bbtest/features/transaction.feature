@@ -55,19 +55,22 @@ Feature: Transaction workflow
     """
       {
         "id": "forward_id",
-        "transfers": [{
-          "id": "transfer_1",
-          "credit": "OriginCredit",
-          "debit": "OriginDebit",
-          "amount": "1",
-          "currency": "EUR"
-        }, {
-          "id": "transfer_2",
-          "credit": "OriginCredit",
-          "debit": "OriginDebit",
-          "amount": "2",
-          "currency": "EUR"
-        }]
+        "transfers": [
+          {
+            "id": "transfer_1",
+            "credit": "OriginCredit",
+            "debit": "OriginDebit",
+            "amount": "1",
+            "currency": "EUR"
+          },
+          {
+            "id": "transfer_2",
+            "credit": "OriginCredit",
+            "debit": "OriginDebit",
+            "amount": "2",
+            "currency": "EUR"
+          }
+        ]
       }
     """
     Then  AIRBANK/OriginDebit balance should be -3 EUR

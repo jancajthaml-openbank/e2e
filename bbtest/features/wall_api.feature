@@ -5,14 +5,14 @@ Feature: Wall API test
     And   vault WALL is onbdoarded
 
   Scenario: Account API - account doesn't exist
-    When I request wall GET /account/WALL/xxx
-    Then wall responds with 404
+    When  I request curl GET /account/WALL/xxx
+    Then  curl responds with 404
     """
       {}
     """
 
   Scenario: Account API - account created
-    When I request wall POST /account/WALL
+    When  I request curl POST /account/WALL
     """
       {
         "accountNumber": "xxx",
@@ -20,13 +20,20 @@ Feature: Wall API test
         "isBalanceCheck": false
       }
     """
-    Then wall responds with 200
+    Then  curl responds with 200
+    """
+      {}
+    """
+
+  Scenario: Account API - request for account of non-existant vault
+    When  I request curl GET /account/nothing/xxx
+    Then  curl responds with 504
     """
       {}
     """
 
   Scenario: Account API - account already exists
-    When I request wall POST /account/WALL
+    When  I request curl POST /account/WALL
     """
       {
         "accountNumber": "yyy",
@@ -34,12 +41,12 @@ Feature: Wall API test
         "isBalanceCheck": false
       }
     """
-    Then wall responds with 200
+    Then  curl responds with 200
     """
       {}
     """
 
-    When I request wall POST /account/WALL
+    When  I request curl POST /account/WALL
     """
       {
         "accountNumber": "yyy",
@@ -47,14 +54,14 @@ Feature: Wall API test
         "isBalanceCheck": false
       }
     """
-    Then wall responds with 409
+    Then  curl responds with 409
     """
       {}
     """
 
   Scenario: Account API - get account balance
-    When I request wall GET /account/WALL/xxx
-    Then wall responds with 200
+    When  I request curl GET /account/WALL/xxx
+    Then  curl responds with 200
     """
       {
         "currency": "XXX",
@@ -64,8 +71,8 @@ Feature: Wall API test
       }
     """
 
-    When I request wall GET /account/WALL/yyy
-    Then wall responds with 200
+    When  I request curl GET /account/WALL/yyy
+    Then  curl responds with 200
     """
       {
         "currency": "XXX",
@@ -76,61 +83,67 @@ Feature: Wall API test
     """
 
   Scenario: Transaction API - invalid transaction side
-    When I request wall POST /transaction/WALL
+    When  I request curl POST /transaction/WALL
     """
       {
-        "transfers": [{
-          "credit": "Credit",
-          "debit": "Debit",
-          "amount": "1.0",
-          "currency": "XXX"
-        }]
+        "transfers": [
+          {
+            "credit": "Credit",
+            "debit": "Debit",
+            "amount": "1.0",
+            "currency": "XXX"
+          }
+        ]
       }
     """
-    Then wall responds with 417
+    Then  curl responds with 417
     """
       {}
     """
 
   Scenario: Transaction API - currency mismatch
-    When I request wall POST /transaction/WALL
+    When  I request curl POST /transaction/WALL
     """
       {
-        "transfers": [{
-          "credit": "xxx",
-          "debit": "yyy",
-          "amount": "1.0",
-          "currency": "YYY"
-        }]
+        "transfers": [
+          {
+            "credit": "xxx",
+            "debit": "yyy",
+            "amount": "1.0",
+            "currency": "YYY"
+          }
+        ]
       }
     """
-    Then wall responds with 417
+    Then  curl responds with 417
     """
       {}
     """
 
   Scenario: Transaction API - new transaction, valid resend, invalid resend
-    When I request wall GET /transaction/WALL/unique_transaction_id
-    Then wall responds with 404
+    When  I request curl GET /transaction/WALL/unique_transaction_id
+    Then  curl responds with 404
     """
       {}
     """
 
-    When I request wall POST /transaction/WALL
+    When  I request curl POST /transaction/WALL
     """
       {
         "id": "unique_transaction_id",
-        "transfers": [{
-          "id": "unique_transfer_id",
-          "valueDate": "2018-03-04T17:08:22Z",
-          "credit": "xxx",
-          "debit": "yyy",
-          "amount": "1.0",
-          "currency": "XXX"
-        }]
+        "transfers": [
+          {
+            "id": "unique_transfer_id",
+            "valueDate": "2018-03-04T17:08:22Z",
+            "credit": "xxx",
+            "debit": "yyy",
+            "amount": "1.0",
+            "currency": "XXX"
+          }
+        ]
       }
     """
-    Then wall responds with 200
+    Then  curl responds with 200
     """
       {
         "transaction": "unique_transaction_id",
@@ -140,21 +153,23 @@ Feature: Wall API test
       }
     """
 
-    When I request wall POST /transaction/WALL
+    When  I request curl POST /transaction/WALL
     """
       {
         "id": "unique_transaction_id",
-        "transfers": [{
-          "id": "unique_transfer_id",
-          "valueDate": "2018-03-04T17:08:22Z",
-          "credit": "xxx",
-          "debit": "yyy",
-          "amount": "1.0",
-          "currency": "XXX"
-        }]
+        "transfers": [
+          {
+            "id": "unique_transfer_id",
+            "valueDate": "2018-03-04T17:08:22Z",
+            "credit": "xxx",
+            "debit": "yyy",
+            "amount": "1.0",
+            "currency": "XXX"
+          }
+        ]
       }
     """
-    Then wall responds with 200
+    Then  curl responds with 200
     """
       {
         "transaction": "unique_transaction_id",
@@ -164,37 +179,41 @@ Feature: Wall API test
       }
     """
 
-    When I request wall GET /transaction/WALL/unique_transaction_id
-    Then wall responds with 200
+    When  I request curl GET /transaction/WALL/unique_transaction_id
+    Then  curl responds with 200
     """
       {
         "id": "unique_transaction_id",
-        "transfers": [{
-          "id": "unique_transfer_id",
-          "valueDate": "2018-03-04T17:08:22Z",
-          "credit": "xxx",
-          "debit": "yyy",
-          "amount": "1.0",
-          "currency": "XXX"
-        }]
+        "transfers": [
+          {
+            "id": "unique_transfer_id",
+            "valueDate": "2018-03-04T17:08:22Z",
+            "credit": "xxx",
+            "debit": "yyy",
+            "amount": "1.0",
+            "currency": "XXX"
+          }
+        ]
       }
     """
 
-    When I request wall GET /transaction/WALL
+    When  I request curl GET /transaction/WALL
     """
       {
         "id": "unique_transaction_id",
-        "transfers": [{
-          "id": "unique_transfer_id",
-          "valueDate": "2018-03-04T17:08:22Z",
-          "credit": "xxx",
-          "debit": "yyy",
-          "amount": "2.0",
-          "currency": "XXX"
-        }]
+        "transfers": [
+          {
+            "id": "unique_transfer_id",
+            "valueDate": "2018-03-04T17:08:22Z",
+            "credit": "xxx",
+            "debit": "yyy",
+            "amount": "2.0",
+            "currency": "XXX"
+          }
+        ]
       }
     """
-    Then wall responds with 409
+    Then  curl responds with 409
     """
       {}
     """
