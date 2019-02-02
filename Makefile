@@ -14,6 +14,8 @@ bbtest: candidate
 		docker run -d -ti \
 		  --name=e2e_bbtest \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+			-v /var/run/docker.sock:/var/run/docker.sock \
+      -v /var/lib/docker/containers:/var/lib/docker/containers \
 			-v $$(pwd)/bbtest:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
@@ -37,6 +39,8 @@ perf: candidate
 		docker run -d -ti \
 		  --name=e2e_perf \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+			-v /var/run/docker.sock:/var/run/docker.sock \
+      -v /var/lib/docker/containers:/var/lib/docker/containers \
 			-v $$(pwd)/perf:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
@@ -56,6 +60,8 @@ run: candidate
 		docker run -d -ti \
 		  --name=e2e_run \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+			-v /var/run/docker.sock:/var/run/docker.sock \
+      -v /var/lib/docker/containers:/var/lib/docker/containers \
 			--privileged=true \
 			--security-opt seccomp:unconfined \
 		openbankdev/e2e_candidate \

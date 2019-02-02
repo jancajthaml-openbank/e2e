@@ -84,12 +84,12 @@ class Integration(object):
     return (url, body, json.dumps(body), tenant_name)
 
   def prepare_get_balance(self, tenant_name, account_name, reference):
-    url = 'https://127.0.0.1/account/' + tenant_name + '/' + account_name
+    url = 'https://127.0.0.1:4400/account/' + tenant_name + '/' + account_name
 
     return (url, reference, tenant_name)
 
   def prepare_create_account(self, tenant_name, account_name, is_ballance_check):
-    url = 'https://127.0.0.1/account/' + tenant_name
+    url = 'https://127.0.0.1:4400/account/' + tenant_name
     body = {
       "accountNumber": account_name,
       "currency": "CZK",

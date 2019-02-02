@@ -48,7 +48,7 @@ placeholder :http_status do
 end
 
 placeholder :url do
-  match(/\/[\S]+/) do |url|
+  match(/https?:\/\/[\S]+/) do |url|
     url
   end
 end

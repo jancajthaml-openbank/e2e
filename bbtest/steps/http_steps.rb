@@ -6,7 +6,7 @@ step "I request curl :http_method :url" do |http_method, url, body=nil|
   cmd = ["curl --insecure"]
   cmd << ["-X #{http_method.upcase}"] unless http_method.upcase == "GET"
   cmd << ["-H \"Content-Type: application/json\""]
-  cmd << ["https://127.0.0.1#{url} -sw \"%{http_code}\""]
+  cmd << ["#{url} -sw \"%{http_code}\""]
   cmd << ["-d \'#{JSON.parse(body).to_json}\'"] unless body.nil?
 
   @http_req = cmd.join(" ")

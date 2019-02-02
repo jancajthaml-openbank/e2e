@@ -58,10 +58,6 @@ jobs:
     steps:
       - checkout
       - setup_remote_docker
-      - run: docker pull openbank/lake:master
-      - run: docker pull openbank/vault:master
-      - run: docker pull openbank/wall:master
-      - run: docker pull openbank/search:master
       - run: docker build -t openbankdev/e2e_candidate .
       - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
       - deploy:
@@ -141,6 +137,8 @@ jobs:
               docker run -d -ti \
                 -e NO_TTY=${NO_TTY} \
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v /var/lib/docker/containers:/var/lib/docker/containers \
                 -v /home/circleci/project/perf:/opt/perf \
                 -v /home/circleci/project/reports:/reports \
               openbankdev/e2e_candidate \
@@ -167,6 +165,8 @@ jobs:
             docker exec -it $(\
               docker run -d -ti \
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v /var/lib/docker/containers:/var/lib/docker/containers \
                 -v /home/circleci/project/bbtest:/opt/bbtest \
                 -v /home/circleci/project/reports:/reports \
               openbankdev/e2e_candidate \

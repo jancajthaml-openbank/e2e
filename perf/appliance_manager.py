@@ -5,6 +5,8 @@ from systemd.wall import Wall
 from systemd.search import Search
 from systemd.lake import Lake
 
+import errno
+import os
 import subprocess
 import string
 import random
@@ -15,6 +17,47 @@ class ApplianceManager(object):
   def __init__(self):
     self.store = {}
     self.units = {}
+
+    DEVNULL = open(os.devnull, 'w')
+
+    try:
+      os.mkdir("/opt/artifacts")
+    except OSError as exc:
+      if exc.errno != errno.EEXIST:
+        raise
+      pass
+
+    for service in [
+      {
+        "name": "lake",
+        "wildcard": "lake_*_amd64.deb",
+      },
+      {
+        "name": "vault",
+        "wildcard": "vault_*_amd64.deb",
+      },
+      {
+        "name": "wall",
+        "wildcard": "wall_*_amd64.deb",
+      },
+      {
+        "name": "search",
+        "wildcard": "search_*.deb",
+      },
+    ]:
+      subprocess.check_call(["docker", "pull", "openbank/"+service["name"]+":master"], stdout=DEVNULL, stderr=subprocess.STDOUT)
+      try:
+        subprocess.check_call(["docker", "run", "--name", "temp-container-"+service["name"], "openbank/"+service["name"]+":master", "/bin/false"], stdout=DEVNULL, stderr=subprocess.STDOUT)
+      except:
+        pass
+      subprocess.check_call(["docker", "cp", "temp-container-"+service["name"]+":/opt/artifacts", "/opt/artifacts/"+service["name"]], stdout=DEVNULL, stderr=subprocess.STDOUT)
+      subprocess.check_call(["docker", "rm", "temp-container-"+service["name"]], stdout=DEVNULL, stderr=subprocess.STDOUT)
+
+      packages = subprocess.check_output(["find", "/opt/artifacts/"+service["name"], "-type", "f", "-name", service["wildcard"]], stderr=subprocess.STDOUT).decode("utf-8").strip()
+      for package in packages.splitlines():
+        subprocess.check_call(["apt-get", "-y", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", package], stdout=DEVNULL, stderr=subprocess.STDOUT)
+
+    DEVNULL.close()
 
     installed = subprocess.check_output(["systemctl", "-t", "service", "--no-legend"], stderr=subprocess.STDOUT).decode("utf-8").strip()
     services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in installed.splitlines()])
@@ -57,7 +100,6 @@ class ApplianceManager(object):
   def onboard_vault(self, tenant=None) -> None:
     if not tenant:
       tenant = ''.join(secure_random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
-    #self.units.setdefault('vault', []).append(Vault(tenant))
     self['vault'] = Vault(tenant)
 
   def scale_wall(self, size) -> None:
@@ -80,3 +122,4 @@ class ApplianceManager(object):
     else:
       for name in list(self.units):
         del self[name]
+
