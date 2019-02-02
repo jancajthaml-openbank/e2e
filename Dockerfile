@@ -18,31 +18,19 @@
 
 FROM jancajthaml/bbtest
 
-COPY --from=openbank/lake:master /opt/artifacts /opt/artifacts/lake
-COPY --from=openbank/vault:master /opt/artifacts /opt/artifacts/vault
-COPY --from=openbank/wall:master /opt/artifacts /opt/artifacts/wall
-COPY --from=openbank/search:master /opt/artifacts /opt/artifacts/search
+COPY --from=library/docker:18.06 /usr/local/bin/docker /usr/bin/docker
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
       haproxy \
-      && \
-    \
-    find /opt/artifacts/lake -type f -name 'lake_*_amd64.deb' -exec \
-      apt-get -y install -f \{\} \; && \
-    \
-    find /opt/artifacts/vault -type f -name 'vault_*_amd64.deb' -exec \
-      apt-get -y install -f \{\} \; && \
-    \
-    find /opt/artifacts/wall -type f -name 'wall_*_amd64.deb' -exec \
-      apt-get -y install -f \{\} \; && \
-    \
-    find /opt/artifacts/search -type f -name 'search*_all.deb' -exec \
-      apt-get -y install -f \{\} \; && \
-    \
-    systemctl enable mongod
+      mongodb-org>=4.0.3~ \
+      nodejs>=10.11~ \
+      init-system-helpers>=1.18~ \
+      libzmq5=4.2.1-4
 
 COPY etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
+
+RUN systemctl enable mongod
 
 # ---------------------------------------------------------------------------- #
 

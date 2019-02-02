@@ -14,16 +14,21 @@ RSpec.configure do |config|
   $appliance = ApplianceHelper.new()
 
   config.before(:suite) do |_suite|
-    print "[ suite starting ]\n"
+    print "[ suite starting         ]\n"
 
     ["/data", "/reports/logs", "/reports/metrics"].each { |folder|
       %x(mkdir -p #{folder})
       %x(rm -rf #{folder}/*)
     }
 
+    print "[ downloading artifacts  ]\n"
+    $appliance.download_artifacts()
+    print "[ installing packages    ]\n"
+    $appliance.install_packages()
+    print "[ starting appliance     ]\n"
     $appliance.start()
 
-    print "[ suite started  ]\n"
+    print "[ suite started          ]\n"
   end
 
   config.after(:type => :feature) do
@@ -31,11 +36,11 @@ RSpec.configure do |config|
   end
 
   config.after(:suite) do |_suite|
-    print "\n[ suite ending   ]\n"
+    print "\n[ suite ending           ]\n"
 
     $appliance.teardown()
 
-    print "[ suite ended    ]"
+    print "[ suite ended            ]"
   end
 
 end

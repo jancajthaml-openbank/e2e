@@ -3,7 +3,6 @@ Feature: Integrity test
   Scenario: Replay same transaction
     Given appliance is running
     And   vault INTEGRITY is onbdoarded
-
     When  active EUR account INTEGRITY/ReplayCredit is created
     And   pasive EUR account INTEGRITY/ReplayDebit is created
     And   following transaction is created 100 times for tenant INTEGRITY
@@ -36,7 +35,6 @@ Feature: Integrity test
       }
     """
     Then  metrics for tenant INTEGRITY should report 2 created accounts
-    And   metrics should report 3 created transfers
     And   INTEGRITY/ReplayCredit balance should be 6 EUR
     And   INTEGRITY/ReplayDebit balance should be -6 EUR
     #And   there should exist following transfers for tenant INTEGRITY

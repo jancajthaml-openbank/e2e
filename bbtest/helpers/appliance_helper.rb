@@ -2,6 +2,9 @@ require_relative 'eventually_helper'
 require_relative 'mongo_helper'
 
 require 'timeout'
+require 'thread'
+
+Thread.abort_on_exception = true
 
 Encoding.default_external = Encoding::UTF_8
 Encoding.default_internal = Encoding::UTF_8
@@ -9,6 +12,57 @@ Encoding.default_internal = Encoding::UTF_8
 class ApplianceHelper
 
   attr_reader :units
+
+  def download_artifacts()
+    %x(mkdir -p /opt/artifacts)
+    [
+      "lake",
+      "vault",
+      "wall",
+      "search"
+    ].map { |service|
+      Thread.new do
+        begin
+          %x(docker pull openbank/#{service}:master)
+        rescue ThreadError
+        end
+      end
+    }.map(&:join)
+
+    [
+      "lake",
+      "vault",
+      "wall",
+      "search"
+    ].map { |service|
+      Thread.new do
+        begin
+          %x(docker run --name temp-container-#{service} openbank/#{service}:master /bin/true)
+          %x(docker cp temp-container-#{service}:/opt/artifacts /opt/artifacts/#{service})
+          %x(docker rm temp-container-#{service})
+        rescue ThreadError
+        end
+      end
+    }.map(&:join)
+  end
+
+  def install_packages()
+    [
+      "lake/lake_*_amd64.deb",
+      "vault/vault_*_amd64.deb",
+      "wall/wall_*_amd64.deb",
+      "search/search_*.deb",
+    ].each { |service|
+      id, wildcard = service.split("/")
+      %x(find /opt/artifacts/#{id} -type f -name '#{wildcard}')
+      .split("\n")
+      .map(&:strip)
+      .reject { |x| x.empty? }
+      .each { |package|
+        %x(apt-get -y install -qq -o=Dpkg::Use-Pty=0 -f #{package})
+      }
+    }
+  end
 
   def start()
     units = %x(systemctl -t service --no-legend | awk '{ print $1 }' | sort -t @ -k 2 -g)
@@ -24,11 +78,9 @@ class ApplianceHelper
 
     MongoHelper.start("graphql")
 
-    return if @units.nil?
-
     @units.each { |unit|
       %x(systemctl start #{unit})
-    }
+    } unless @units.nil?
   end
 
   def cleanup()
@@ -50,19 +102,18 @@ class ApplianceHelper
     return @units.all? { |e| actual.include?(e) }
   end
 
-  def onboard_vault(tenant)
-    out = %x(systemctl enable vault@#{tenant} 2>&1)
-    raise "failed to enable unit with error: #{out}" unless $? == 0
+  def update_units()
+    units = %x(systemctl -t service --no-legend | awk '{ print $1 }' | sort -t @ -k 2 -g)
+    raise false unless $? == 0
 
-    out = %x(systemctl start vault@#{tenant} 2>&1)
-    raise "failed to start unit with error: #{out}" unless $? == 0
-
-    @units << "vault@#{tenant}"
-
-    EventuallyHelper.eventually(timeout: 2) {
-      out = %x(systemctl show -p SubState "vault@#{tenant}" 2>&1 | sed 's/SubState=//g')
-      raise "expected vault@#{tenant} to be running is #{out}" unless out.strip == "running"
-    }
+    @units = units.split("\n").map(&:strip).reject { |x|
+      x.empty? || !(
+        x.start_with?("vault") ||
+        x.start_with?("lake")  ||
+        x.start_with?("wall")  ||
+        x.start_with?("search")
+      )
+    }.map { |x| x.chomp(".service") }
   end
 
   def get_wall_instances()

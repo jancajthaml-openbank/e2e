@@ -71,8 +71,13 @@ def main():
   clear_dir("/reports/perf_logs")
   clear_dir("/reports/perf_metrics")
 
+  info("preparing appliance")
   manager = ApplianceManager()
+
+  info("preparing integration")
   integration = Integration(manager)
+
+  info("preparing steps")
   steps = Steps(integration)
 
   try:
