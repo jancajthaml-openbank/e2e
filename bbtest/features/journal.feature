@@ -65,12 +65,12 @@ Feature: Journal integrity test
       }
     """
     And   transaction xxx state of JOURNAL should be committed
-    And   directory /data/JOURNAL/account/A/events/0000000000 should contain 2 files
-    And   file /data/JOURNAL/account/A/events/0000000000/0_-123456789123313.000422901124_xxx should exist
-    And   file /data/JOURNAL/account/A/events/0000000000/1_-123456789123313.000422901124_xxx should exist
-    And   directory /data/JOURNAL/account/B/events/0000000000 should contain 2 files
-    And   file /data/JOURNAL/account/B/events/0000000000/0_123456789123313.000422901124_xxx should exist
-    And   file /data/JOURNAL/account/B/events/0000000000/1_123456789123313.000422901124_xxx should exist
+    And   directory /data/t_JOURNAL/account/A/events/0000000000 should contain 2 files
+    And   file /data/t_JOURNAL/account/A/events/0000000000/0_-123456789123313.000422901124_xxx should exist
+    And   file /data/t_JOURNAL/account/A/events/0000000000/1_-123456789123313.000422901124_xxx should exist
+    And   directory /data/t_JOURNAL/account/B/events/0000000000 should contain 2 files
+    And   file /data/t_JOURNAL/account/B/events/0000000000/0_123456789123313.000422901124_xxx should exist
+    And   file /data/t_JOURNAL/account/B/events/0000000000/1_123456789123313.000422901124_xxx should exist
 
   Scenario: Creating of transaction rejected (insufficient funds)
     When  pasive XXX account JOURNAL/C is created
@@ -104,7 +104,7 @@ Feature: Journal integrity test
       }
     """
     And   transaction yyy state of JOURNAL should be rollbacked
-    And   directory /data/JOURNAL/account/C/events/0000000000 should contain 2 files
-    And   file /data/JOURNAL/account/C/events/0000000000/0_123456789123313.000422901124_yyy should exist
-    And   file /data/JOURNAL/account/C/events/0000000000/2_123456789123313.000422901124_yyy should exist
-    And   directory /data/JOURNAL/account/D/events/0000000000 should contain 0 files
+    And   directory /data/t_JOURNAL/account/C/events/0000000000 should contain 2 files
+    And   file /data/t_JOURNAL/account/C/events/0000000000/0_123456789123313.000422901124_yyy should exist
+    And   file /data/t_JOURNAL/account/C/events/0000000000/2_123456789123313.000422901124_yyy should exist
+    And   directory /data/t_JOURNAL/account/D/events/0000000000 should contain 0 files

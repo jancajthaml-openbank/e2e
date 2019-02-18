@@ -95,27 +95,23 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      for _ in range(4):
+      absolute_total = int(2*1e3)
+
+      for _ in range(6):
         manager.onboard_vault()
-      manager.scale_wall(4)
-
+      manager.scale_wall(8)
       integration.reset()
-
       eventually_ready(manager)
 
-      absolute_total = int(4*1e3)
       with metrics(manager, 's1_new_account_latencies_{0}'.format(absolute_total)):
         steps.random_uniform_accounts(absolute_total)
-        manager.teardown('vault')
 
-      absolute_total = int(4*1e3)
+      manager.teardown('vault')
+      manager.onboard_vault()
+      integration.reset()
+      eventually_ready(manager)
+
       with timeit('get accounts scenario'):
-        manager.onboard_vault()
-        manager.scale_wall(4)
-        integration.reset()
-
-        eventually_ready(manager)
-
         splits = 10
         chunk = int(absolute_total/splits)
         absolute_total = splits*chunk
@@ -131,7 +127,7 @@ def main():
 
           no_accounts += chunk
 
-        manager.teardown('vault')
+      manager.teardown('vault')
 
     ############################################################################
 
