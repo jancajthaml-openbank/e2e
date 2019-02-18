@@ -13,6 +13,8 @@ from steps import Steps
 import traceback
 from parallel.pool import Pool
 
+from time import sleep
+
 from parallel.monkey_patch import patch_thread_join
 patch_thread_join()
 
@@ -95,22 +97,27 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      absolute_total = int(2*1e3)
+      absolute_total = int(3*1e3)
 
       for _ in range(6):
         manager.onboard_vault()
-      manager.scale_wall(8)
+      manager.scale_wall(2)
       integration.reset()
       eventually_ready(manager)
 
+      sleep(2)
       with metrics(manager, 's1_new_account_latencies_{0}'.format(absolute_total)):
         steps.random_uniform_accounts(absolute_total)
+      sleep(2)
 
       manager.teardown('vault')
       manager.onboard_vault()
       integration.reset()
       eventually_ready(manager)
 
+      absolute_total = int(2*1e3)
+
+      sleep(2)
       with timeit('get accounts scenario'):
         splits = 10
         chunk = int(absolute_total/splits)
@@ -126,6 +133,7 @@ def main():
             manager.reset()
 
           no_accounts += chunk
+      sleep(2)
 
       manager.teardown('vault')
 
