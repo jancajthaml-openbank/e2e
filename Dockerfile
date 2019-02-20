@@ -26,7 +26,7 @@ RUN apt-get update && \
       mongodb-org>=4.0.3~ \
       nodejs>=10.11~ \
       init-system-helpers>=1.18~ \
-      libzmq5=4.2.1-4
+      libzmq5>=4.2.1~
 
 COPY etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 

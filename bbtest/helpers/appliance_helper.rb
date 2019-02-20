@@ -59,7 +59,8 @@ class ApplianceHelper
       .map(&:strip)
       .reject { |x| x.empty? }
       .each { |package|
-        %x(apt-get -y install -qq -o=Dpkg::Use-Pty=0 -f #{package})
+        out = %x(apt-get -y install -qq -o=Dpkg::Use-Pty=0 -f #{package} 2>&1)
+        raise "#{package} install failed with: #{out}" unless $? == 0
       }
     }
   end

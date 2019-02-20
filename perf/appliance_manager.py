@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+import docker
+
+from utils import progress, debug
+
 from systemd.vault import Vault
 from systemd.wall import Wall
 from systemd.search import Search
@@ -17,6 +21,7 @@ class ApplianceManager(object):
   def __init__(self):
     self.store = {}
     self.units = {}
+    self.docker = docker.from_env()
 
     DEVNULL = open(os.devnull, 'w')
 
@@ -45,17 +50,26 @@ class ApplianceManager(object):
         "wildcard": "search_*.deb",
       },
     ]:
-      subprocess.check_call(["docker", "pull", "openbank/"+service["name"]+":master"], stdout=DEVNULL, stderr=subprocess.STDOUT)
-      try:
-        subprocess.check_call(["docker", "run", "--name", "temp-container-"+service["name"], "openbank/"+service["name"]+":master", "/bin/false"], stdout=DEVNULL, stderr=subprocess.STDOUT)
-      except:
-        pass
-      subprocess.check_call(["docker", "cp", "temp-container-"+service["name"]+":/opt/artifacts", "/opt/artifacts/"+service["name"]], stdout=DEVNULL, stderr=subprocess.STDOUT)
-      subprocess.check_call(["docker", "rm", "temp-container-"+service["name"]], stdout=DEVNULL, stderr=subprocess.STDOUT)
+      for line in self.docker.api.pull('openbank/{0}'.format(service["name"]), tag='master', stream=True, decode=True):
+        progress('docker pull openbank/{0}:master {1}'.format(service["name"], line['status']))
+
+      progress('docker create scratch container openbank/{0}:master'.format(service["name"]))
+      container_id = self.docker.api.create_container('openbank/{0}:master'.format(service["name"]), '/bin/false', detach=True)['Id']
+
+      progress('docker cp openbank/{0}:/opt/artifacts /opt/artifacts/{1}'.format(service["name"], service["name"]))
+      subprocess.check_call(["docker", "cp", container_id+":/opt/artifacts", "/opt/artifacts/"+service["name"]], stdout=DEVNULL, stderr=subprocess.STDOUT)
+
+      progress('docker remove scratch container openbank/{0}:master'.format(service["name"]))
+      self.docker.api.remove_container(container_id)
 
       packages = subprocess.check_output(["find", "/opt/artifacts/"+service["name"], "-type", "f", "-name", service["wildcard"]], stderr=subprocess.STDOUT).decode("utf-8").strip()
+
+      progress('{0} installing package {1}'.format(service["name"], packages))
+
       for package in packages.splitlines():
         subprocess.check_call(["apt-get", "-y", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", package], stdout=DEVNULL, stderr=subprocess.STDOUT)
+
+      debug('{0} installed'.format(service["name"]))
 
     DEVNULL.close()
 
