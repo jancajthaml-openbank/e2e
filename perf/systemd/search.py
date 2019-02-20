@@ -14,14 +14,19 @@ class Search(Unit):
     self.units.append('search')
 
   def teardown(self):
-    try:
-      subprocess.check_call(["systemctl", "stop", 'search'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-      out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'search'], stderr=subprocess.STDOUT).decode("utf-8").strip()
-      with open('/reports/perf_logs/search.log', 'w') as the_file:
-        the_file.write(out)
-    except subprocess.CalledProcessError as ex:
-      pass
-    pass
+    def eventual_teardown():
+      try:
+        subprocess.check_call(["systemctl", "stop", 'search'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'search'], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        with open('/reports/perf_logs/search.log', 'w') as the_file:
+          the_file.write(out)
+      except subprocess.CalledProcessError as ex:
+        pass
+
+    action_process = multiprocessing.Process(target=eventual_teardown)
+    action_process.start()
+    action_process.join(timeout=2)
+    action_process.terminate()
 
   def restart(self) -> bool:
     out = None
