@@ -32,7 +32,7 @@ class MetricsAggregator(Thread):
         self.__store[path] = {}
       try:
         with open(path, mode='r', encoding="ascii") as f:
-          self.__store[path][str(int(time.time()))] = json.load(f)
+          self.__store[path][str(int(time.time()*1000))] = json.load(f)
       except IOError:
         pass
       else:
@@ -51,14 +51,14 @@ class MetricsAggregator(Thread):
       events = []
 
       for event in self.__wall_watch.read(timeout=100):
-        if not event.name.endswith("temp"):
+        if not event.name.endswith('temp'):
           path = os.path.join('/opt/wall/metrics', event.name)
           self.__process_change(path)
       for event in self.__lake_watch.read(timeout=100):
-        if not event.name.endswith("temp"):
+        if not event.name.endswith('temp'):
           path = os.path.join('/opt/lake/metrics', event.name)
           self.__process_change(path)
       for event in self.__vault_watch.read(timeout=100):
-        if not event.name.endswith("temp"):
+        if not event.name.endswith('temp'):
           path = os.path.join('/opt/vault/metrics', event.name)
           self.__process_change(path)

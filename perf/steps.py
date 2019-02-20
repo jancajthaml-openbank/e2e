@@ -116,14 +116,14 @@ class Steps:
 
       return True
 
-  def random_uniform_transactions(self):
+  def random_uniform_transactions(self, number_of_transactions=None):
     with timeit('random_uniform_transactions(_)'):
-      #debug("random uniform transactions to all tenants")
-
       tenants = self.integration.tenants
 
-      min_transactions = 100
-      max_transactions = min_transactions*10
+      if not number_of_transactions:
+        min_transactions = max(len(tenants) * 10, 100)
+        max_transactions = min_transactions * 10
+        number_of_transactions = secure_random.randrange(min_transactions, max_transactions)
 
       def callback(response, url, request, tenant_name):
         if response.status != 200:
@@ -136,8 +136,6 @@ class Steps:
 
       def on_progress(processed, passed, failed):
         progress('{0} [ passed: {1}, failed: {2} ]'.format(processed, passed, failed))
-
-      number_of_transactions = secure_random.randrange(min_transactions, max_transactions)
 
       partitions = []
       chunks = len(tenants)
@@ -171,7 +169,6 @@ class Steps:
 
   def check_balances(self):
     with timeit('check_balances(_)'):
-      #debug("check balances of all tenants")
       num_of_accounts = 0
 
       prepared = []

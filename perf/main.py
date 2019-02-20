@@ -139,6 +139,26 @@ def main():
 
     ############################################################################
 
+    with timeit('new transaction scenario'):
+      absolute_total = int(10*1e3)
+
+      for _ in range(1):
+        manager.onboard_vault()
+      manager.scale_wall(2)
+      integration.reset()
+      eventually_ready(manager)
+
+      steps.random_uniform_accounts(100)
+
+      sleep(2)
+      with metrics(manager, 's3_new_transaction_latencies_{0}'.format(absolute_total)):
+        steps.random_uniform_transactions(absolute_total)
+      sleep(2)
+
+      manager.teardown('vault')
+
+    ############################################################################
+
     debug("end tests")
 
   except KeyboardInterrupt:
