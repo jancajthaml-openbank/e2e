@@ -97,11 +97,11 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      absolute_total = int(3*1e3)
+      absolute_total = int(4*1e3)
 
-      for _ in range(6):
+      for _ in range(4):
         manager.onboard_vault()
-      manager.scale_wall(2)
+      manager.scale_wall(6)
       integration.reset()
       eventually_ready(manager)
 
@@ -144,7 +144,7 @@ def main():
 
       for _ in range(1):
         manager.onboard_vault()
-      manager.scale_wall(2)
+      manager.scale_wall(6)
       integration.reset()
       eventually_ready(manager)
 
