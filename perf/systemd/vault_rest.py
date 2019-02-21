@@ -26,10 +26,17 @@ class VaultRest(Unit):
     action_process.terminate()
 
   def restart(self) -> bool:
-    try:
-      subprocess.check_call(["systemctl", "restart", "vault"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as ex:
-      raise RuntimeError("Failed to restart vault with error {0}".format(ex))
+    def eventual_restart():
+      try:
+        subprocess.check_call(["systemctl", "restart", "vault"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+      except subprocess.CalledProcessError as ex:
+        raise RuntimeError("Failed to restart vault with error {0}".format(ex))
+
+    action_process = multiprocessing.Process(target=eventual_restart)
+    action_process.start()
+    action_process.join(timeout=2)
+    action_process.terminate()
+
     return self.is_healthy
 
   def reconfigure(self, params) -> None:
@@ -41,7 +48,9 @@ class VaultRest(Unit):
         d[key] = val
 
     for k, v in params.items():
-      d['VAULT_{0}'.format(k)] = v
+      key = 'VAULT_{0}'.format(k)
+      if key in d:
+        d[key] = v
 
     with open('/etc/init/vault.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))

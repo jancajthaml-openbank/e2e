@@ -32,7 +32,9 @@ class Wall(Unit):
         d[key] = val
 
     for k, v in params.items():
-      d['WALL_{0}'.format(k)] = v
+      key = 'WALL_{0}'.format(k)
+      if key in d:
+        d[key] = v
 
     with open('/etc/init/wall.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
@@ -64,6 +66,9 @@ class Wall(Unit):
   def teardown(self):
     def eventual_teardown():
       try:
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'wall'], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        with open('/reports/perf_logs/wall.log', 'w') as the_file:
+          the_file.write(out)
         subprocess.check_call(["systemctl", "stop", 'wall'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
         out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'wall'], stderr=subprocess.STDOUT).decode("utf-8").strip()
         with open('/reports/perf_logs/wall.log', 'w') as the_file:
