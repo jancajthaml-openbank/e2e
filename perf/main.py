@@ -108,6 +108,7 @@ def main():
       sleep(2)
       with metrics(manager, 's1_new_account_latencies_{0}'.format(absolute_total)):
         steps.random_uniform_accounts(absolute_total)
+        manager.reset()
       sleep(2)
 
       manager.teardown('vault')
@@ -146,6 +147,7 @@ def main():
         manager.onboard_vault()
       manager.scale_wall(6)
       integration.reset()
+      manager.reset()
       eventually_ready(manager)
 
       steps.random_uniform_accounts(100)
@@ -153,6 +155,7 @@ def main():
       sleep(2)
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(absolute_total)):
         steps.random_uniform_transactions(absolute_total)
+        manager.reset()
       sleep(2)
 
       manager.teardown('vault')
