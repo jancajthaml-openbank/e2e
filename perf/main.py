@@ -89,8 +89,11 @@ def main():
 
     # with memory boundaries we could test long running (several days running) tests and determine failures
 
-    #manager.spawn_appliance()
-    #manager.spawn_lake()
+    info("reconfigure units")
+
+    manager.reconfigure({
+      'METRICS_REFRESHRATE': '500ms'
+    })
 
     info("start tests")
 
@@ -111,7 +114,7 @@ def main():
         manager.reset()
       sleep(2)
 
-      manager.teardown('vault')
+      manager.teardown('vault-unit')
       manager.onboard_vault()
       integration.reset()
       eventually_ready(manager)
@@ -127,7 +130,8 @@ def main():
 
         while no_accounts <= absolute_total:
           steps.random_uniform_accounts(chunk)
-          manager.reset('vault')
+          manager.reset('vault-unit')
+          manager.reset('vault-rest')
 
           with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
             steps.check_balances()
@@ -136,7 +140,7 @@ def main():
           no_accounts += chunk
       sleep(2)
 
-      manager.teardown('vault')
+      manager.teardown('vault-unit')
 
     ############################################################################
 
@@ -158,7 +162,7 @@ def main():
         manager.reset()
       sleep(2)
 
-      manager.teardown('vault')
+      manager.teardown('vault-unit')
 
     ############################################################################
 

@@ -23,6 +23,23 @@ class Wall(Unit):
     for i in range(int(d['WALL_SCALE'])):
       self.units.append('wall@{0}'.format(i+1))
 
+  def reconfigure(self, params) -> None:
+    d = {}
+
+    with open('/etc/init/wall.conf', 'r') as f:
+      for line in f:
+        (key, val) = line.rstrip().split('=')
+        d[key] = val
+
+    for k, v in params.items():
+      d['WALL_{0}'.format(k)] = v
+
+    with open('/etc/init/wall.conf', 'w') as f:
+      f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
+
+    if not self.restart():
+      raise RuntimeError("wall failed to restart")
+
   def scale(self, size) -> None:
     d = {}
 
@@ -45,14 +62,19 @@ class Wall(Unit):
       raise RuntimeError("wall failed to scale")
 
   def teardown(self):
-    try:
-      subprocess.check_call(["systemctl", "stop", 'wall'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-      out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'wall'], stderr=subprocess.STDOUT).decode("utf-8").strip()
-      with open('/reports/perf_logs/wall.log', 'w') as the_file:
-        the_file.write(out)
-    except subprocess.CalledProcessError as ex:
-      pass
-    pass
+    def eventual_teardown():
+      try:
+        subprocess.check_call(["systemctl", "stop", 'wall'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'wall'], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        with open('/reports/perf_logs/wall.log', 'w') as the_file:
+          the_file.write(out)
+      except subprocess.CalledProcessError as ex:
+        pass
+
+    action_process = multiprocessing.Process(target=eventual_teardown)
+    action_process.start()
+    action_process.join(timeout=5)
+    action_process.terminate()
 
   def restart(self) -> bool:
     out = None

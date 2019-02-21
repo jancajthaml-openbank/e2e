@@ -55,7 +55,7 @@ class Integration(object):
 
   @property
   def tenants(self) -> list:
-    return [v.tenant for v in self.__manager['vault']]
+    return [v.tenant for v in self.__manager['vault-unit']]
 
   @staticmethod
   def prepare_transfer(credit_account_choice, debit_acount_choice) -> dict:

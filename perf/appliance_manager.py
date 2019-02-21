@@ -4,7 +4,8 @@ import docker
 
 from utils import progress, debug
 
-from systemd.vault import Vault
+from systemd.vault_unit import VaultUnit
+from systemd.vault_rest import VaultRest
 from systemd.wall import Wall
 from systemd.search import Search
 from systemd.lake import Lake
@@ -85,6 +86,9 @@ class ApplianceManager(object):
     if 'search' in services:
       self['search'] = Search()
 
+    if 'vault' in services:
+      self['vault-rest'] = VaultRest()
+
   def __len__(self):
     return sum([len(x) for x in self.units.values()])
 
@@ -114,11 +118,21 @@ class ApplianceManager(object):
   def onboard_vault(self, tenant=None) -> None:
     if not tenant:
       tenant = ''.join(secure_random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
-    self['vault'] = Vault(tenant)
+    self['vault-unit'] = VaultUnit(tenant)
 
   def scale_wall(self, size) -> None:
     for wall in self['wall']:
       wall.scale(size)
+
+  def reconfigure(self, params, key=None) -> None:
+    if not key:
+      for name in list(self.units):
+        for node in self[name]:
+          node.reconfigure(params)
+      return
+
+    for node in self[key]:
+      node.reconfigure(params)
 
   def reset(self, key=None) -> None:
     if not key:
@@ -136,4 +150,3 @@ class ApplianceManager(object):
     else:
       for name in list(self.units):
         del self[name]
-
