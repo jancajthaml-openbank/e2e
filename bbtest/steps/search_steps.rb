@@ -17,30 +17,32 @@ end
 step "search responds with :http_status" do |http_status, body = nil|
   raise if @search_req.nil?
 
-  @resp = Hash.new
-  resp = %x(#{@search_req})
+  eventually() {
+    @resp = Hash.new
+    resp = %x(#{@search_req})
 
-  @resp[:code] = resp[resp.length-3...resp.length].to_i
-  @resp[:body] = resp[0...resp.length-3] unless resp.nil?
+    @resp[:code] = resp[resp.length-3...resp.length].to_i
+    @resp[:body] = resp[0...resp.length-3] unless resp.nil?
 
-  expect(@resp[:code]).to eq(http_status)
+    expect(@resp[:code]).to eq(http_status)
 
-  return if body.nil?
+    return if body.nil?
 
-  expectation = JSON.parse(body)
-  expectation.deep_sort!
+    expectation = JSON.parse(body)
+    expectation.deep_sort!
 
-  begin
-    resp_body = JSON.parse(@resp[:body])
-    resp_body.deep_sort!
+    begin
+      resp_body = JSON.parse(@resp[:body])
+      resp_body.deep_sort!
 
-    diff = JsonDiff.diff(resp_body, expectation).select{ |item| item["op"] != "remove" }
-    return if diff == []
+      diff = JsonDiff.diff(resp_body, expectation).select{ |item| item["op"] != "remove" }
+      return if diff == []
 
-    raise "expectation failure:\ngot:\n#{JSON.pretty_generate(resp_body)}\nexpected:\n#{JSON.pretty_generate(expectation)}"
+      raise "expectation failure:\ngot:\n#{JSON.pretty_generate(resp_body)}\nexpected:\n#{JSON.pretty_generate(expectation)}"
 
-  rescue JSON::ParserError
-    raise "invalid response got \"#{@resp[:body].strip}\", expected \"#{expectation.to_json}\""
-  end
+    rescue JSON::ParserError
+      raise "invalid response got \"#{@resp[:body].strip}\", expected \"#{expectation.to_json}\""
+    end
+  }
 
 end

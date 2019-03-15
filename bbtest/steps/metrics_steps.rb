@@ -4,7 +4,7 @@ require 'json'
 
 step "metrics for tenant :tenant should report :count created accounts" do |tenant, count|
   eventually(timeout: 3) {
-    metrics = $appliance.get_metrics("vault@#{tenant}")
+    metrics = $appliance.get_metrics("vault", "metrics.#{tenant}.json")
     expect(metrics["createdAccounts"]).to eq(count)
   }
 end
@@ -12,7 +12,8 @@ end
 step "metrics should report :count created transfers" do |count|
   eventually(timeout: 3) {
     createdTransfers = $appliance.get_wall_instances().reduce(0) { |sum, wall|
-      sum + $appliance.get_metrics(wall)["createdTransfers"].to_i
+      puts "[#{wall}]"
+      sum + $appliance.get_metrics("wall", "wall")["createdTransfers"].to_i
     }
     expect(createdTransfers).to eq(count)
   }
@@ -20,7 +21,7 @@ end
 
 step "metrics events for tenant :tenant should cancel out" do |tenant|
   eventually(timeout: 3) {
-    metrics = $appliance.get_metrics("vault@#{tenant}")
+    metrics = $appliance.get_metrics("vault", "metrics.#{tenant}.json")
 
     raise "no promises in #{contents}" unless metrics["promisesAccepted"] > 0
 

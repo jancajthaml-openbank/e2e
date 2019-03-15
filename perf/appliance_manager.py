@@ -77,6 +77,7 @@ class ApplianceManager(object):
     installed = subprocess.check_output(["systemctl", "-t", "service", "--no-legend"], stderr=subprocess.STDOUT).decode("utf-8").strip()
     services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in installed.splitlines()])
 
+
     if 'wall' in services:
       self['wall'] = Wall()
 

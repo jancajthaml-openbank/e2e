@@ -13,9 +13,9 @@ class VaultRest(Unit):
   def teardown(self):
     def eventual_teardown():
       try:
-        subprocess.check_call(["systemctl", "stop", "vault"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", "vault"], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/vault.log', 'w') as the_file:
+        subprocess.check_call(["systemctl", "stop", "vault-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", "vault-rest"], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        with open('/reports/perf_logs/vault-rest.log', 'w') as the_file:
           the_file.write(out)
       except subprocess.CalledProcessError as ex:
         pass
@@ -28,9 +28,9 @@ class VaultRest(Unit):
   def restart(self) -> bool:
     def eventual_restart():
       try:
-        subprocess.check_call(["systemctl", "restart", "vault"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(["systemctl", "restart", "vault-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
       except subprocess.CalledProcessError as ex:
-        raise RuntimeError("Failed to restart vault with error {0}".format(ex))
+        raise RuntimeError("Failed to restart vault-rest with error {0}".format(ex))
 
     action_process = multiprocessing.Process(target=eventual_restart)
     action_process.start()
@@ -56,12 +56,12 @@ class VaultRest(Unit):
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
     if not self.restart():
-      raise RuntimeError("vault failed to restart")
+      raise RuntimeError("vault-rest failed to restart")
 
   @property
   def is_healthy(self) -> bool:
     def single_check():
-      out = subprocess.check_output(["systemctl", "show", "-p", "SubState", "vault"], stderr=subprocess.STDOUT).decode("utf-8").strip()
+      out = subprocess.check_output(["systemctl", "show", "-p", "SubState", "vault-rest"], stderr=subprocess.STDOUT).decode("utf-8").strip()
       return out == "SubState=running"
 
     if single_check():

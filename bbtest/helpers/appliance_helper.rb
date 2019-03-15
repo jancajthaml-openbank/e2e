@@ -127,13 +127,8 @@ class ApplianceHelper
     }.map { |x| x.chomp(".service") }
   end
 
-  def get_metrics(unit)
-    if unit.include?("@")
-      metrics_file = "/opt/#{unit[/[^@]+/]}/metrics/metrics.#{unit[/([^@]+)$/]}.json"
-    else
-      metrics_file = "/opt/#{unit}/metrics/metrics.json"
-    end
-
+  def get_metrics(type, filename)
+    metrics_file = "/opt/#{type}/metrics/#{filename}"
     return {} unless File.file?(metrics_file)
     return File.open(metrics_file, 'rb') { |f| JSON.parse(f.read) }
   end
