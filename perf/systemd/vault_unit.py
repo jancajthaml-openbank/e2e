@@ -17,20 +17,20 @@ class VaultUnit(Unit):
   def __init__(self, tenant):
     self._tenant = tenant
     try:
-      subprocess.check_call(["systemctl", "enable", 'vault@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-      subprocess.check_call(["systemctl", "start", 'vault@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+      subprocess.check_call(["systemctl", "enable", 'vault-unit@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+      subprocess.check_call(["systemctl", "start", 'vault-unit@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
     except subprocess.CalledProcessError as ex:
-      raise RuntimeError("Failed to onboard vault@{0} with error {1}".format(self._tenant, ex))
+      raise RuntimeError("Failed to onboard vault-unit@{0} with error {1}".format(self._tenant, ex))
 
   def teardown(self):
     def eventual_teardown():
       try:
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'vault@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/vault_{0}.log'.format(self._tenant), 'w') as the_file:
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'vault-unit@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        with open('/reports/perf_logs/vault_unit_{0}.log'.format(self._tenant), 'w') as the_file:
           the_file.write(out)
-        subprocess.check_call(["systemctl", "stop", 'vault@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'vault@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/vault_{0}.log'.format(self._tenant), 'w') as the_file:
+        subprocess.check_call(["systemctl", "stop", 'vault-unit@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'vault-unit@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        with open('/reports/perf_logs/vault_unit_{0}.log'.format(self._tenant), 'w') as the_file:
           the_file.write(out)
       except subprocess.CalledProcessError as ex:
         pass
@@ -43,9 +43,9 @@ class VaultUnit(Unit):
   def restart(self) -> bool:
     def eventual_restart():
       try:
-        subprocess.check_call(["systemctl", "restart", 'vault@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(["systemctl", "restart", 'vault-unit@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
       except subprocess.CalledProcessError as ex:
-        raise RuntimeError("Failed to restart vault@{0} with error {1}".format(self._tenant, ex))
+        raise RuntimeError("Failed to restart vault-unit@{0} with error {1}".format(self._tenant, ex))
 
     action_process = multiprocessing.Process(target=eventual_restart)
     action_process.start()
@@ -76,7 +76,7 @@ class VaultUnit(Unit):
   @property
   def is_healthy(self) -> bool:
     def single_check():
-      out = subprocess.check_output(["systemctl", "show", "-p", "SubState", 'vault@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
+      out = subprocess.check_output(["systemctl", "show", "-p", "SubState", 'vault-unit@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
       return out == "SubState=running"
 
     if single_check():
