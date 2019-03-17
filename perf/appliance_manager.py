@@ -79,7 +79,7 @@ class ApplianceManager(object):
 
 
     if 'wall' in services:
-      self['wall'] = Wall()
+      self['wall-scale'] = Wall()
 
     if 'lake' in services:
       self['lake'] = Lake()
