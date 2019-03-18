@@ -11,16 +11,16 @@ class Lake(Unit):
   def __init__(self):
     self.units = []
 
-    self.units.append('lake')
+    self.units.append('lake-relay')
 
   def teardown(self):
     def eventual_teardown():
       try:
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'lake'], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'lake-relay'], stderr=subprocess.STDOUT).decode("utf-8").strip()
         with open('/reports/perf_logs/lake.log', 'w') as the_file:
           the_file.write(out)
-        subprocess.check_call(["systemctl", "stop", 'lake'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'lake'], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        subprocess.check_call(["systemctl", "stop", 'lake-relay'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'lake-relay'], stderr=subprocess.STDOUT).decode("utf-8").strip()
         with open('/reports/perf_logs/lake.log', 'w') as the_file:
           the_file.write(out)
       except subprocess.CalledProcessError as ex:
@@ -34,9 +34,9 @@ class Lake(Unit):
   def restart(self) -> bool:
     def eventual_restart():
       try:
-        subprocess.check_call(["systemctl", "restart", "lake"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(["systemctl", "restart", "lake-relay"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
       except subprocess.CalledProcessError as ex:
-        raise RuntimeError("Failed to restart lake with error {0}".format(ex))
+        raise RuntimeError("Failed to restart lake-relay with error {0}".format(ex))
 
     action_process = multiprocessing.Process(target=eventual_restart)
     action_process.start()
