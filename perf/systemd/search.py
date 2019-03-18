@@ -11,16 +11,16 @@ class Search(Unit):
   def __init__(self):
     self.units = []
 
-    self.units.append('search')
+    self.units.append('search-rest')
 
   def teardown(self):
     def eventual_teardown():
       try:
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'search'], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'search-rest'], stderr=subprocess.STDOUT).decode("utf-8").strip()
         with open('/reports/perf_logs/search.log', 'w') as the_file:
           the_file.write(out)
         subprocess.check_call(["systemctl", "stop", 'search'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'search'], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'search-rest'], stderr=subprocess.STDOUT).decode("utf-8").strip()
         with open('/reports/perf_logs/search.log', 'w') as the_file:
           the_file.write(out)
       except subprocess.CalledProcessError as ex:
@@ -34,9 +34,9 @@ class Search(Unit):
   def restart(self) -> bool:
     def eventual_restart():
       try:
-        subprocess.check_call(["systemctl", "restart", "search"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+        subprocess.check_call(["systemctl", "restart", "search-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
       except subprocess.CalledProcessError as ex:
-        raise RuntimeError("Failed to restart search with error {0}".format(ex))
+        raise RuntimeError("Failed to restart search-rest with error {0}".format(ex))
 
     action_process = multiprocessing.Process(target=eventual_restart)
     action_process.start()
@@ -62,7 +62,7 @@ class Search(Unit):
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
     if not self.restart():
-      raise RuntimeError("search failed to restart")
+      raise RuntimeError("search-rest failed to restart")
 
   @property
   def is_healthy(self) -> bool:
