@@ -29,9 +29,15 @@ placeholder :count do
   end
 end
 
-placeholder :path do
-  match(/((?:\/[a-z0-9]+[a-z0-9(\/)(\-)]{1,100}[\w,\s-]+\.?[A-Za-z0-9_-]{0,100})+)/) do |path|
-    path
+placeholder :directory do
+  match(/((?:\/[a-z0-9]+[a-z0-9(\/)(\-)]{1,100}[\w,\s-]+\.?[A-Za-z0-9_-]{0,100})+)/) do |directory|
+    directory
+  end
+end
+
+placeholder :filename do
+  match(/((?:\/[a-z0-9]+[a-z0-9(\/)(\-)]{1,100}[\w,\s-]+(\.?[A-Za-z0-9_-]{0,100})+))/) do |filename|
+    filename
   end
 end
 
@@ -44,6 +50,12 @@ end
 placeholder :http_status do
   match(/\d{3}/) do |http_status|
     http_status.to_i
+  end
+end
+
+placeholder :transaction_status do
+  match(/(committed|rollbacked|promised)/) do |transaction_status|
+    transaction_status
   end
 end
 

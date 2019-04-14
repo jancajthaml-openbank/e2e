@@ -22,8 +22,8 @@ class Steps:
         if response.status != 200:
           return None
 
-        self.integration.update_account(tenant, request['accountNumber'], {
-          'accountNumber': request['accountNumber'],
+        self.integration.update_account(tenant, request['name'], {
+          'name': request['name'],
           'active': request['isBalanceCheck'],
           'balance': 0,
           'transactions': [],
@@ -67,8 +67,8 @@ class Steps:
         if response.status != 200:
           return None
 
-        self.integration.update_account(tenant, request['accountNumber'], {
-          'accountNumber': request['accountNumber'],
+        self.integration.update_account(tenant, request['name'], {
+          'name': request['name'],
           'active': request['isBalanceCheck'],
           'balance': 0,
           'transactions': [],
@@ -129,7 +129,7 @@ class Steps:
         if response.status != 200:
           return None
 
-        transaction = json.loads(response.data.decode('utf-8'))['transaction']
+        transaction = json.loads(response.data.decode('utf-8'))['id']
         self.integration.charge_transactions(tenant_name, transaction, request['transfers'])
 
         return response
@@ -204,11 +204,9 @@ class Steps:
 
   def balance_cancel_out_check(self):
     with timeit('balance_cancel_out_check(_)'):
-      #debug("checking that sum of all balances is 0.0")
 
       total = 0
 
-      #start = time.time()
       for accounts in self.integration.get_accounts().values():
         for meta in accounts.values():
           total += meta['balance']

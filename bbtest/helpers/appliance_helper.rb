@@ -18,7 +18,7 @@ class ApplianceHelper
     [
       "lake",
       "vault",
-      "wall",
+      "ledger",
       "search"
     ].map { |service|
       Thread.new do
@@ -32,7 +32,7 @@ class ApplianceHelper
     [
       "lake",
       "vault",
-      "wall",
+      "ledger",
       "search"
     ].map { |service|
       Thread.new do
@@ -50,7 +50,7 @@ class ApplianceHelper
     [
       "lake/lake_*_amd64.deb",
       "vault/vault_*_amd64.deb",
-      "wall/wall_*_amd64.deb",
+      "ledger/ledger_*_amd64.deb",
       "search/search_*.deb",
     ].each { |service|
       id, wildcard = service.split("/")
@@ -72,7 +72,7 @@ class ApplianceHelper
       x.empty? || !(
         x.start_with?("vault") ||
         x.start_with?("lake")  ||
-        x.start_with?("wall")  ||
+        x.start_with?("ledger")  ||
         x.start_with?("search")
       )
     }.map { |x| x.chomp(".service") }
@@ -95,12 +95,13 @@ class ApplianceHelper
       x.empty? || !(
         x.start_with?("vault") ||
         x.start_with?("lake")  ||
-        x.start_with?("wall")  ||
+        x.start_with?("ledger")  ||
         x.start_with?("search")
       )
     }.map { |x| x.chomp(".service") }
 
     return @units.all? { |e| actual.include?(e) }
+    # fixme check running?
   end
 
   def update_units()
@@ -111,19 +112,9 @@ class ApplianceHelper
       x.empty? || !(
         x.start_with?("vault") ||
         x.start_with?("lake")  ||
-        x.start_with?("wall")  ||
+        x.start_with?("ledger")  ||
         x.start_with?("search")
       )
-    }.map { |x| x.chomp(".service") }
-  end
-
-  def get_wall_instances()
-    units=%x(systemctl -t service --no-legend | awk '{ print $1 }' | grep wall@)
-
-    raise [] unless $? == 0
-
-    return units.split("\n").map(&:strip).reject { |x|
-      x.empty? || !x.start_with?("wall@")
     }.map { |x| x.chomp(".service") }
   end
 

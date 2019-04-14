@@ -22,13 +22,10 @@ COPY --from=library/docker:18.06 /usr/local/bin/docker /usr/bin/docker
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      haproxy \
       mongodb-org>=4.0.3~ \
       nodejs>=10.11~ \
       init-system-helpers>=1.18~ \
       libzmq5>=4.2.1~
-
-COPY etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg
 
 RUN systemctl enable mongod
 

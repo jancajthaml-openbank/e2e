@@ -7,7 +7,7 @@ step ":activity :currency account :account is created" do |activity, currency, a
   (tenant, account) = account.split('/')
 
   send "I request curl :http_method :url", "POST", "https://127.0.0.1:4400/account/#{tenant}", {
-    accountNumber: account,
+    name: account,
     currency: currency,
     isBalanceCheck: activity
   }.to_json

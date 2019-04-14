@@ -3,32 +3,51 @@ Feature: Integrity test
   Scenario: Replay same transaction
     Given appliance is running
     And   vault INTEGRITY is onbdoarded
+    And   ledger INTEGRITY is onbdoarded
     When  active EUR account INTEGRITY/ReplayCredit is created
     And   pasive EUR account INTEGRITY/ReplayDebit is created
-    And   following transaction is created 100 times for tenant INTEGRITY
+    And   following transaction is created 100 times from tenant INTEGRITY
     """
       {
         "id": "race",
         "transfers": [
           {
             "id": "race_id_1",
-            "credit": "ReplayCredit",
-            "debit": "ReplayDebit",
-            "amount": "1.0",
+            "credit": {
+              "tenant": "INTEGRITY",
+              "name": "ReplayCredit"
+            },
+            "debit": {
+              "tenant": "INTEGRITY",
+              "name": "ReplayDebit"
+            },
+            "amount": "1",
             "currency": "EUR"
           },
           {
             "id": "race_id_2",
-            "credit": "ReplayCredit",
-            "debit": "ReplayDebit",
-            "amount": "2.0",
+            "credit": {
+              "tenant": "INTEGRITY",
+              "name": "ReplayCredit"
+            },
+            "debit": {
+              "tenant": "INTEGRITY",
+              "name": "ReplayDebit"
+            },
+            "amount": "2",
             "currency": "EUR"
           },
           {
             "id": "race_id_3",
-            "credit": "ReplayCredit",
-            "debit": "ReplayDebit",
-            "amount": "3.0",
+            "credit": {
+              "tenant": "INTEGRITY",
+              "name": "ReplayCredit"
+            },
+            "debit": {
+              "tenant": "INTEGRITY",
+              "name": "ReplayDebit"
+            },
+            "amount": "3",
             "currency": "EUR"
           }
         ]
