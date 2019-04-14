@@ -15,7 +15,7 @@ Feature: Vault API test
     When  I request curl POST https://127.0.0.1:4400/account/APIACC
     """
       {
-        "accountNumber": "xxx",
+        "name": "xxx",
         "currency": "XXX",
         "isBalanceCheck": false
       }
@@ -36,7 +36,7 @@ Feature: Vault API test
     When  I request curl POST https://127.0.0.1:4400/account/APIACC
     """
       {
-        "accountNumber": "yyy",
+        "name": "yyy",
         "currency": "XXX",
         "isBalanceCheck": false
       }
@@ -49,7 +49,7 @@ Feature: Vault API test
     When  I request curl POST https://127.0.0.1:4400/account/APIACC
     """
       {
-        "accountNumber": "yyy",
+        "name": "yyy",
         "currency": "XXX",
         "isBalanceCheck": false
       }

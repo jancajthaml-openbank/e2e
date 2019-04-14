@@ -31,3 +31,15 @@ step "metrics events for tenant :tenant should cancel out" do |tenant|
     expect(initials - terminals).to eq(0), "promises and terminals don't cancel out in: #{contents}"
   }
 end
+
+step "metrics file :filename should have following keys:" do |path, keys|
+  expected_keys = keys.split("\n").map(&:strip).reject { |x| x.empty? }
+
+  eventually(timeout: 3) {
+    expect(File.file?(path)).to be(true)
+  }
+
+  metrics_keys = File.open(path, 'rb') { |f| JSON.parse(f.read).keys }
+
+  expect(metrics_keys).to match_array(expected_keys)
+end

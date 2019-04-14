@@ -3,6 +3,7 @@ Feature: Journal integrity test
   Scenario: setup
     Given appliance is running
     And   vault JOURNAL is onbdoarded
+    And   ledger JOURNAL is onbdoarded
 
   Scenario: Creation of account
     When  pasive EUR account JOURNAL/Euro is created
@@ -36,14 +37,20 @@ Feature: Journal integrity test
   Scenario: Creating of transaction comitted
     When  pasive XXX account JOURNAL/A is created
     And   active XXX account JOURNAL/B is created
-    And   following transaction is created for tenant JOURNAL
+    And   following transaction is created from tenant JOURNAL
     """
       {
         "id": "xxx",
         "transfers": [
           {
-            "credit": "B",
-            "debit": "A",
+            "credit": {
+              "tenant": "JOURNAL",
+              "name": "B"
+            },
+            "debit": {
+              "tenant": "JOURNAL",
+              "name": "A"
+            },
             "amount": "123456789123313.000422901124",
             "currency": "XXX"
           }
@@ -56,8 +63,14 @@ Feature: Journal integrity test
         "id": "xxx",
         "transfers": [
           {
-            "credit": "B",
-            "debit": "A",
+            "credit": {
+              "tenant": "JOURNAL",
+              "name": "B"
+            },
+            "debit": {
+              "tenant": "JOURNAL",
+              "name": "A"
+            },
             "amount": "123456789123313.000422901124",
             "currency": "XXX"
           }
@@ -75,14 +88,20 @@ Feature: Journal integrity test
   Scenario: Creating of transaction rejected (insufficient funds)
     When  pasive XXX account JOURNAL/C is created
     And   active XXX account JOURNAL/D is created
-    And   following transaction is created for tenant JOURNAL
+    And   following transaction is created from tenant JOURNAL
     """
       {
         "id": "yyy",
         "transfers": [
           {
-            "credit": "C",
-            "debit": "D",
+            "credit": {
+              "tenant": "JOURNAL",
+              "name": "C"
+            },
+            "debit": {
+              "tenant": "JOURNAL",
+              "name": "D"
+            },
             "amount": "123456789123313.000422901124",
             "currency": "XXX"
           }
@@ -95,8 +114,14 @@ Feature: Journal integrity test
         "id": "yyy",
         "transfers": [
           {
-            "credit": "C",
-            "debit": "D",
+            "credit": {
+              "tenant": "JOURNAL",
+              "name": "C"
+            },
+            "debit": {
+              "tenant": "JOURNAL",
+              "name": "D"
+            },
             "amount": "123456789123313.000422901124",
             "currency": "XXX"
           }

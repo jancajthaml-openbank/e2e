@@ -3,6 +3,7 @@ Feature: Search API test
   Scenario: setup
     Given appliance is running
     And   vault SEARCH is onbdoarded
+    And   ledger SEARCH is onbdoarded
 
   Scenario: Accounts query
     When  active EUR account SEARCH/ReplayCredit is created
@@ -10,9 +11,11 @@ Feature: Search API test
 
     When  I request search
     """
-      Accounts(tenant: "SEARCH") {
-        name
-        currency
+      query {
+        Accounts(tenant: "SEARCH") {
+          name
+          currency
+        }
       }
     """
     Then  search responds with 200
@@ -36,23 +39,29 @@ Feature: Search API test
   Scenario: Transactions query
     When  active EUR account SEARCH/Credit is created
     And   pasive EUR account SEARCH/Debit is created
-    And   1 EUR is transfered from Debit to Credit for tenant SEARCH
+    And   1 EUR is transferred from SEARCH/Debit to SEARCH/Credit
 
     When  I request search
     """
-      Transactions(tenant: "SEARCH") {
-        status
-        transfers {
-          credit {
-            name
-            isBalanceCheck
+      fragment accountFields on Account {
+        name
+        isBalanceCheck
+        currency
+      }
+
+      query {
+        Transactions(tenant: "SEARCH") {
+          status
+          transfers {
+            credit {
+              ...accountFields
+            }
+            debit {
+              ...accountFields
+            }
+            amount
+            currency
           }
-          debit {
-            name
-            isBalanceCheck
-          }
-          amount
-          currency
         }
       }
     """

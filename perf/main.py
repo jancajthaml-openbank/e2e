@@ -85,8 +85,6 @@ def main():
   try:
     # fixme in parallel please :/
 
-    # fixme when spawning wall and vault provide parameter if it should run in memory on be persistant
-
     # with memory boundaries we could test long running (several days running) tests and determine failures
 
     info("reconfigure units")
@@ -103,8 +101,8 @@ def main():
       absolute_total = int(4*1e3)
 
       for _ in range(4):
-        manager.onboard_vault()
-      manager.scale_wall(6)
+        manager.onboard()
+
       integration.reset()
       eventually_ready(manager)
 
@@ -115,7 +113,10 @@ def main():
       sleep(2)
 
       manager.teardown('vault-unit')
-      manager.onboard_vault()
+      manager.teardown('ledger-unit')
+
+      manager.onboard()
+
       integration.reset()
       eventually_ready(manager)
 
@@ -148,13 +149,13 @@ def main():
       absolute_total = int(10*1e3)
 
       for _ in range(1):
-        manager.onboard_vault()
-      manager.scale_wall(6)
+        manager.onboard()
+
       integration.reset()
       manager.reset()
       eventually_ready(manager)
 
-      steps.random_uniform_accounts(100)
+      steps.random_uniform_accounts(10*1e2)
 
       sleep(2)
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(absolute_total)):
@@ -163,6 +164,7 @@ def main():
       sleep(2)
 
       manager.teardown('vault-unit')
+      manager.teardown('ledger-unit')
 
     ############################################################################
 

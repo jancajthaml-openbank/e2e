@@ -14,8 +14,8 @@ class MetricsAggregator(Thread):
     self._stop_event = Event()
     self.__manager = manager
     self.__store = {}
-    self.__wall_watch = INotify()
     self.__lake_watch = INotify()
+    self.__ledger_watch = INotify()
     self.__vault_watch = INotify()
     self.__lock = Lock()
     self.__store = {}
@@ -43,21 +43,23 @@ class MetricsAggregator(Thread):
       json.dump(self.__store, f, indent=4, sort_keys=True)
 
   def run(self) -> None:
-    self.__wall_watch.add_watch('/opt/wall/metrics', flags.MODIFY | flags.MOVED_TO)
     self.__lake_watch.add_watch('/opt/lake/metrics', flags.MODIFY | flags.MOVED_TO)
+    self.__ledger_watch.add_watch('/opt/ledger/metrics', flags.MODIFY | flags.MOVED_TO)
     self.__vault_watch.add_watch('/opt/vault/metrics', flags.MODIFY | flags.MOVED_TO)
 
     while not self.stopped():
       events = []
 
-      for event in self.__wall_watch.read(timeout=100):
-        if not event.name.endswith('temp'):
-          path = os.path.join('/opt/wall/metrics', event.name)
-          self.__process_change(path)
       for event in self.__lake_watch.read(timeout=100):
         if not event.name.endswith('temp'):
           path = os.path.join('/opt/lake/metrics', event.name)
           self.__process_change(path)
+
+      for event in self.__ledger_watch.read(timeout=100):
+        if not event.name.endswith('temp'):
+          path = os.path.join('/opt/ledger/metrics', event.name)
+          self.__process_change(path)
+
       for event in self.__vault_watch.read(timeout=100):
         if not event.name.endswith('temp'):
           path = os.path.join('/opt/vault/metrics', event.name)

@@ -6,7 +6,8 @@ from utils import progress, debug
 
 from systemd.vault_unit import VaultUnit
 from systemd.vault_rest import VaultRest
-from systemd.wall import Wall
+from systemd.ledger_unit import LedgerUnit
+from systemd.ledger_rest import LedgerRest
 from systemd.search import Search
 from systemd.lake import Lake
 
@@ -43,8 +44,8 @@ class ApplianceManager(object):
         "wildcard": "vault_*_amd64.deb",
       },
       {
-        "name": "wall",
-        "wildcard": "wall_*_amd64.deb",
+        "name": "ledger",
+        "wildcard": "ledger_*_amd64.deb",
       },
       {
         "name": "search",
@@ -77,10 +78,6 @@ class ApplianceManager(object):
     installed = subprocess.check_output(["systemctl", "-t", "service", "--no-legend"], stderr=subprocess.STDOUT).decode("utf-8").strip()
     services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in installed.splitlines()])
 
-
-    if 'wall' in services:
-      self['wall-scale'] = Wall()
-
     if 'lake' in services:
       self['lake'] = Lake()
 
@@ -89,6 +86,9 @@ class ApplianceManager(object):
 
     if 'vault' in services:
       self['vault-rest'] = VaultRest()
+
+    if 'ledger' in services:
+      self['ledger-rest'] = LedgerRest()
 
   def __len__(self):
     return sum([len(x) for x in self.units.values()])
@@ -116,14 +116,11 @@ class ApplianceManager(object):
   def values(self) -> list:
     return self.units.values()
 
-  def onboard_vault(self, tenant=None) -> None:
+  def onboard(self, tenant=None) -> None:
     if not tenant:
       tenant = ''.join(secure_random.choice(string.ascii_lowercase + string.digits) for _ in range(10))
     self['vault-unit'] = VaultUnit(tenant)
-
-  def scale_wall(self, size) -> None:
-    for wall in self['wall']:
-      wall.scale(size)
+    self['ledger-unit'] = LedgerUnit(tenant)
 
   def reconfigure(self, params, key=None) -> None:
     if not key:

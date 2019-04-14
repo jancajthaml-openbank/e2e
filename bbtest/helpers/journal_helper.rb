@@ -12,7 +12,7 @@ module Journal
     transaction = Journal.transaction_data(tenant, id)
     state = Journal.transaction_state(tenant, id)
 
-    return nil if (transaction.nil? or state.nil?)
+    return nil if (transaction.nil? or parts.empty?)
 
     transaction[:state] = state
     transaction
@@ -23,14 +23,15 @@ module Journal
   end
 
   def transaction_state(tenant, id)
-    Journal.transaction_state(tenant, id)
+    Journal.transaction_state(tenant, id).split(" ")
   end
 
   def self.transaction_state(tenant, id)
     return nil if id.nil?
     path = "/data/t_#{tenant}/transaction_state/#{id}"
     raise "transaction state for #{id} not found" unless File.file?(path)
-    File.open(path, 'rb') { |f| f.read }
+    parts = File.open(path, 'rb') { |f| f.read }.split(" ")
+    parts[0]
   end
 
   def self.transaction_data(tenant, id)
@@ -49,11 +50,17 @@ module Journal
 
           {
             "id" => data[0],
-            "credit" => data[1],
-            "debit" => data[2],
-            "valueDate" => Time.at(data[3].to_i).to_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "amount" => data[4],
-            "currency" => data[5],
+            "credit" => {
+              "tenant" => data[1],
+              "name" => data[2],
+            },
+            "debit" => {
+              "tenant" => data[3],
+              "name" => data[4],
+            },
+            "valueDate" => Time.at(data[5].to_i).to_datetime.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "amount" => data[6],
+            "currency" => data[7],
           }
         }
       }
