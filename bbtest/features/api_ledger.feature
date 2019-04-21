@@ -179,7 +179,7 @@ Feature: Ledger API test
       }
     """
 
-    When  I request curl GET https://127.0.0.1:4401/transaction/APITRN
+    When  I request curl POST https://127.0.0.1:4401/transaction/APITRN
     """
       {
         "id": "unique_transaction_id",
