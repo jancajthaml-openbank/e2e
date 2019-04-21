@@ -49,19 +49,31 @@ Feature: Search API test
         currency
       }
 
+      fragment transferFields on Transfer {
+        amount
+        currency
+        credit {
+          ...accountFields
+        }
+        debit {
+          ...accountFields
+        }
+      }
+
+      fragment transactionFields on Transaction {
+        status
+        transfers {
+          ...transferFields
+        }
+      }
+
       query {
+        Transfers(tenant: "SEARCH") {
+          ...transferFields
+        }
+
         Transactions(tenant: "SEARCH") {
-          status
-          transfers {
-            credit {
-              ...accountFields
-            }
-            debit {
-              ...accountFields
-            }
-            amount
-            currency
-          }
+          ...transactionFields
         }
       }
     """
