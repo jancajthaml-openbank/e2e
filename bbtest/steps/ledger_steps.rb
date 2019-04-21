@@ -12,18 +12,11 @@ step "following transaction is created :count times from tenant :tenant" do |cou
 
   send "I request curl :http_method :url", "POST", uri, body
 
-  responses = []
-
   [*1..count].each { |_|
     eventually() {
-      resp = %x(#{@http_req})
-      code = resp[resp.length-3...resp.length].to_i
-      expect(code).not_to eq(504)
-      responses << code
+      send "curl responds with :http_status", [200, 201]
     }
   }
-
-  responses.each { |status| expect(status).to satisfy { |x| x == 200 || x == 201 } }
 end
 
 step ":id :id :side side is forwarded to :account from tenant :tenant" do |transaction, transfer, side, account, tenant|
@@ -40,15 +33,7 @@ step ":id :id :side side is forwarded to :account from tenant :tenant" do |trans
   uri = "https://127.0.0.1:4401/transaction/#{tenant}/#{transaction}/#{transfer}"
 
   send "I request curl :http_method :url", "PATCH", uri, payload
-
-  resp = nil
-  eventually() {
-    resp = %x(#{@http_req})
-    expect($?).to be_success, resp
-  }
-  code = resp[resp.length-3...resp.length].to_i
-
-  expect(code).to satisfy { |x| x == 200 || x == 201 }
+  send "curl responds with :http_status", [200, 201]
 end
 
 step ":amount :currency is transferred from :account to :account" do |amount, currency, from, to|
