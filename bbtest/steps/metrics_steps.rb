@@ -12,7 +12,6 @@ end
 step "metrics should report :count created transfers" do |count|
   eventually(timeout: 3) {
     createdTransfers = $appliance.get_wall_instances().reduce(0) { |sum, wall|
-      puts "[#{wall}]"
       sum + $appliance.get_metrics("wall", "wall")["createdTransfers"].to_i
     }
     expect(createdTransfers).to eq(count)
