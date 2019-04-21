@@ -8,7 +8,6 @@ from systemd.vault_unit import VaultUnit
 from systemd.vault_rest import VaultRest
 from systemd.ledger_unit import LedgerUnit
 from systemd.ledger_rest import LedgerRest
-from systemd.search import Search
 from systemd.lake import Lake
 
 import errno
@@ -47,10 +46,6 @@ class ApplianceManager(object):
         "name": "ledger",
         "wildcard": "ledger_*_amd64.deb",
       },
-      {
-        "name": "search",
-        "wildcard": "search_*.deb",
-      },
     ]:
       for line in self.docker.api.pull('openbank/{0}'.format(service["name"]), tag='master', stream=True, decode=True):
         progress('docker pull openbank/{0}:master {1}'.format(service["name"], line['status']))
@@ -80,9 +75,6 @@ class ApplianceManager(object):
 
     if 'lake' in services:
       self['lake'] = Lake()
-
-    if 'search' in services:
-      self['search'] = Search()
 
     if 'vault' in services:
       self['vault-rest'] = VaultRest()
