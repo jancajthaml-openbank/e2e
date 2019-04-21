@@ -1,5 +1,4 @@
 require_relative 'eventually_helper'
-require_relative 'mongo_helper'
 
 require 'timeout'
 require 'thread'
@@ -77,8 +76,6 @@ class ApplianceHelper
       )
     }.map { |x| x.chomp(".service") }
 
-    MongoHelper.start("graphql")
-
     @units.each { |unit|
       %x(systemctl start #{unit})
     } unless @units.nil?
@@ -143,8 +140,6 @@ class ApplianceHelper
         }
       } if File.file?(metrics_file)
     }
-
-    MongoHelper.stop()
   end
 
 end
