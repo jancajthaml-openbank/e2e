@@ -98,7 +98,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      absolute_total = int(4*1e3)
+      absolute_total = int(4*1e4)
 
       for _ in range(4):
         manager.onboard()
@@ -120,7 +120,7 @@ def main():
       integration.reset()
       eventually_ready(manager)
 
-      absolute_total = int(2*1e3)
+      absolute_total = int(2*1e4)
 
       sleep(2)
       with timeit('get accounts scenario'):
@@ -146,7 +146,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      absolute_total = int(10*1e3)
+      absolute_total = int(1*1e4)
 
       for _ in range(1):
         manager.onboard()
@@ -155,7 +155,7 @@ def main():
       manager.reset()
       eventually_ready(manager)
 
-      steps.random_uniform_accounts(10*1e2)
+      steps.random_uniform_accounts(1*1e3)
 
       sleep(2)
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(absolute_total)):
