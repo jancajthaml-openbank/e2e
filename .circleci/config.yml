@@ -8,8 +8,8 @@ workflows:
 
   commit:
     jobs:
-      - performance:
-      - bbtest:
+      - performance
+      - bbtest
       - report:
           requires:
             - performance
