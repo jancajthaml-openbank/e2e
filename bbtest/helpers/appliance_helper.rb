@@ -2,6 +2,8 @@ require_relative 'eventually_helper'
 
 require 'timeout'
 require 'thread'
+require 'json'
+require 'tempfile'
 
 Thread.abort_on_exception = true
 
@@ -12,55 +14,97 @@ class ApplianceHelper
 
   attr_reader :units
 
-  def download_artifacts()
-    %x(mkdir -p /opt/artifacts)
-    [
-      "lake",
-      "vault",
-      "ledger",
-      "search"
-    ].map { |service|
-      Thread.new do
-        begin
-          %x(docker pull openbank/#{service}:master)
-        rescue ThreadError
-        end
-      end
-    }.map(&:join)
+  def get_latest_version(service)
+    cmd = ["curl"]
+    cmd << ["-ss"]
+    cmd << ["-i"]
+    cmd << ["-H \"Authorization: token #{ENV['GITHUB_RELEASE_TOKEN']}\""] if ENV.has_key?('GITHUB_RELEASE_TOKEN')
+    cmd << ["https://api.github.com/repos/jancajthaml-openbank/#{service}/releases/latest"]
+    cmd << ["2>&1 | cat"]
 
-    [
+    response = { :code => 0, :raw => [] }
+    response[:body] = []
+
+    in_body = false
+    IO.popen(cmd.join(" ")) do |stream|
+      stream.each do |line|
+        response[:raw] << line
+        if in_body
+          response[:body] << line
+        elsif line.start_with? "HTTP/"
+          response[:code] = line[9..13].to_i
+        elsif line.strip.empty?
+          in_body = true
+        end
+      end
+    end
+
+    response[:body] = response[:body].join('')
+    response[:raw] = response[:raw].join('\n')
+
+    raise "endpoint is unreachable\n#{response[:raw]}" if response[:code] === 0
+    raise "failed to fetch version for #{service}\n#{response[:raw]}" unless response[:code] === 200
+    resp_body = JSON.parse(response[:body])
+    return resp_body['tag_name'].gsub('v', '')
+  end
+
+  def download_artifacts()
+    raise "no arch specified" unless ENV.has_key?('UNIT_ARCH')
+
+    arch = ENV['UNIT_ARCH']
+
+    %x(mkdir -p /opt/artifacts)
+
+    cmd = ["FROM alpine"] + [
       "lake",
       "vault",
       "ledger",
       "search"
     ].map { |service|
-      Thread.new do
-        begin
-          %x(docker run --name temp-container-#{service} openbank/#{service}:master /bin/true)
-          %x(docker cp temp-container-#{service}:/opt/artifacts /opt/artifacts/#{service})
-          %x(docker rm temp-container-#{service})
-        rescue ThreadError
+      version = self.get_latest_version(service)
+      "COPY --from=openbank/#{service}:v#{version}-master /opt/artifacts/#{service}_#{version}+master_#{arch}.deb /opt/artifacts/#{service}.deb"
+    } + ["RUN ls -la /opt/artifacts"]
+
+    file = Tempfile.new('e2e_artifacts')
+
+    begin
+      file.write(cmd.join("\n"))
+      file.close
+
+      IO.popen("docker build -t e2e_artifacts - < #{file.path}") do |stream|
+        stream.each do |line|
+          puts line
         end
       end
-    }.map(&:join)
+      raise "failed to build e2e_artifacts" unless $? == 0
+
+      %x(docker run --name e2e_artifacts-scratch e2e_artifacts /bin/true)
+      %x(docker cp e2e_artifacts-scratch:/opt/artifacts/ /opt)
+    ensure
+      %x(docker rmi -f e2e_artifacts)
+      %x(docker rm e2e_artifacts-scratch)
+      file.delete
+    end
   end
 
   def install_packages()
+    raise "no arch specified" unless ENV.has_key?('UNIT_ARCH')
+
     [
-      "lake/lake_*_amd64.deb",
-      "vault/vault_*_amd64.deb",
-      "ledger/ledger_*_amd64.deb",
-      "search/search_*.deb",
+      "lake",
+      "vault",
+      "ledger",
+      "search",
     ].each { |service|
-      id, wildcard = service.split("/")
-      %x(find /opt/artifacts/#{id} -type f -name '#{wildcard}')
-      .split("\n")
-      .map(&:strip)
-      .reject { |x| x.empty? }
-      .each { |package|
-        out = %x(apt-get -y install -qq -o=Dpkg::Use-Pty=0 -f #{package} 2>&1)
-        raise "#{package} install failed with: #{out}" unless $? == 0
-      }
+      # fixme check if file exists
+
+      IO.popen("apt-get -y install -qq -o=Dpkg::Use-Pty=0 -f /opt/artifacts/#{service}.deb 2>&1") do |stream|
+        stream.each do |line|
+          puts line
+        end
+      end
+
+      raise "#{service} install failed" unless $? == 0
     }
   end
 
