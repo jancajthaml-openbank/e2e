@@ -8,13 +8,8 @@ workflows:
 
   commit:
     jobs:
-      - setup
-      - performance:
-          requires:
-            - setup
-      - bbtest:
-          requires:
-            - setup
+      - performance
+      - bbtest
       - report:
           requires:
             - performance
@@ -47,28 +42,6 @@ workflows:
 # ---------------------------------------------------------------------------- #
 
 jobs:
-
-  # -------------------------------------------------------------------------- #
-
-  setup:
-    docker:
-      - image: docker:17.09.0-ce-git
-        environment:
-          - LANG: C.UTF-8
-    steps:
-      - checkout
-      - setup_remote_docker
-      - run: docker build -t openbankdev/e2e_candidate .
-      - run: docker login -u ${DOCKER_USER} -p ${DOCKER_PASSWORD}
-      - deploy:
-          name: Push dev docker images to DockerHUB
-          command: |
-            upload_to_docker_hub() {
-              docker tag ${1} "${1}:${2}"
-              docker push "${1}:${2}"
-            }
-
-            upload_to_docker_hub openbankdev/e2e_candidate latest
 
   # -------------------------------------------------------------------------- #
 
@@ -129,7 +102,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run: docker pull openbankdev/e2e_candidate:latest
+      - run: docker pull jancajthaml/bbtest:amd64
       - run:
           name: Run performance tests
           command: |
@@ -141,8 +114,9 @@ jobs:
                 -v /var/lib/docker/containers:/var/lib/docker/containers \
                 -v /home/circleci/project/perf:/opt/perf \
                 -v /home/circleci/project/reports:/reports \
-              openbankdev/e2e_candidate \
+              jancajthaml/bbtest:amd64 \
             ) python3 /opt/perf/main.py
+          no_output_timeout: 25m
       - store_artifacts:
           path: /home/circleci/project/reports
           destination: reports
@@ -158,18 +132,20 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run: docker pull openbankdev/e2e_candidate:latest
+      - run: docker pull jancajthaml/bbtest:amd64
       - run:
           name: Run blackbox tests
           command: |
             docker exec -it $(\
               docker run -d -ti \
+                -e GITHUB_RELEASE_TOKEN="${GITHUB_RELEASE_TOKEN}" \
+                -e UNIT_ARCH="amd64" \
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v /var/lib/docker/containers:/var/lib/docker/containers \
                 -v /home/circleci/project/bbtest:/opt/bbtest \
                 -v /home/circleci/project/reports:/reports \
-              openbankdev/e2e_candidate \
+              jancajthaml/bbtest:amd64 \
             ) rspec --require /opt/bbtest/spec.rb \
               --format documentation \
               --format RspecJunitFormatter \
