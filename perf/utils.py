@@ -39,57 +39,41 @@ def interrupt_stdout() -> None:
   this.__progress_running = False
 
 def debug(msg) -> None:
-  pre=''
-  if this.__progress_running and __TTY:
-    pre=buster+'\r'
   this.__progress_running = False
   if isinstance(msg, str):
-    sys.stdout.write('{0}\033[97m  debug | \033[0m{1}\n'.format(pre, msg))
+    sys.stdout.write('\033[97m  debug | \033[0m{0}\033[K\n'.format(msg))
     sys.stdout.flush()
   elif isinstance(msg, collections.Iterable) and len(msg):
-    sys.stdout.write('{0}\033[97m  debug | \033[0m{1}\n'.format(pre, msg[0]))
+    sys.stdout.write('\033[97m  debug | \033[0m{0}\033[K\n'.format(msg[0]))
     for chunk in msg[1:]:
-      sys.stdout.write('{0}\033[97m        | \033[0m{1}\n'.format(pre, chunk))
+      sys.stdout.write('\033[97m        | \033[0m{0}\033[K\n'.format(chunk))
     sys.stdout.flush()
 
 def info(msg) -> None:
-  pre=''
-  if this.__progress_running and __TTY:
-    pre=buster+'\r'
   this.__progress_running = False
-  sys.stdout.write('{0}\033[95m   info | \033[0m{1}\n'.format(pre, msg))
+  sys.stdout.write('\033[95m   info | \033[0m{0}\033[K\n'.format(msg))
   sys.stdout.flush()
 
 def progress(msg) -> None:
   if not __TTY:
     return
   this.__progress_running = True
-  m = msg.rstrip()
-  sys.stdout.write('\033[94m        | {0}{1}\r'.format(m, buster[len(m)+10:]))
+  sys.stdout.write('\033[94m        | {0}\033[K\r'.format( msg.rstrip()))
   sys.stdout.flush()
 
 def error(msg) -> None:
-  pre=''
-  if this.__progress_running and __TTY:
-    pre=buster+'\r'
   this.__progress_running = False
-  sys.stdout.write('{0}\033[91m! error | {1}\033[0m\n'.format(pre, msg))
+  sys.stdout.write('\033[91m! error | {0}\033[0m[K\n'.format(msg))
   sys.stdout.flush()
 
 def success(msg) -> None:
-  pre=''
-  if this.__progress_running and __TTY:
-    pre=buster+'\r'
   this.__progress_running = False
-  sys.stdout.write('{0}\033[92m   pass | {1}\033[0m\n'.format(pre, msg))
+  sys.stdout.write('\033[92m   pass | {0}\033[0m\033[K\n'.format(msg))
   sys.stdout.flush()
 
 def warn(msg) -> None:
-  pre=''
-  if this.__progress_running and __TTY:
-    pre=buster+'\r'
   this.__progress_running = False
-  sys.stdout.write('{0}\033[93m   warn | {1}\033[0m\n'.format(pre, msg))
+  sys.stdout.write('\033[93m   warn | {0}\033[0m\033[K\n'.format(msg))
   sys.stdout.flush()
 
 

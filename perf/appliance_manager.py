@@ -1,8 +1,20 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+import ssl
+try:
+  _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+  pass
+else:
+  ssl._create_default_https_context = _create_unverified_https_context
 
 import docker
 
-from utils import progress, debug
+from utils import progress, success, debug
 
 from systemd.vault_unit import VaultUnit
 from systemd.vault_rest import VaultRest
@@ -10,8 +22,11 @@ from systemd.ledger_unit import LedgerUnit
 from systemd.ledger_rest import LedgerRest
 from systemd.lake import Lake
 
+import tarfile
+import tempfile
 import errno
 import os
+import json
 import subprocess
 import string
 import random
@@ -19,10 +34,47 @@ secure_random = random.SystemRandom()
 
 class ApplianceManager(object):
 
+  def get_latest_service_version(self, service):
+    headers = {
+      'User-Agent': 'https://api.github.com/meta'
+    }
+
+    if 'GITHUB_RELEASE_TOKEN' in os.environ:
+      headers['Authorization'] = 'token {0}'.format(os.environ['GITHUB_RELEASE_TOKEN'])
+
+    uri = 'https://api.github.com/repos/jancajthaml-openbank/{0}/releases/latest'.format(service)
+    r = self.http.request('GET', uri, headers=headers)
+
+    data = r.data.decode('utf-8')
+
+    if r.status != 200:
+      raise Exception('GitHUB version fetch failure {0}'.format(data))
+
+    version = json.loads(data)['tag_name']
+    if version.startswith('v'):
+      version = version[len('v'):]
+
+    return version
+
+  def fetch_versions(self):
+    self.http = urllib3.PoolManager()
+
+    for service in ['lake', 'vault', 'ledger']:
+      version = self.get_latest_service_version(service)
+      self.versions[service] = version
+
+    del self.http
+
   def __init__(self):
+    arch = os.environ.get('UNIT_ARCH')
+
+    if arch is None:
+      raise Exception('no arch specified')
+
     self.store = {}
+    self.versions = {}
     self.units = {}
-    self.docker = docker.from_env()
+    self.docker = docker.APIClient(base_url='unix://var/run/docker.sock')
 
     DEVNULL = open(os.devnull, 'w')
 
@@ -33,40 +85,54 @@ class ApplianceManager(object):
         raise
       pass
 
-    for service in [
-      {
-        "name": "lake",
-        "wildcard": "lake_*_amd64.deb",
-      },
-      {
-        "name": "vault",
-        "wildcard": "vault_*_amd64.deb",
-      },
-      {
-        "name": "ledger",
-        "wildcard": "ledger_*_amd64.deb",
-      },
-    ]:
-      for line in self.docker.api.pull('openbank/{0}'.format(service["name"]), tag='master', stream=True, decode=True):
-        progress('docker pull openbank/{0}:master {1}'.format(service["name"], line['status']))
+    self.fetch_versions()
 
-      progress('docker create scratch container openbank/{0}:master'.format(service["name"]))
-      container_id = self.docker.api.create_container('openbank/{0}:master'.format(service["name"]), '/bin/false', detach=True)['Id']
+    scratch_docker_cmd = ['FROM alpine']
+    for service in ['lake', 'vault', 'ledger']:
+      version = self.versions[service]
+      scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-master /opt/artifacts/{0}_{1}+master_{2}.deb /opt/artifacts/{0}.deb'.format(service, version, arch))
 
-      progress('docker cp openbank/{0}:/opt/artifacts /opt/artifacts/{1}'.format(service["name"], service["name"]))
-      subprocess.check_call(["docker", "cp", container_id+":/opt/artifacts", "/opt/artifacts/"+service["name"]], stdout=DEVNULL, stderr=subprocess.STDOUT)
+    temp = tempfile.NamedTemporaryFile(delete=True)
+    try:
+      with open(temp.name, 'w') as f:
+        for item in scratch_docker_cmd:
+          f.write("%s\n" % item)
 
-      progress('docker remove scratch container openbank/{0}:master'.format(service["name"]))
-      self.docker.api.remove_container(container_id)
+      for chunk in self.docker.build(fileobj=temp, rm=True, decode=True, tag='perf_artifacts-scratch'):
+        if 'stream' in chunk:
+          for line in chunk['stream'].splitlines():
+            if len(line):
+              progress('docker {0}'.format(line.strip('\r\n')))
 
-      packages = subprocess.check_output(["find", "/opt/artifacts/"+service["name"], "-type", "f", "-name", service["wildcard"]], stderr=subprocess.STDOUT).decode("utf-8").strip()
+      scratch = self.docker.create_container('perf_artifacts-scratch', '/bin/true')
 
-      progress('{0} installing package {1}'.format(service["name"], packages))
+      if scratch['Warnings']:
+        raise Exception(scratch['Warnings'])
 
-      for package in packages.splitlines():
-        subprocess.check_call(["apt-get", "-y", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", package], stdout=DEVNULL, stderr=subprocess.STDOUT)
+      for service in ['lake', 'vault', 'ledger']:
+        tar_stream, stat = self.docker.get_archive(scratch['Id'], '/opt/artifacts/{0}.deb'.format(service))
+        with open('/opt/artifacts/{0}.tar'.format(service), 'wb') as destination:
+          total_bytes = 0
+          for chunk in tar_stream:
+            total_bytes += len(chunk)
+            progress('download {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
+            destination.write(chunk)
+          destination.seek(0)
+          archive = tarfile.TarFile(destination.name)
+          archive.extract('{0}.deb'.format(service), '/opt/artifacts')
+          os.remove(destination.name)
+          debug('downloaded {0}'.format(stat['name']))
 
-      debug('{0} installed'.format(service["name"]))
+      self.docker.remove_container(scratch['Id'])
+    finally:
+      temp.close()
+      self.docker.remove_image('perf_artifacts-scratch', force=True)
+
+    for service in ['lake', 'vault', 'ledger']:
+      version = self.versions[service]
+      progress('installing {0} {1}'.format(service, version))
+      subprocess.check_call(["apt-get", "-y", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", '/opt/artifacts/{0}.deb'.format(service)], stdout=DEVNULL, stderr=subprocess.STDOUT)
+      success('installed {0} {1}'.format(service, version))
 
     DEVNULL.close()
 

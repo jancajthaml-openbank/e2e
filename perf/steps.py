@@ -32,8 +32,8 @@ class Steps:
 
         return response
 
-      def on_progress(processed, passed, failed):
-        progress('{0} [ passed: {1}, failed: {2} ]'.format(processed, passed, failed))
+      def on_progress(processed, total):
+        progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
 
       tenants = self.integration.tenants
 
@@ -77,8 +77,8 @@ class Steps:
 
         return response
 
-      def on_progress(processed, passed, failed):
-        progress('{0} [ passed: {1}, failed: {2} ]'.format(processed, passed, failed))
+      def on_progress(processed, total):
+        progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
 
       tenants = self.integration.tenants
 
@@ -134,8 +134,8 @@ class Steps:
 
         return response
 
-      def on_progress(processed, passed, failed):
-        progress('{0} [ passed: {1}, failed: {2} ]'.format(processed, passed, failed))
+      def on_progress(processed, total):
+        progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
 
       partitions = []
       chunks = len(tenants)
@@ -189,8 +189,8 @@ class Steps:
         else:
           return None
 
-      def on_progress(processed, passed, failed):
-        progress('{0} [ passed: {1}, failed: {2} ]'.format(processed, passed, failed))
+      def on_progress(processed, total):
+        progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
 
       client = HttpClient()
       passed, failed = client.get(prepared, callback, on_progress)
