@@ -6,7 +6,7 @@ endif
 all: bbtest perf
 
 .PHONY: bbtest
-	$(MAKE) -j 3 \
+	$(MAKE) -j3 \
 		bbtest-amd64 \
 		bbtest-armhf \
 		bbtest-arm64
@@ -16,12 +16,12 @@ bbtest-amd64:
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_bbtest_amd64" -q) &> /dev/null || :)
 	@(docker exec -it $$(\
 		docker run -d -ti \
-		  --name=e2e_bbtest_amd64 \
-		  -e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
-		  -e UNIT_ARCH="amd64" \
+			--name=e2e_bbtest_amd64 \
+			-e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
+			-e UNIT_ARCH="amd64" \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
 			-v /var/run/docker.sock:/var/run/docker.sock \
-      -v /var/lib/docker/containers:/var/lib/docker/containers \
+			-v /var/lib/docker/containers:/var/lib/docker/containers \
 			-v $$(pwd)/bbtest:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
@@ -40,12 +40,12 @@ bbtest-armhf:
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_bbtest_armhf" -q) &> /dev/null || :)
 	@(docker exec -it $$(\
 		docker run -d -ti \
-		  --name=e2e_bbtest_armhf \
-		  -e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
-		  -e UNIT_ARCH="armhf" \
+			--name=e2e_bbtest_armhf \
+			-e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
+			-e UNIT_ARCH="armhf" \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
 			-v /var/run/docker.sock:/var/run/docker.sock \
-      -v /var/lib/docker/containers:/var/lib/docker/containers \
+			-v /var/lib/docker/containers:/var/lib/docker/containers \
 			-v $$(pwd)/bbtest:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
@@ -64,12 +64,12 @@ bbtest-arm64:
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_bbtest_arm64" -q) &> /dev/null || :)
 	@(docker exec -it $$(\
 		docker run -d -ti \
-		  --name=e2e_bbtest_arm64 \
-		  -e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
-		  -e UNIT_ARCH="arm64" \
+			--name=e2e_bbtest_arm64 \
+			-e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
+			-e UNIT_ARCH="arm64" \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
 			-v /var/run/docker.sock:/var/run/docker.sock \
-      -v /var/lib/docker/containers:/var/lib/docker/containers \
+			-v /var/lib/docker/containers:/var/lib/docker/containers \
 			-v $$(pwd)/bbtest:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
@@ -88,15 +88,15 @@ perf:
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_perf" -q) &> /dev/null || :)
 	@(docker exec -it $$(\
 		docker run -d -ti \
-		  --name=e2e_perf \
+			--name=e2e_perf \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
 			-v /var/run/docker.sock:/var/run/docker.sock \
-      -v /var/lib/docker/containers:/var/lib/docker/containers \
+			-v /var/lib/docker/containers:/var/lib/docker/containers \
 			-v $$(pwd)/perf:/opt/bbtest \
 			-v $$(pwd)/reports:/reports \
 			--privileged=true \
 			--security-opt seccomp:unconfined \
-		jancajtham/bbtest \
+		jancajthaml/bbtest:amd64 \
 	) python3 \
 		/opt/bbtest/main.py || :)
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_perf" -q) &> /dev/null || :)
