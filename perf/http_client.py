@@ -21,8 +21,9 @@ class HttpClient(object):
     http = urllib3.PoolManager()
     self.http = http
 
-  @with_deadline(10*60)
+  @with_deadline(20*60)
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
+    total = len(reqs)
     counter = ProgressCounter()
 
     def try_post(url, payload, bounce=0) -> urllib3.HTTPResponse:
@@ -49,7 +50,7 @@ class HttpClient(object):
         print(ex)
         counter.fail()
       finally:
-        on_progress(counter.progress, counter.success, counter.failure)
+        on_progress(counter.progress, total)
 
     p = Pool()
 
@@ -61,8 +62,9 @@ class HttpClient(object):
 
     return counter.success, counter.failure
 
-  @with_deadline(10*60)
-  def get(self, reqs, pre_process, on_progress):
+  @with_deadline(20*60)
+  def get(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
+    total = len(reqs)
     counter = ProgressCounter()
 
     def try_get(url, bounce=0) -> urllib3.HTTPResponse:
@@ -88,7 +90,7 @@ class HttpClient(object):
       except Exception as ex:
         print(ex)
       finally:
-        on_progress(counter.progress, counter.success, counter.failure)
+        on_progress(counter.progress, total)
 
     p = Pool()
 
