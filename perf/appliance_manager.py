@@ -115,18 +115,18 @@ class ApplianceManager(object):
         raise Exception(scratch['Warnings'])
 
       for service in ['lake', 'vault', 'ledger']:
+        tar_name = '/opt/artifacts/{0}.tar'.format(service)
         tar_stream, stat = self.docker.get_archive(scratch['Id'], '/opt/artifacts/{0}.deb'.format(service))
-        with open('/opt/artifacts/{0}.tar'.format(service), 'wb') as destination:
+        with open(tar_name, 'wb') as destination:
           total_bytes = 0
           for chunk in tar_stream:
             total_bytes += len(chunk)
-            progress('download {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
+            progress('extracting {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
             destination.write(chunk)
-          destination.seek(0)
-          archive = tarfile.TarFile(destination.name)
-          archive.extract('{0}.deb'.format(service), '/opt/artifacts')
-          os.remove(destination.name)
-          debug('downloaded {0}'.format(stat['name']))
+        archive = tarfile.TarFile(tar_name)
+        archive.extract('{0}.deb'.format(service), '/opt/artifacts')
+        os.remove(tar_name)
+        debug('downloaded {0}'.format(stat['name']))
 
       self.docker.remove_container(scratch['Id'])
     finally:
