@@ -22,6 +22,7 @@ from systemd.ledger_unit import LedgerUnit
 from systemd.ledger_rest import LedgerRest
 from systemd.lake import Lake
 
+import platform
 import tarfile
 import tempfile
 import errno
@@ -65,11 +66,15 @@ class ApplianceManager(object):
 
     del self.http
 
-  def __init__(self):
-    arch = os.environ.get('UNIT_ARCH')
+  def get_arch(self):
+    return {
+      'x86_64': 'amd64',
+      'armv7l': 'armhf',
+      'armv8': 'arm64'
+    }.get(platform.uname().machine, 'amd64')
 
-    if arch is None:
-      raise Exception('no arch specified')
+  def __init__(self):
+    self.arch = self.get_arch()
 
     self.store = {}
     self.versions = {}
@@ -90,7 +95,7 @@ class ApplianceManager(object):
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-master /opt/artifacts/{0}_{1}+master_{2}.deb /opt/artifacts/{0}.deb'.format(service, version, arch))
+      scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-master /opt/artifacts/{0}_{1}+master_{2}.deb /opt/artifacts/{0}.deb'.format(service, version, self.arch))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:

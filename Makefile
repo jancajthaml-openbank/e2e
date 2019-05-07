@@ -49,7 +49,6 @@ perf-%: %
 		docker run -d -ti \
 			--name=e2e_perf_$^ \
 			-e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
-			-e UNIT_ARCH="$^" \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
 			-v /var/run/docker.sock:/var/run/docker.sock \
 			-v /var/lib/docker/containers:/var/lib/docker/containers \
