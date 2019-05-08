@@ -48,6 +48,38 @@ class ApplianceHelper
     return resp_body['tag_name'].gsub('v', '')
   end
 
+  def image_exists?(image, tag)
+    cmd = ["curl"]
+    cmd << ["-ss"]
+    cmd << ["-i"]
+    cmd << ["https://index.docker.io/v1/repositories/#{image}/tags/#{tag}"]
+    cmd << ["2>&1 | cat"]
+
+    response = { :code => 0, :raw => [] }
+    response[:body] = []
+
+    in_body = false
+    IO.popen(cmd.join(" ")) do |stream|
+      stream.each do |line|
+        response[:raw] << line
+        if in_body
+          response[:body] << line
+        elsif line.start_with? "HTTP/"
+          response[:code] = line[9..13].to_i
+        elsif line.strip.empty?
+          in_body = true
+        end
+      end
+    end
+
+    response[:body] = response[:body].join('')
+    response[:raw] = response[:raw].join('\n')
+
+    raise "endpoint is unreachable\n#{response[:raw]}" if response[:code] === 0
+
+    return response[:code] == 200
+  end
+
   def download_artifacts()
     raise "no arch specified" unless ENV.has_key?('UNIT_ARCH')
 
@@ -62,7 +94,11 @@ class ApplianceHelper
       "search"
     ].map { |service|
       version = self.get_latest_version(service)
-      "COPY --from=openbank/#{service}:v#{version}-master /opt/artifacts/#{service}_#{version}+master_#{arch}.deb /opt/artifacts/#{service}.deb"
+      if self.image_exists?("openbank/#{service}", "v#{version}-master")
+        "COPY --from=openbank/#{service}:v#{version}-master /opt/artifacts/#{service}_#{version}+master_#{arch}.deb /opt/artifacts/#{service}.deb"
+      else
+        "COPY --from=openbank/#{service}:v#{version} /opt/artifacts/#{service}_#{version}_#{arch}.deb /opt/artifacts/#{service}.deb"
+      end
     } + ["RUN ls -la /opt/artifacts"]
 
     file = Tempfile.new('e2e_artifacts')
