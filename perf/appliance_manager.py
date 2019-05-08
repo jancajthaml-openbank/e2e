@@ -35,6 +35,11 @@ secure_random = random.SystemRandom()
 
 class ApplianceManager(object):
 
+  def image_exists(self, image, tag):
+    uri = 'https://index.docker.io/v1/repositories/{0}/tags/{1}'.format(image, tag)
+    r = self.http.request('GET', uri)
+    return r.status == 200
+
   def get_latest_service_version(self, service):
     headers = {
       'User-Agent': 'https://api.github.com/meta'
@@ -63,8 +68,6 @@ class ApplianceManager(object):
     for service in ['lake', 'vault', 'ledger']:
       version = self.get_latest_service_version(service)
       self.versions[service] = version
-
-    del self.http
 
   def get_arch(self):
     return {
@@ -95,7 +98,10 @@ class ApplianceManager(object):
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-master /opt/artifacts/{0}_{1}+master_{2}.deb /opt/artifacts/{0}.deb'.format(service, version, self.arch))
+      if self.image_exists('openbank/{0}'.format(service), 'v{0}-master'.format(version)):
+        scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-master /opt/artifacts/{0}_{1}+master_{2}.deb /opt/artifacts/{0}.deb'.format(service, version, self.arch))
+      else:
+        scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /opt/artifacts/{0}.deb'.format(service, version, self.arch))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
