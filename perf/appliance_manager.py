@@ -99,9 +99,18 @@ class ApplianceManager(object):
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
       if self.image_exists('openbank/{0}'.format(service), 'v{0}-master'.format(version)):
-        scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-master /opt/artifacts/{0}_{1}+master_{2}.deb /opt/artifacts/{0}.deb'.format(service, version, self.arch))
+        image = 'openbank/{0}:v{1}-master'.format(service, version)
+        package = '{0}_{1}+master_{2}'.format(service, version, self.arch)
       else:
-        scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /opt/artifacts/{0}.deb'.format(service, version, self.arch))
+        image = 'openbank/{0}:v{1}'.format(service, version)
+        package = '{0}_{1}_{2}.deb'.format(service, version, self.arch)
+
+      try:
+        self.docker.remove_image(image, force=True)
+      except:
+        pass
+      finally:
+        scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /opt/artifacts/{2}.deb'.format(image, package, service))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
@@ -133,6 +142,12 @@ class ApplianceManager(object):
         archive.extract('{0}.deb'.format(service), '/opt/artifacts')
         os.remove(tar_name)
         debug('downloaded {0}'.format(stat['name']))
+
+      for service in ['lake', 'vault', 'ledger']:
+        try:
+          contents = subprocess.check_output(["dpkg", "-c", "/opt/artifacts/{0}.deb".format(service)], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        except subprocess.CalledProcessError as e:
+          raise Exception(e.output.decode("utf-8").strip())
 
       self.docker.remove_container(scratch['Id'])
     finally:
