@@ -13,6 +13,7 @@ import struct
 import copy
 import signal
 import time
+import fcntl
 from functools import partial
 
 this = sys.modules[__name__]
@@ -20,11 +21,11 @@ this = sys.modules[__name__]
 fd = sys.stdin.fileno()
 old = termios.tcgetattr(fd)
 new = copy.deepcopy(old)
-new[3] = new[3] & ~termios.ECHO
+new[3] &= ~termios.ICANON & ~termios.ECHO
 
 this.__progress_running = False
 
-termios.tcsetattr(fd, termios.TCSADRAIN, new)
+termios.tcsetattr(fd, termios.TCSANOW, new)
 
 __TTY = sys.stdout.isatty() and (int(os.environ.get('NO_TTY', 0)) == 0)
 
@@ -32,7 +33,7 @@ _, term_w, _, _ = struct.unpack('HHHH', fcntl.ioctl(0, termios.TIOCGWINSZ, struc
 buster = (' '*term_w)
 
 def interrupt_stdout() -> None:
-  termios.tcsetattr(fd, termios.TCSADRAIN, old)
+  termios.tcsetattr(fd, termios.TCSAFLUSH, old)
   if this.__progress_running and __TTY:
     sys.stdout.write('\n')
     sys.stdout.flush()
@@ -91,7 +92,12 @@ class timeit():
   def __enter__(self):
     self.ts = time.time()
 
-  def __exit__(self, *args):
+  def __exit__(self, exception_type, exception_value, traceback):
+    if exception_type == KeyboardInterrupt:
+      sys.stdout.write('\033[0m')
+      sys.stdout.flush()
+      return
+
     te = time.time()
     sys.stdout.write('\033[90m          {0} took {1}\033[0m\n'.format(self.__label, human_readable_duration((te - self.ts)*1e3)))
     sys.stdout.flush()

@@ -6,7 +6,7 @@ from queue import Queue
 from threading import Thread, Event
 from time import sleep
 
-_NPROCESSORS_ONLN = int(subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"]).strip())
+_NPROCESSORS_ONLN = int(subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"]).strip()) * 6
 
 class Worker(Thread):
 
