@@ -17,7 +17,7 @@ workflows:
   rolling_contract:
     triggers:
       - schedule:
-          cron: "5,20,35,50 * * * *"
+          cron: "10,50 * * * *"
           filters:
             branches:
               only:
@@ -28,7 +28,7 @@ workflows:
   rolling_performance:
     triggers:
       - schedule:
-          cron: "10,40 * * * *"
+          cron: "30 * * * *"
           filters:
             branches:
               only:
