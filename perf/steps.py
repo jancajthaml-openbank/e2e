@@ -155,7 +155,7 @@ class Steps:
 
         info("preparing creation of {0} transactions for tenant {1}".format(will_generate_transactions, tenant_name))
 
-        prepared.extend(self.integration.prepare_transaction(tenant_name, secure_random.randint(1, 10), credit_accounts, debit_account) for x in range(0, will_generate_transactions, 1))
+        prepared.extend(self.integration.prepare_transaction(tenant_name, 10, credit_accounts, debit_account) for x in range(0, will_generate_transactions, 1))
 
       client = HttpClient()
       passed, failed = client.post(prepared, callback, on_progress)

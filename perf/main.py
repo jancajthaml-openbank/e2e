@@ -98,7 +98,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      absolute_total = int(4*1e4)
+      total = 40000 #int(4*1e4)
 
       for _ in range(6):
         manager.onboard()
@@ -106,62 +106,63 @@ def main():
       integration.reset()
       eventually_ready(manager)
 
-      sleep(2)
-      with metrics(manager, 's1_new_account_latencies_{0}'.format(absolute_total)):
-        steps.random_uniform_accounts(absolute_total)
+      #sleep(1)
+      with metrics(manager, 's1_new_account_latencies_{0}'.format(total)):
+        steps.random_uniform_accounts(total)
         manager.reset()
-      sleep(2)
+      #sleep(1)
 
       manager.teardown('vault-unit')
       manager.teardown('ledger-unit')
+
+    with timeit('get accounts scenario'):
+
+      total = 40000
 
       manager.onboard()
 
       integration.reset()
       eventually_ready(manager)
 
-      absolute_total = int(4*1e4)
+      splits = 40
+      chunk = int(total/splits)
+      total = splits*chunk
+      no_accounts = chunk
 
-      sleep(2)
-      with timeit('get accounts scenario'):
-        splits = 10
-        chunk = int(absolute_total/splits)
-        absolute_total = splits*chunk
-        no_accounts = chunk
+      while no_accounts <= total:
+        steps.random_uniform_accounts(chunk)
+        manager.reset('vault-unit')
+        manager.reset('vault-rest')
 
-        while no_accounts <= absolute_total:
-          steps.random_uniform_accounts(chunk)
-          manager.reset('vault-unit')
-          manager.reset('vault-rest')
+        #sleep(1)
+        with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
+          steps.check_balances()
+          manager.reset()
+        #sleep(1)
 
-          with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
-            steps.check_balances()
-            manager.reset()
-
-          no_accounts += chunk
-      sleep(2)
+        no_accounts += chunk
 
       manager.teardown('vault-unit')
 
     ############################################################################
 
     with timeit('new transaction scenario'):
-      absolute_total = int(4*1e4)
+      total = 40000 #int(4*1e4)
 
-      for _ in range(1):
-        manager.onboard()
+      #for _ in range(1):
+      manager.onboard()
 
       integration.reset()
       manager.reset()
       eventually_ready(manager)
 
-      steps.random_uniform_accounts(4*1e4)
+      steps.random_uniform_accounts(40)
 
-      sleep(2)
-      with metrics(manager, 's3_new_transaction_latencies_{0}'.format(absolute_total)):
-        steps.random_uniform_transactions(absolute_total)
+      #sleep(1)
+      with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
+        steps.random_uniform_transactions(total)
         manager.reset()
-      sleep(2)
+      #sleep(1)
 
       manager.teardown('vault-unit')
       manager.teardown('ledger-unit')

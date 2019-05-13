@@ -6,7 +6,7 @@ from queue import Queue
 from threading import Thread, Event
 from time import sleep
 
-_NPROCESSORS_ONLN = int(subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"]).strip()) * 6
+_NPROCESSORS_ONLN = int(subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"]).strip()) # * 100
 
 class Worker(Thread):
 
@@ -73,7 +73,7 @@ class Pool(object):
     for a in self.aborts:
       a.set()
     while self.alive():
-      sleep(0.1)
+      sleep(1)
 
   def alive(self) -> bool:
     for t in self.threads:
