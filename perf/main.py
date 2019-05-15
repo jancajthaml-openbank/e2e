@@ -98,7 +98,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 4000 #int(4*1e4)
+      total = 100000 #int(4*1e4)
 
       for _ in range(6):
         manager.onboard()
