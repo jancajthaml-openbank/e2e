@@ -98,7 +98,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 40000 #int(4*1e4)
+      total = 4000 #int(4*1e4)
 
       for _ in range(6):
         manager.onboard()
@@ -116,15 +116,14 @@ def main():
       manager.teardown('ledger-unit')
 
     with timeit('get accounts scenario'):
-
-      total = 40000
+      total = 1000
 
       manager.onboard()
 
       integration.reset()
       eventually_ready(manager)
 
-      splits = 40
+      splits = 10
       chunk = int(total/splits)
       total = splits*chunk
       no_accounts = chunk
@@ -143,11 +142,12 @@ def main():
         no_accounts += chunk
 
       manager.teardown('vault-unit')
+      manager.teardown('ledger-unit')
 
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 40000 #int(4*1e4)
+      total = 20000 #int(4*1e4)
 
       #for _ in range(1):
       manager.onboard()
