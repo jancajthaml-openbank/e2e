@@ -34,6 +34,7 @@ class MetricsAggregator(Thread):
         with open(path, mode='r', encoding="ascii") as f:
           self.__store[path][str(int(time.time()*1000))] = json.load(f)
       except IOError:
+        print('')
         pass
       else:
         f.close()
@@ -48,7 +49,7 @@ class MetricsAggregator(Thread):
     self.__vault_watch.add_watch('/opt/vault/metrics', flags.MODIFY | flags.MOVED_TO)
 
     while not self.stopped():
-      events = []
+      #events = []
 
       for event in self.__lake_watch.read(timeout=100):
         if not event.name.endswith('temp'):
