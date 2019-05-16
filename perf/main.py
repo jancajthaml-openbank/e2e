@@ -90,7 +90,7 @@ def main():
     info("reconfigure units")
 
     manager.reconfigure({
-      'METRICS_REFRESHRATE': '500ms'
+      'METRICS_REFRESHRATE': '1000ms'
     })
 
     info("start tests")
@@ -98,7 +98,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 200000 #int(4*1e4)
+      total = 300000 #int(4*1e4)
 
       for _ in range(6):
         manager.onboard()
@@ -147,7 +147,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 40000 #int(4*1e4)
+      total = 50000 #int(4*1e4)
 
       #for _ in range(1):
       manager.onboard()
