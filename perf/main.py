@@ -98,7 +98,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 300000 #int(4*1e4)
+      total = 300000
 
       for _ in range(6):
         manager.onboard()
@@ -106,11 +106,11 @@ def main():
       integration.reset()
       eventually_ready(manager)
 
-      #sleep(1)
+      sleep(1)
       with metrics(manager, 's1_new_account_latencies_{0}'.format(total)):
         steps.random_uniform_accounts(total)
         manager.reset()
-      #sleep(1)
+        sleep(1)
 
       manager.teardown('vault-unit')
       manager.teardown('ledger-unit')
@@ -133,11 +133,11 @@ def main():
         manager.reset('vault-unit')
         manager.reset('vault-rest')
 
-        #sleep(1)
+        sleep(1)
         with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
           steps.check_balances()
           manager.reset()
-        #sleep(1)
+          sleep(1)
 
         no_accounts += chunk
 
@@ -147,9 +147,8 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 50000 #int(4*1e4)
+      total = 50000
 
-      #for _ in range(1):
       manager.onboard()
 
       integration.reset()
@@ -158,11 +157,11 @@ def main():
 
       steps.random_uniform_accounts(40)
 
-      #sleep(1)
+      sleep(1)
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
         steps.random_uniform_transactions(total)
         manager.reset()
-      #sleep(1)
+        sleep(1)
 
       manager.teardown('vault-unit')
       manager.teardown('ledger-unit')
