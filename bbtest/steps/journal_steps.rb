@@ -41,5 +41,7 @@ step "transaction :id of :tenant should be" do |id, tenant, expectation|
 end
 
 step "transaction :id state of :tenant should be :state" do |id, tenant, state|
-  expect(Journal.transaction_state(tenant, id)).to eq(state)
+  transaction = Journal.transaction_data(tenant, id)
+
+  expect(transaction["state"]).to eq(state)
 end
