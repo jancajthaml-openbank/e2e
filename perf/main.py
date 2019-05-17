@@ -5,7 +5,7 @@ import os
 
 from functools import partial
 from utils import debug, warn, info, interrupt_stdout, clear_dir, timeit
-from metrics_aggregator import MetricsAggregator
+from metrics.manager import MetricsManager
 from appliance_manager import ApplianceManager
 
 from integration.integration import Integration
@@ -22,7 +22,7 @@ class metrics():
 
   def __init__(self, manager, label):
     self.__label = label
-    self.__metrics = MetricsAggregator(manager)
+    self.__metrics = MetricsManager(manager)
     self.__ready = False
     self.__fn = lambda *args: None
 
@@ -43,7 +43,6 @@ class metrics():
 
   def __exit__(self, *args):
     self.__metrics.stop()
-    self.__metrics.join()
     self.__metrics.persist(self.__label)
 
 def eventually_ready(manager):
