@@ -126,11 +126,9 @@ def main():
       while no_accounts <= total:
         steps.random_uniform_accounts(chunk)
 
-        sleep(1)
         with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
           steps.check_balances()
           manager.restart()
-          sleep(1)
 
         no_accounts += chunk
 

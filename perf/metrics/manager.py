@@ -16,4 +16,3 @@ class MetricsManager():
           store.update(unit.get_metrics())
 
       json.dump(store, f, indent=4, sort_keys=True)
-

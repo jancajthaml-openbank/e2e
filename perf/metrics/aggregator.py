@@ -35,3 +35,4 @@ class MetricsAggregator(Thread):
       for event in self.__watcher.read(timeout=600):
         if dirname + '/' + event.name == self.__path:
           self.__process_change(self.__path)
+
