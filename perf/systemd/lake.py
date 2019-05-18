@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from systemd.common import Unit
-from metrics.manager import MetricsAggregator
+from metrics.aggregator import MetricsAggregator
 import subprocess
 import multiprocessing
 import string
