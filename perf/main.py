@@ -39,10 +39,9 @@ class metrics():
       return self.__fn(*args, **kwargs)
 
   def __enter__(self):
-    self.__metrics.start()
+    pass
 
   def __exit__(self, *args):
-    self.__metrics.stop()
     self.__metrics.persist(self.__label)
 
 def eventually_ready(manager):
@@ -82,15 +81,12 @@ def main():
   steps = Steps(integration)
 
   try:
-    # fixme in parallel please :/
-
-    # with memory boundaries we could test long running (several days running) tests and determine failures
-
     info("reconfigure units")
 
     manager.reconfigure({
       'METRICS_REFRESHRATE': '1000ms'
     })
+    manager.teardown()
 
     info("start tests")
 
@@ -99,27 +95,27 @@ def main():
     with timeit('new accounts scenario'):
       total = 300000
 
+      manager.bootstrap()
+
       for _ in range(6):
         manager.onboard()
 
-      integration.reset()
+      integration.clear()
       eventually_ready(manager)
 
-      sleep(1)
       with metrics(manager, 's1_new_account_latencies_{0}'.format(total)):
         steps.random_uniform_accounts(total)
-        manager.reset()
-        sleep(1)
+        manager.restart()
 
-      manager.teardown('vault-unit')
-      manager.teardown('ledger-unit')
+      manager.teardown()
 
     with timeit('get accounts scenario'):
       total = 1000
 
+      manager.bootstrap()
       manager.onboard()
 
-      integration.reset()
+      integration.clear()
       eventually_ready(manager)
 
       splits = 10
@@ -129,41 +125,34 @@ def main():
 
       while no_accounts <= total:
         steps.random_uniform_accounts(chunk)
-        manager.reset('vault-unit')
-        manager.reset('vault-rest')
 
-        sleep(1)
         with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
           steps.check_balances()
-          manager.reset()
-          sleep(1)
+          manager.restart()
 
         no_accounts += chunk
 
-      manager.teardown('vault-unit')
-      manager.teardown('ledger-unit')
+      manager.teardown()
 
     ############################################################################
 
     with timeit('new transaction scenario'):
       total = 50000
 
+      manager.bootstrap()
       manager.onboard()
 
-      integration.reset()
-      manager.reset()
+      integration.clear()
+
       eventually_ready(manager)
 
       steps.random_uniform_accounts(40)
 
-      sleep(1)
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
         steps.random_uniform_transactions(total)
-        manager.reset()
-        sleep(1)
+        manager.restart()
 
-      manager.teardown('vault-unit')
-      manager.teardown('ledger-unit')
+      manager.teardown()
 
     ############################################################################
 
