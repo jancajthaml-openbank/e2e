@@ -14,7 +14,7 @@ class Integration(object):
     self.__accounts = OrderedDict()
     self.__lock = Lock()
 
-  def reset(self):
+  def clear(self):
     with self.__lock:
       self.__accounts = OrderedDict()
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 from systemd.common import Unit
+from metrics.aggregator import MetricsAggregator
+
 import subprocess
 import multiprocessing
 import string
@@ -9,6 +11,19 @@ import random
 secure_random = random.SystemRandom()
 
 class VaultRest(Unit):
+
+  def __init__(self):
+    self.__metrics = None
+
+    try:
+      subprocess.check_call(["systemctl", "start", 'vault-rest'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
+    except subprocess.CalledProcessError as ex:
+      raise RuntimeError("Failed to onboard 'vault-rest' with error {0}".format(ex))
+
+    self.watch_metrics()
+
+  def __repr__(self):
+    return 'VaultRest()'
 
   def teardown(self):
     def eventual_teardown():
@@ -25,6 +40,9 @@ class VaultRest(Unit):
     action_process.join(timeout=5)
     action_process.terminate()
 
+    if self.__metrics:
+      self.__metrics.stop()
+
   def restart(self) -> bool:
     def eventual_restart():
       try:
@@ -38,6 +56,24 @@ class VaultRest(Unit):
     action_process.terminate()
 
     return self.is_healthy
+
+  def watch_metrics(self) -> None:
+    metrics_output = None
+    with open('/etc/init/vault.conf', 'r') as f:
+      for line in f:
+        (key, val) = line.rstrip().split('=')
+        if key == 'VAULT_METRICS_OUTPUT':
+          metrics_output = val
+          break
+
+    if metrics_output:
+      self.__metrics = MetricsAggregator(metrics_output)
+      self.__metrics.start()
+
+  def get_metrics(self) -> None:
+    if self.__metrics:
+      return self.__metrics.get_metrics()
+    return {}
 
   def reconfigure(self, params) -> None:
     d = {}

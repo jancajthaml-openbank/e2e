@@ -82,6 +82,7 @@ class ApplianceManager(object):
     self.store = {}
     self.versions = {}
     self.units = {}
+    self.services = []
     self.docker = docker.APIClient(base_url='unix://var/run/docker.sock')
 
     DEVNULL = open(os.devnull, 'w')
@@ -163,16 +164,7 @@ class ApplianceManager(object):
     DEVNULL.close()
 
     installed = subprocess.check_output(["systemctl", "-t", "service", "--no-legend"], stderr=subprocess.STDOUT).decode("utf-8").strip()
-    services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in installed.splitlines()])
-
-    if 'lake' in services:
-      self['lake'] = Lake()
-
-    if 'vault' in services:
-      self['vault-rest'] = VaultRest()
-
-    if 'ledger' in services:
-      self['ledger-rest'] = LedgerRest()
+    self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in installed.splitlines()])
 
   def __len__(self):
     return sum([len(x) for x in self.units.values()])
@@ -216,7 +208,7 @@ class ApplianceManager(object):
     for node in self[key]:
       node.reconfigure(params)
 
-  def reset(self, key=None) -> None:
+  def restart(self, key=None) -> None:
     if not key:
       for name in list(self.units):
         for node in self[name]:
@@ -225,6 +217,16 @@ class ApplianceManager(object):
 
     for node in self[key]:
       node.restart()
+
+  def bootstrap(self) -> None:
+    if 'lake' in self.services and not self['lake']:
+      self['lake'] = Lake()
+
+    if 'vault' in self.services and not self['vault-rest']:
+      self['vault-rest'] = VaultRest()
+
+    if 'ledger' in self.services and not self['ledger-rest']:
+      self['ledger-rest'] = LedgerRest()
 
   def teardown(self, key=None) -> None:
     if key:
