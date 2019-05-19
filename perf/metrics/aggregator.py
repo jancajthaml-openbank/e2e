@@ -30,9 +30,8 @@ class MetricsAggregator(Thread):
 
   def run(self) -> None:
     dirname = os.path.dirname(self.__path)
-    self.__watcher.add_watch(dirname, flags.CREATE | flags.MODIFY | flags.MOVED_TO)
+    self.__watcher.add_watch(dirname, flags.MOVED_TO)
     while not self._stop_event.is_set():
-      for event in self.__watcher.read(timeout=600):
+      for event in self.__watcher.read(read_delay=100, timeout=2000):
         if dirname + '/' + event.name == self.__path:
           self.__process_change(self.__path)
-

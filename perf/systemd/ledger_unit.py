@@ -2,13 +2,10 @@
 
 from systemd.common import Unit
 from metrics.aggregator import MetricsAggregator
-
 import subprocess
 import multiprocessing
 import string
 import time
-import random
-secure_random = random.SystemRandom()
 
 class LedgerUnit(Unit):
 
