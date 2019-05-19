@@ -164,9 +164,6 @@ def main():
   except Exception as ex:
     print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
   finally:
-    debug("gracefull teardown components")
-    manager.teardown()
-
     debug("terminated")
 
 if __name__ == "__main__":
