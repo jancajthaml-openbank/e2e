@@ -104,7 +104,7 @@ class ApplianceManager(object):
         package = '{0}_{1}+master_{2}'.format(service, version, self.arch)
       else:
         image = 'openbank/{0}:v{1}'.format(service, version)
-        package = '{0}_{1}_{2}.deb'.format(service, version, self.arch)
+        package = '{0}_{1}_{2}'.format(service, version, self.arch)
 
       try:
         self.docker.remove_image(image, force=True)
