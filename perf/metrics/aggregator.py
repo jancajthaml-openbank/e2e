@@ -3,9 +3,8 @@
 import json
 import time
 import os
-from inotify_simple import INotify, flags
 
-from threading import Lock, Thread, Event
+from threading import Thread, Event
 
 class MetricsAggregator(Thread):
 
@@ -14,24 +13,26 @@ class MetricsAggregator(Thread):
     self._stop_event = Event()
     self.__store = {}
     self.__path = path
-    self.__watcher = INotify()
 
   def stop(self) -> None:
     self._stop_event.set()
 
-  def __process_change(self, path) -> None:
-    with open(path, mode='r', encoding="ascii") as f:
-      self.__store[str(int(time.time()*1000))] = json.load(f)
+  def __process_change(self) -> None:
+    if not os.path.isfile(self.__path):
+      return
+    try:
+      with open(self.__path, mode='r', encoding="ascii") as f:
+        self.__store[str(int(time.time()*1000))] = json.load(f)
+    except:
+      pass
 
   def get_metrics(self) -> dict:
     store = {}
-    store[self.__path] = self.__store
+    store[self.__path] = self.__store.copy()
     return store
 
   def run(self) -> None:
-    dirname = os.path.dirname(self.__path)
-    self.__watcher.add_watch(dirname, flags.MOVED_TO)
     while not self._stop_event.is_set():
-      for event in self.__watcher.read(read_delay=100, timeout=2000):
-        if dirname + '/' + event.name == self.__path:
-          self.__process_change(self.__path)
+      time.sleep(0.5)
+      self.__process_change()
+    self.__process_change()
