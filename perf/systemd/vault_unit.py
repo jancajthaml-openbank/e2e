@@ -69,15 +69,11 @@ class VaultUnit(Unit):
       for line in f:
         (key, val) = line.rstrip().split('=')
         if key == 'VAULT_METRICS_OUTPUT':
-          metrics_output = val
+          metrics_output = '{0}/metrics.{1}.json'.format(val, self._tenant)
           break
 
-    # "/opt/vault/metrics/metrics.json"
-    # "/opt/vault/metrics/metrics.6hnari9ywl.json"
-
     if metrics_output:
-      parts = metrics_output.split('.')
-      self.__metrics = MetricsAggregator('{0}.{1}.{2}'.format(parts[0], self._tenant, parts[1]))
+      self.__metrics = MetricsAggregator(metrics_output)
       self.__metrics.start()
 
   def get_metrics(self) -> None:

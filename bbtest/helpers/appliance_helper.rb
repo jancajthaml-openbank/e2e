@@ -196,6 +196,7 @@ class ApplianceHelper
   end
 
   def get_metrics(type, filename)
+
     metrics_file = "/opt/#{type}/metrics/#{filename}"
     return {} unless File.file?(metrics_file)
     return File.open(metrics_file, 'rb') { |f| JSON.parse(f.read) }
