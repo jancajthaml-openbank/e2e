@@ -33,6 +33,6 @@ class MetricsAggregator(Thread):
 
   def run(self) -> None:
     while not self._stop_event.is_set():
-      time.sleep(0.5)
+      time.sleep(1)
       self.__process_change()
     self.__process_change()
