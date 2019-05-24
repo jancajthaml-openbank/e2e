@@ -63,7 +63,7 @@ class VaultRest(Unit):
       for line in f:
         (key, val) = line.rstrip().split('=')
         if key == 'VAULT_METRICS_OUTPUT':
-          metrics_output = val
+          metrics_output = '{0}/metrics.json'.format(val)
           break
 
     if metrics_output:
