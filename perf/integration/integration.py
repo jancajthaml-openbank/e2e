@@ -97,6 +97,7 @@ class Integration(object):
     url = 'https://127.0.0.1:4400/account/' + tenant_name
     body = {
       "name": account_name,
+      "format": "perf",
       "currency": "CZK",
       "isBalanceCheck": is_ballance_check
     }
