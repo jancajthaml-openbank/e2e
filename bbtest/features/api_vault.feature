@@ -16,6 +16,7 @@ Feature: Vault API test
     """
       {
         "name": "xxx",
+        "format": "bbtest",
         "currency": "XXX",
         "isBalanceCheck": false
       }
@@ -37,6 +38,7 @@ Feature: Vault API test
     """
       {
         "name": "yyy",
+        "format": "bbtest",
         "currency": "XXX",
         "isBalanceCheck": false
       }
@@ -50,6 +52,7 @@ Feature: Vault API test
     """
       {
         "name": "yyy",
+        "format": "bbtest",
         "currency": "XXX",
         "isBalanceCheck": false
       }
@@ -65,6 +68,7 @@ Feature: Vault API test
     """
       {
         "currency": "XXX",
+        "format": "BBTEST",
         "balance": "0",
         "blocking": "0",
         "isBalanceCheck": false
@@ -76,6 +80,7 @@ Feature: Vault API test
     """
       {
         "currency": "XXX",
+        "format": "BBTEST",
         "balance": "0",
         "blocking": "0",
         "isBalanceCheck": false

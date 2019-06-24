@@ -11,7 +11,8 @@ Feature: Journal integrity test
     """
       {
         "version": 0,
-        "accountName": "Euro",
+        "name": "Euro",
+        "format": "BBTEST",
         "isBalanceCheck": false,
         "currency": "EUR",
         "balance": "0",
@@ -25,7 +26,8 @@ Feature: Journal integrity test
     """
       {
         "version": 0,
-        "accountName": "Ripple",
+        "name": "Ripple",
+        "format": "BBTEST",
         "isBalanceCheck": true,
         "currency": "XRP",
         "balance": "0",

@@ -16,9 +16,7 @@ module Journal
     Journal.transaction_data(tenant, id)
   end
 
-
   def self.transaction_data(tenant, id)
-    puts "tenant #{tenant} id #{id}"
     return nil if id.nil?
     path = "/data/t_#{tenant}/transaction/#{id}"
     raise "transaction #{id} not found" unless File.file?(path)
@@ -54,9 +52,9 @@ module Journal
   end
 
   def self.account_snapshot(tenant, account, version)
-    snapshots = [version.to_s.rjust(10, '0')]
+    filename = version.to_s.rjust(10, '0')
 
-    path = "/data/t_#{tenant}/account/#{account}/snapshot/#{snapshots[0]}"
+    path = "/data/t_#{tenant}/account/#{account}/snapshot/#{filename}"
 
     File.open(path, 'rb') { |f|
       data = f.read
@@ -64,9 +62,10 @@ module Journal
       lines = data.split("\n").map(&:strip)
 
       {
-        "isBalanceCheck" => lines[0][0] != 'F',
-        "currency" => lines[0][1..3],
-        "accountName" => account,
+        "isBalanceCheck" => lines[0][lines[0].length-1..-1] != "F",
+        "format" => lines[0][4...-2],
+        "currency" => lines[0][0..2],
+        "name" => account,
         "version" => version.to_i,
         "balance" => lines[1],
         "promised" => lines[2],
@@ -80,26 +79,10 @@ module Journal
     Dir.foreach("/data/t_#{tenant}/account/#{account}/snapshot") { |f|
       snapshots << f unless f.start_with?(".")
     }
-    return if snapshots.empty?
     snapshots.sort_by! { |i| -i.to_i }
 
-    path = "/data/t_#{tenant}/account/#{account}/snapshot/#{snapshots[0]}"
-
-    File.open(path, 'rb') { |f|
-      data = f.read
-
-      lines = data.split("\n").map(&:strip)
-
-      {
-        "isBalanceCheck" => lines[0][0] != 'F',
-        "currency" => lines[0][1..3],
-        "accountName" => account,
-        "version" => snapshots[0].to_i,
-        "balance" => lines[1],
-        "promised" => lines[2],
-        "promiseBuffer" => lines[3..-2]
-      }
-    }
+    return nil if snapshots.empty?
+    return self.account_snapshot(tenant, account, snapshots[0])
   end
 
 end

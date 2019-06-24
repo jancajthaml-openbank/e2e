@@ -10,6 +10,7 @@ step ":activity :currency account :account is created" do |activity, currency, a
 
   payload = {
     name: account,
+    format: 'bbtest',
     currency: currency,
     isBalanceCheck: activity
   }.to_json
