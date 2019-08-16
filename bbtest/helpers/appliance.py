@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import docker
-from .shell import execute
 import ssl
 import urllib.request
 import platform
@@ -13,6 +12,8 @@ import os
 import json
 import datetime
 import subprocess
+from .shell import execute
+
 
 class ApplianceHelper(object):
 
@@ -181,4 +182,3 @@ class ApplianceHelper(object):
       execute(['systemctl', 'stop', unit], silent=True)
 
     self.cleanup()
-
