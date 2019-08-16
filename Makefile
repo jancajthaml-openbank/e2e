@@ -22,23 +22,19 @@ perf:
 bbtest-%: %
 	@(docker pull jancajthaml/bbtest:$^)
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_bbtest_$^" -q) &> /dev/null || :)
-	@(docker exec -it $$(\
-		docker run -d -ti \
+	@docker exec -t $$(\
+		docker run -d \
 			--name=e2e_bbtest_$^ \
 			-e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
 			-e UNIT_ARCH="$^" \
+			-v /var/run/docker.sock:/var/run/docker.sock:rw \
+			-v /var/lib/docker/containers:/var/lib/docker/containers:rw \
 			-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-			-v /var/run/docker.sock:/var/run/docker.sock \
-			-v /var/lib/docker/containers:/var/lib/docker/containers \
-			-v $$(pwd)/bbtest:/opt/bbtest \
-			-v $$(pwd)/reports:/reports \
+			-v $$(pwd)/bbtest:/opt/app \
+			-v $$(pwd)/reports:/tmp/reports \
+			-w /opt/app \
 		jancajthaml/bbtest:$^ \
-	) rspec \
-		--require /opt/bbtest/spec.rb \
-		--format documentation \
-		--format RspecJunitFormatter \
-		--out junit.xml \
-		--pattern /opt/bbtest/features/*.feature || :)
+	) python3 /opt/app/main.py
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_bbtest_$^" -q) &> /dev/null || :)
 
 .PHONY: perf-%
