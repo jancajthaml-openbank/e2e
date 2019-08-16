@@ -1,8 +1,7 @@
 from behave import *
-
+from helpers.eventually import eventually
 import os
 import json
-from helpers.eventually import eventually
 
 
 @then('metrics for tenant {tenant} should report {numberOfAccounts} created accounts')
