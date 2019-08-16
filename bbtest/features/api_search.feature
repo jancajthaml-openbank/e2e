@@ -2,14 +2,14 @@ Feature: Search API test
 
   Scenario: setup
     Given appliance is running
-    And   vault SEARCH is onbdoarded
-    And   ledger SEARCH is onbdoarded
+    And   vault SEARCH is onboarded
+    And   ledger SEARCH is onboarded
 
   Scenario: Accounts query
     When  active EUR account SEARCH/ReplayCredit is created
     And   pasive EUR account SEARCH/ReplayDebit is created
 
-    When  I request search
+    When  GraphQL requested with
     """
       query {
         Accounts(tenant: "SEARCH") {
@@ -18,7 +18,7 @@ Feature: Search API test
         }
       }
     """
-    Then  search responds with 200
+    Then GraphQL responsed with
     """
       {
         "data": {
@@ -41,7 +41,7 @@ Feature: Search API test
     And   pasive EUR account SEARCH/Debit is created
     And   1 EUR is transferred from SEARCH/Debit to SEARCH/Credit
 
-    When  I request search
+    When  GraphQL requested with
     """
       fragment accountFields on Account {
         name
@@ -77,7 +77,7 @@ Feature: Search API test
         }
       }
     """
-    Then  search responds with 200
+    Then GraphQL responsed with
     """
       {
         "data": {

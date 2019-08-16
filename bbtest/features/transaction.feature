@@ -1,15 +1,15 @@
 Feature: Transaction workflow
 
-  Scenario: setup
+  Scenario: Setup
     Given appliance is running
-    And   vault NORDEA is onbdoarded
-    And   ledger NORDEA is onbdoarded
-    And   vault FIO is onbdoarded
-    And   ledger FIO is onbdoarded
-    And   vault AIRBANK is onbdoarded
-    And   ledger AIRBANK is onbdoarded
-    And   vault RAIFFEISEN is onbdoarded
-    And   ledger RAIFFEISEN is onbdoarded
+    And   vault NORDEA is onboarded
+    And   ledger NORDEA is onboarded
+    And   vault FIO is onboarded
+    And   ledger FIO is onboarded
+    And   vault AIRBANK is onboarded
+    And   ledger AIRBANK is onboarded
+    And   vault RAIFFEISEN is onboarded
+    And   ledger RAIFFEISEN is onboarded
 
   Scenario: Trivial transfer
     When  pasive EUR account NORDEA/mine is created
@@ -23,10 +23,10 @@ Feature: Transaction workflow
     And   NORDEA/theirs balance should be 0.00000000001 EUR
 
     When  0.00000000001 EUR is transferred from NORDEA/theirs to NORDEA/mine
-    Then  NORDEA/mine balance should be 0 EUR
-    And   NORDEA/theirs balance should be 0 EUR
+    Then  NORDEA/mine balance should be 0.00000000000 EUR
+    And   NORDEA/theirs balance should be 0.00000000000 EUR
 
-  Scenario: tenant isolation
+  Scenario: Tenant isolation
     When  pasive CZK account FIO/Nostro is created
     And   active CZK account FIO/Credit is created
     Then  FIO/Nostro should exist
@@ -57,37 +57,37 @@ Feature: Transaction workflow
 
     When  following transaction is created from tenant AIRBANK
     """
-      {
-        "id": "forward_id",
-        "transfers": [
-          {
-            "id": "transfer_1",
-            "credit": {
-              "tenant": "AIRBANK",
-              "name": "OriginCredit"
-            },
-            "debit": {
-              "tenant": "AIRBANK",
-              "name": "OriginDebit"
-            },
-            "amount": "1",
-            "currency": "EUR"
+    {
+      "id": "forward_id",
+      "transfers": [
+        {
+          "id": "transfer_1",
+          "credit": {
+            "tenant": "AIRBANK",
+            "name": "OriginCredit"
           },
-          {
-            "id": "transfer_2",
-            "credit": {
-              "tenant": "AIRBANK",
-              "name": "OriginCredit"
-            },
-            "debit": {
-              "tenant": "AIRBANK",
-              "name": "OriginDebit"
-            },
-            "amount": "2",
-            "currency": "EUR"
-          }
-        ]
-      }
+          "debit": {
+            "tenant": "AIRBANK",
+            "name": "OriginDebit"
+          },
+          "amount": "1",
+          "currency": "EUR"
+        },
+        {
+          "id": "transfer_2",
+          "credit": {
+            "tenant": "AIRBANK",
+            "name": "OriginCredit"
+          },
+          "debit": {
+            "tenant": "AIRBANK",
+            "name": "OriginDebit"
+          },
+          "amount": "2",
+          "currency": "EUR"
+        }
+      ]
+    }
     """
     Then  AIRBANK/OriginDebit balance should be -3 EUR
     And   AIRBANK/OriginCredit balance should be 3 EUR
