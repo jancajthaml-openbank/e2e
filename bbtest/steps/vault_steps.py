@@ -1,9 +1,9 @@
 from behave import *
+from helpers.eventually import eventually
 import ssl
-import urllib.request
 import json
 import time
-from helpers.eventually import eventually
+import urllib.request
 
 
 @given('{activity} {currency} account {tenant}/{account} is created')
