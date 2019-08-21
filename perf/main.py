@@ -110,7 +110,7 @@ def main():
       manager.teardown()
 
     with timeit('get accounts scenario'):
-      total = 1000
+      total = 5000
 
       manager.bootstrap()
       manager.onboard()
@@ -118,7 +118,7 @@ def main():
       integration.clear()
       eventually_ready(manager)
 
-      splits = 10
+      splits = 50
       chunk = int(total/splits)
       total = splits*chunk
       no_accounts = chunk
