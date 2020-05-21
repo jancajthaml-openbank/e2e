@@ -1,5 +1,6 @@
 
 import os
+import sys
 from helpers.appliance import ApplianceHelper
 
 
@@ -13,8 +14,12 @@ def before_all(context):
   os.system('mkdir -p /tmp/reports /tmp/reports/blackbox-tests /tmp/reports/blackbox-tests/logs /tmp/reports/blackbox-tests/metrics')
   os.system('rm -rf /tmp/reports/blackbox-tests/logs/*.log /tmp/reports/blackbox-tests/metrics/*.json')
 
-  context.appliance.download()
-  context.appliance.install()
+  try:
+    context.appliance.download()
+    context.appliance.install()
+  except Exception as ex:
+    print(ex)
+    sys.exit(1)
 
 
 def after_all(context):
