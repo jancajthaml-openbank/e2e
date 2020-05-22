@@ -67,10 +67,9 @@ class ApplianceHelper(object):
     parts = latest.get('id', '').split('-')
 
     version = parts[0] or None
-    meta = None
 
     if len(parts) > 1:
-      meta = parts[-1]
+      meta = 'master'
 
     if version and version.startswith('v'):
       version = version[1:]
