@@ -21,14 +21,14 @@ class HttpClient(object):
     http = urllib3.PoolManager()
     self.http = http
 
-  @with_deadline(40*60)
+  @with_deadline(45*60)
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
     counter = ProgressCounter()
 
     def try_post(url, payload, bounce=0) -> urllib3.HTTPResponse:
       try:
-        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(3, redirect=2))
+        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(3, redirect=2), timeout=60)
         if resp and resp.status in [504, 503] and bounce < 3:
           return try_post(url, payload, bounce + 1)
         else:
@@ -60,14 +60,14 @@ class HttpClient(object):
 
     return counter.success, counter.failure
 
-  @with_deadline(40*60)
+  @with_deadline(45*60)
   def get(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
     counter = ProgressCounter()
 
     def try_get(url, bounce=0) -> urllib3.HTTPResponse:
       try:
-        resp = self.http.request('GET', url, retries=urllib3.Retry(3, redirect=2))
+        resp = self.http.request('GET', url, retries=urllib3.Retry(3, redirect=2), timeout=60)
         if resp and resp.status in [504, 503] and bounce < 3:
           return try_get(url, bounce + 1)
         else:
