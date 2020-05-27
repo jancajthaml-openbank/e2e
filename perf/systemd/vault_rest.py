@@ -27,7 +27,7 @@ class VaultRest(Unit):
     def eventual_teardown():
       try:
         out = subprocess.check_output(["journalctl", "-o", "short-precise", "-t", 'vault-rest'], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/ledger-rest.log', 'w') as the_file:
+        with open('/reports/perf_logs/vault-rest.log', 'w') as the_file:
           the_file.write(out)
         subprocess.check_call(["systemctl", "stop", "vault-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
         out = subprocess.check_output(["journalctl", "-o", "short-precise", "-t", "vault-rest"], stderr=subprocess.STDOUT).decode("utf-8").strip()
