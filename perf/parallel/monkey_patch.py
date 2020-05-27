@@ -3,6 +3,7 @@
 
 import threading
 
+
 def patch_thread_join():
   threading.currentThread()
   mainThreadId = threading.get_ident()

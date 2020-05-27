@@ -2,6 +2,7 @@
 
 import json
 
+
 class MetricsManager():
 
   def __init__(self, manager):

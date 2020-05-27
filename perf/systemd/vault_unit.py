@@ -7,6 +7,7 @@ import multiprocessing
 import string
 import time
 
+
 class VaultUnit(Unit):
 
   @property

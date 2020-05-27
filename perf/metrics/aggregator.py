@@ -3,8 +3,8 @@
 import json
 import time
 import os
-
 from threading import Thread, Event
+
 
 class MetricsAggregator(Thread):
 

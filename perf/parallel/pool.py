@@ -8,6 +8,7 @@ from time import sleep
 
 _NPROCESSORS_ONLN = int(subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"]).strip()) # * 100
 
+
 class Worker(Thread):
 
   def __init__(self, name, queue, abort, idle):
@@ -35,6 +36,7 @@ class Worker(Thread):
         pass
       finally:
         self.queue.task_done()
+
 
 class Pool(object):
 

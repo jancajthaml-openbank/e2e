@@ -103,7 +103,7 @@ def perform_http_request(context, uri):
   context.http_response = dict()
 
   try:
-    response = urllib.request.urlopen(request, timeout=10, context=ctx)
+    response = urllib.request.urlopen(request, timeout=20, context=ctx)
     context.http_response['status'] = str(response.status)
     context.http_response['body'] = response.read().decode('utf-8')
   except urllib.error.HTTPError as err:

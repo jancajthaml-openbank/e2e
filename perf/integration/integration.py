@@ -2,10 +2,9 @@
 
 import json
 import random
-secure_random = random.SystemRandom()
-
 from collections import OrderedDict
 from threading import Lock
+
 
 class Integration(object):
 
@@ -13,6 +12,7 @@ class Integration(object):
     self.__manager = manager
     self.__accounts = OrderedDict()
     self.__lock = Lock()
+    self.__secure_random = random.SystemRandom()
 
   def clear(self):
     with self.__lock:
@@ -59,8 +59,8 @@ class Integration(object):
 
   @staticmethod
   def prepare_transfer(tenant_name, credit_account_choice, debit_acount_choice) -> dict:
-    account_to = secure_random.choice(credit_account_choice)
-    account_from = secure_random.choice(debit_acount_choice)
+    account_to = self.__secure_random.choice(credit_account_choice)
+    account_from = self.__secure_random.choice(debit_acount_choice)
 
     return {
       "credit": {
