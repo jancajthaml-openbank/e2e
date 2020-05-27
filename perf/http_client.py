@@ -12,7 +12,7 @@ except AttributeError:
 else:
   ssl._create_default_https_context = _create_unverified_https_context
 
-from utils import with_deadline, ProgressCounter
+from utils import ProgressCounter
 from parallel.pool import Pool
 
 class HttpClient(object):
@@ -25,7 +25,6 @@ class HttpClient(object):
     total = len(reqs)
     counter = ProgressCounter()
 
-    @with_deadline(40)
     def process_one(url, body, payload, tenant) -> None:
       try:
         resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(2, redirect=0), timeout=31)
@@ -52,13 +51,12 @@ class HttpClient(object):
     total = len(reqs)
     counter = ProgressCounter()
 
-    @with_deadline(40)
-    def process_one(url, *args) -> None:
+    def process_one(url, body, tenant) -> None:
       try:
         resp = self.http.request('GET', url, retries=urllib3.Retry(2, redirect=0), timeout=31)
         if resp and resp.status == 200:
           counter.ok()
-          pre_process(resp, url, *args)
+          pre_process(resp, url, body, tenant)
         else:
           counter.fail()
       except Exception as ex:
