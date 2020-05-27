@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import json
@@ -215,4 +215,3 @@ class Steps:
         warn('sum of all active and pasive accounts it non-zero: {0}'.format(total))
       else:
         success('all balances cancels out')
-

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import docker
@@ -170,7 +170,7 @@ class ApplianceHelper(object):
   def cleanup(self):
     for unit in self.units:
       (code, result) = execute([
-        'journalctl', '-o', 'short-precise', '-u', '{}.service'.format(unit), '--no-pager'
+        'journalctl', '-o', 'short-precise', '-t', '{}.service'.format(unit), '--no-pager'
       ], silent=True)
       if code == 0:
         with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:

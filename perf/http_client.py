@@ -27,7 +27,7 @@ class HttpClient(object):
 
     def process_one(url, body, payload, tenant) -> None:
       try:
-        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(0, redirect=0), timeout=45)
+        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(1, redirect=0), timeout=45)
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, body, tenant)
@@ -56,7 +56,7 @@ class HttpClient(object):
 
     def process_one(url, body, tenant) -> None:
       try:
-        resp = self.http.request('GET', url, retries=urllib3.Retry(0, redirect=0), timeout=45)
+        resp = self.http.request('GET', url, retries=urllib3.Retry(1, redirect=0), timeout=45)
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, body, tenant)
