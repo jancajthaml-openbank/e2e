@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import urllib3
@@ -28,7 +28,7 @@ class HttpClient(object):
     @with_deadline(40)
     def process_one(url, body, payload, tenant) -> None:
       try:
-        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(2, redirect=2), timeout=31)
+        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(2, redirect=0), timeout=31)
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, body, tenant)
@@ -55,7 +55,7 @@ class HttpClient(object):
     @with_deadline(40)
     def process_one(url, *args) -> None:
       try:
-        resp = self.http.request('GET', url, retries=urllib3.Retry(2, redirect=2), timeout=31)
+        resp = self.http.request('GET', url, retries=urllib3.Retry(2, redirect=0), timeout=31)
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, *args)
