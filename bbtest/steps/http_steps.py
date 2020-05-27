@@ -1,7 +1,7 @@
 from behave import *
-import ssl
-import urllib.request
+import urllib3
 import json
+import socket
 import time
 from helpers.eventually import eventually
 
@@ -15,14 +15,7 @@ def onboard_unit(context, service, tenant):
     'vault': 4400,
   }[service], tenant)
 
-  ctx = ssl.create_default_context()
-  ctx.check_hostname = False
-  ctx.verify_mode = ssl.CERT_NONE
-
-  request = urllib.request.Request(method='POST', url=uri)
-  request.add_header('Accept', 'application/json')
-
-  response = urllib.request.urlopen(request, timeout=10, context=ctx)
+  response = context.http.request('POST', uri, headers={'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
 
   assert response.status == 200
 
@@ -42,45 +35,34 @@ def prepare_graphql_request(context):
 @then('GraphQL responsed with')
 def check_graphql_response(context):
   uri = "http://127.0.0.1:8080/graphql"
-  body = {
+  payload = {
     'query': context.http_request,
     'variables': None,
     'operationName': None,
   }
 
-  ctx = ssl.create_default_context()
-  ctx.check_hostname = False
-  ctx.verify_mode = ssl.CERT_NONE
-
-  request = urllib.request.Request(method='POST', url=uri)
-  request.add_header('Accept', 'application/json')
-  request.add_header('Content-Type', 'application/json')
-  request.data = json.dumps(body).encode('utf-8')
-
-  expected = json.loads(context.text)
-
   def diff(path, a, b):
     if type(a) == list:
       assert type(b) == list, 'types differ at {} expected: {} actual: {}'.format(path, list, type(b))
       for idx, item in enumerate(a):
-        assert item in b, 'value {} was not found at {}[{}]'.format(item, path, idx)
+        assert item in b, 'value {} was not found at {}[{}], actual: {}'.format(item, path, idx, b)
         diff('{}[{}]'.format(path, idx), item, b[b.index(item)])
     elif type(b) == dict:
       assert type(b) == dict, 'types differ at {} expected: {} actual: {}'.format(path, dict, type(b))
       for k, v in a.items():
-        assert k in b
+        assert k in b, "value {} was not found in {}".format(k, b)
         diff('{}.{}'.format(path, k), v, b[k])
     else:
       assert type(a) == type(b), 'types differ at {} expected: {} actual: {}'.format(path, type(a), type(b))
       assert a == b, 'values differ at {} expected: {} actual: {}'.format(path, a, b)
 
-  @eventually(5)
-  def impl():
-    response = urllib.request.urlopen(request, timeout=10, context=ctx)
-    assert response.status == 200
-    diff('', expected, json.loads(response.read().decode('utf-8')))
+  response = context.http.request('POST', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
 
-  impl()
+  assert response.status == 200, 'expected status {} actual {}'.format(200, response.status)
+
+  expected = json.loads(context.text)
+  actual = json.loads(response.data.decode('utf-8'))
+  diff('', expected, actual)
 
 
 @when('I request HTTP {uri}')
@@ -90,25 +72,18 @@ def perform_http_request(context, uri):
     for row in context.table:
       options[row['key']] = row['value']
 
-  ctx = ssl.create_default_context()
-  ctx.check_hostname = False
-  ctx.verify_mode = ssl.CERT_NONE
-
-  request = urllib.request.Request(method=options['method'], url=uri)
-  request.add_header('Accept', 'application/json')
-  if context.text:
-    request.add_header('Content-Type', 'application/json')
-    request.data = context.text.encode('utf-8')
-
   context.http_response = dict()
 
   try:
-    response = urllib.request.urlopen(request, timeout=20, context=ctx)
+    if context.text:
+      response = context.http.request(options['method'], uri, body=context.text.encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
+    else:
+      response = context.http.request(options['method'], uri, headers={ 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
     context.http_response['status'] = str(response.status)
-    context.http_response['body'] = response.read().decode('utf-8')
-  except urllib.error.HTTPError as err:
-    context.http_response['status'] = str(err.code)
-    context.http_response['body'] = err.read().decode('utf-8')
+    context.http_response['body'] = response.data.decode('utf-8')
+  except urllib3.exceptions.MaxRetryError:
+    context.http_response['status'] = '504'
+    context.http_response['body'] = '{}'
 
 
 @then('HTTP response is')
@@ -135,10 +110,13 @@ def check_http_response(context):
       elif type(b) == dict:
         assert type(b) == dict, 'types differ at {} expected: {} actual: {}'.format(path, dict, type(b))
         for k, v in a.items():
-          assert k in b
+          assert k in b, "value {} was not found in {}".format(k, b)
           diff('{}.{}'.format(path, k), v, b[k])
       else:
         assert type(a) == type(b), 'types differ at {} expected: {} actual: {}'.format(path, type(a), type(b))
         assert a == b, 'values differ at {} expected: {} actual: {}'.format(path, a, b)
 
-    diff('', json.loads(context.text), json.loads(response['body']))
+    expected = json.loads(context.text)
+    actual = json.loads(response['body'])
+
+    diff('', expected, actual)

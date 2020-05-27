@@ -18,8 +18,7 @@ from parallel.pool import Pool
 class HttpClient(object):
 
   def __init__(self):
-    http = urllib3.PoolManager()
-    self.http = http
+    self.http = urllib3.PoolManager()
 
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
