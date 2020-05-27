@@ -119,7 +119,7 @@ jobs:
                 -v /home/circleci/project/reports:/reports \
               jancajthaml/bbtest:amd64 \
             ) python3 /opt/perf/main.py
-          no_output_timeout: 2h
+          no_output_timeout: 1h
       - store_artifacts:
           path: /home/circleci/project/reports
           destination: reports

@@ -21,24 +21,14 @@ class HttpClient(object):
     http = urllib3.PoolManager()
     self.http = http
 
-  @with_deadline(2*60*60)
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
     counter = ProgressCounter()
 
-    def try_post(url, payload, bounce=0) -> urllib3.HTTPResponse:
-      try:
-        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(2, redirect=2), timeout=31)
-        if resp and resp.status in [504, 503] and bounce < 2:
-          return try_post(url, payload, bounce + 1)
-        else:
-          return resp
-      except (urllib3.exceptions.ConnectionError, urllib3.exceptions.RequestError):
-        return try_post(url, payload, bounce)
-
+    @with_deadline(40)
     def process_one(url, body, payload, tenant) -> None:
       try:
-        resp = try_post(url, payload)
+        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(2, redirect=2), timeout=31)
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, body, tenant)
@@ -51,33 +41,21 @@ class HttpClient(object):
         on_progress(counter.progress, total)
 
     p = Pool()
-
     for item in reqs:
       p.enqueue(process_one, *item)
-
     p.run()
     p.join()
 
     return counter.success, counter.failure
 
-  @with_deadline(2*60*60)
   def get(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
     counter = ProgressCounter()
 
-    def try_get(url, bounce=0) -> urllib3.HTTPResponse:
-      try:
-        resp = self.http.request('GET', url, retries=urllib3.Retry(2, redirect=2), timeout=31)
-        if resp and resp.status in [504, 503] and bounce < 2:
-          return try_get(url, bounce + 1)
-        else:
-          return resp
-      except (urllib3.exceptions.ConnectionError, urllib3.exceptions.RequestError):
-        return try_get(url, bounce)
-
+    @with_deadline(40)
     def process_one(url, *args) -> None:
       try:
-        resp = try_get(url)
+        resp = self.http.request('GET', url, retries=urllib3.Retry(2, redirect=2), timeout=31)
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, *args)
@@ -89,10 +67,8 @@ class HttpClient(object):
         on_progress(counter.progress, total)
 
     p = Pool()
-
     for item in reqs:
       p.enqueue(process_one, *item)
-
     p.run()
     p.join()
 
