@@ -1,9 +1,8 @@
 from behave import *
 from helpers.eventually import eventually
-import ssl
+import urllib3
 import json
 import time
-import urllib.request
 
 
 @given('{activity} {currency} account {tenant}/{account} is created')
@@ -17,38 +16,21 @@ def create_account(context, activity, currency, tenant, account):
     'currency': currency,
     'isBalanceCheck': activity == "active",
   }
-  ctx = ssl.create_default_context()
-  ctx.check_hostname = False
-  ctx.verify_mode = ssl.CERT_NONE
 
-  request = urllib.request.Request(method='POST', url=uri)
-  request.add_header('Accept', 'application/json')
-  request.add_header('Content-Type', 'application/json')
-  request.data = json.dumps(payload).encode('utf-8')
+  response = context.http.request('POST', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5)
 
-  try:
-    response = urllib.request.urlopen(request, timeout=10, context=ctx)
-    assert response.code == 200
-  except urllib.error.HTTPError as err:
-    assert err.code == 409
-
+  assert response.status in [200 , 409]
 
 @then('{tenant}/{account} balance should be {amount} {currency}')
 def account_balance(context, tenant, account, amount, currency):
   uri = "https://127.0.0.1:4400/account/{}/{}".format(tenant, account)
 
-  ctx = ssl.create_default_context()
-  ctx.check_hostname = False
-  ctx.verify_mode = ssl.CERT_NONE
-
-  request = urllib.request.Request(method='GET', url=uri)
-  request.add_header('Accept', 'application/json')
-
-  response = urllib.request.urlopen(request, timeout=10, context=ctx)
+  http = urllib3.PoolManager()
+  response = http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
 
   assert response.status == 200
 
-  body = json.loads(response.read().decode('utf-8'))
+  body = json.loads(response.data.decode('utf-8'))
 
   assert amount == body['balance'], "expected balance {} got {}".format(amount, body['balance'])
   assert currency == body['currency'], "expected currency {} got {}".format(currency, body['currency'])
@@ -58,14 +40,7 @@ def account_balance(context, tenant, account, amount, currency):
 def account_exists(context, tenant, account):
   uri = "https://127.0.0.1:4400/account/{}/{}".format(tenant, account)
 
-  ctx = ssl.create_default_context()
-  ctx.check_hostname = False
-  ctx.verify_mode = ssl.CERT_NONE
-
-  request = urllib.request.Request(method='GET', url=uri)
-  request.add_header('Accept', 'application/json')
-
-  response = urllib.request.urlopen(request, timeout=10, context=ctx)
+  response = context.http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
 
   assert response.status == 200
 
@@ -74,14 +49,6 @@ def account_exists(context, tenant, account):
 def account_not_exists(context, tenant, account):
   uri = "https://127.0.0.1:4400/account/{}/{}".format(tenant, account)
 
-  ctx = ssl.create_default_context()
-  ctx.check_hostname = False
-  ctx.verify_mode = ssl.CERT_NONE
+  response = context.http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
 
-  request = urllib.request.Request(method='GET', url=uri)
-  request.add_header('Accept', 'application/json')
-
-  try:
-    response = urllib.request.urlopen(request, timeout=10, context=ctx)
-  except urllib.error.HTTPError as err:
-    assert err.code in [404, 504]
+  assert response.status in [404, 504]

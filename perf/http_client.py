@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import urllib3
@@ -12,38 +12,29 @@ except AttributeError:
 else:
   ssl._create_default_https_context = _create_unverified_https_context
 
-from utils import with_deadline, ProgressCounter
+from utils import ProgressCounter
 from parallel.pool import Pool
 
 class HttpClient(object):
 
   def __init__(self):
-    http = urllib3.PoolManager()
-    self.http = http
+    self.http = urllib3.PoolManager()
 
-  @with_deadline(2*60*60)
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
     counter = ProgressCounter()
 
-    def try_post(url, payload, bounce=0) -> urllib3.HTTPResponse:
-      try:
-        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(2, redirect=2), timeout=31)
-        if resp and resp.status in [504, 503] and bounce < 2:
-          return try_post(url, payload, bounce + 1)
-        else:
-          return resp
-      except (urllib3.exceptions.ConnectionError, urllib3.exceptions.RequestError):
-        return try_post(url, payload, bounce)
-
     def process_one(url, body, payload, tenant) -> None:
       try:
-        resp = try_post(url, payload)
+        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(1, redirect=0), timeout=45)
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, body, tenant)
         else:
           counter.fail()
+      except urllib3.exceptions.ProtocolError as ex:
+        print('procotol error {}'.format(ex))
+        counter.fail()
       except Exception as ex:
         print(ex)
         counter.fail()
@@ -51,48 +42,37 @@ class HttpClient(object):
         on_progress(counter.progress, total)
 
     p = Pool()
-
     for item in reqs:
       p.enqueue(process_one, *item)
-
     p.run()
     p.join()
 
     return counter.success, counter.failure
 
-  @with_deadline(2*60*60)
   def get(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
     counter = ProgressCounter()
 
-    def try_get(url, bounce=0) -> urllib3.HTTPResponse:
+    def process_one(url, body, tenant) -> None:
       try:
-        resp = self.http.request('GET', url, retries=urllib3.Retry(2, redirect=2), timeout=31)
-        if resp and resp.status in [504, 503] and bounce < 2:
-          return try_get(url, bounce + 1)
-        else:
-          return resp
-      except (urllib3.exceptions.ConnectionError, urllib3.exceptions.RequestError):
-        return try_get(url, bounce)
-
-    def process_one(url, *args) -> None:
-      try:
-        resp = try_get(url)
+        resp = self.http.request('GET', url, retries=urllib3.Retry(1, redirect=0), timeout=45)
         if resp and resp.status == 200:
           counter.ok()
-          pre_process(resp, url, *args)
+          pre_process(resp, url, body, tenant)
         else:
           counter.fail()
+      except urllib3.exceptions.ProtocolError as ex:
+        print('procotol error {}'.format(ex))
+        counter.fail()
       except Exception as ex:
         print(ex)
+        counter.fail()
       finally:
         on_progress(counter.progress, total)
 
     p = Pool()
-
     for item in reqs:
       p.enqueue(process_one, *item)
-
     p.run()
     p.join()
 

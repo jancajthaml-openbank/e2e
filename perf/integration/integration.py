@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import json
 import random
-secure_random = random.SystemRandom()
-
 from collections import OrderedDict
 from threading import Lock
+secure_random = random.SystemRandom()
+
 
 class Integration(object):
 

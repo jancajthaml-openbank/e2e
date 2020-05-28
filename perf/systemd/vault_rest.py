@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from systemd.common import Unit
 from metrics.aggregator import MetricsAggregator
@@ -6,6 +6,7 @@ import subprocess
 import multiprocessing
 import string
 import time
+
 
 class VaultRest(Unit):
 
@@ -25,11 +26,11 @@ class VaultRest(Unit):
   def teardown(self):
     def eventual_teardown():
       try:
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'vault-rest'], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/ledger-rest.log', 'w') as the_file:
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-t", 'vault-rest'], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        with open('/reports/perf_logs/vault-rest.log', 'w') as the_file:
           the_file.write(out)
         subprocess.check_call(["systemctl", "stop", "vault-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", "vault-rest"], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-t", "vault-rest"], stderr=subprocess.STDOUT).decode("utf-8").strip()
         with open('/reports/perf_logs/vault-rest.log', 'w') as the_file:
           the_file.write(out)
       except subprocess.CalledProcessError as ex:

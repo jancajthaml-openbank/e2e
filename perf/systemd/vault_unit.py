@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from systemd.common import Unit
 from metrics.aggregator import MetricsAggregator
@@ -31,11 +31,11 @@ class VaultUnit(Unit):
   def teardown(self):
     def eventual_teardown():
       try:
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'vault-unit@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-t", 'vault-unit@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
         with open('/reports/perf_logs/vault_unit_{0}.log'.format(self._tenant), 'w') as the_file:
           the_file.write(out)
         subprocess.check_call(["systemctl", "stop", 'vault-unit@{0}'.format(self._tenant)], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-u", 'vault-unit@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
+        out = subprocess.check_output(["journalctl", "-o", "short-precise", "-t", 'vault-unit@{0}'.format(self._tenant)], stderr=subprocess.STDOUT).decode("utf-8").strip()
         with open('/reports/perf_logs/vault_unit_{0}.log'.format(self._tenant), 'w') as the_file:
           the_file.write(out)
       except subprocess.CalledProcessError as ex:

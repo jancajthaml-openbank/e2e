@@ -11,29 +11,29 @@ Feature: Search API test
 
     When  GraphQL requested with
     """
-      query {
-        Accounts(tenant: "SEARCH") {
-          name
-          currency
-        }
+    query {
+      Accounts(tenant: "SEARCH") {
+        name
+        currency
       }
+    }
     """
     Then GraphQL responsed with
     """
-      {
-        "data": {
-          "Accounts": [
-            {
-              "name": "ReplayCredit",
-              "currency": "EUR"
-            },
-            {
-              "name": "ReplayDebit",
-              "currency": "EUR"
-            }
-          ]
-        }
+    {
+      "data": {
+        "Accounts": [
+          {
+            "name": "ReplayCredit",
+            "currency": "EUR"
+          },
+          {
+            "name": "ReplayDebit",
+            "currency": "EUR"
+          }
+        ]
       }
+    }
     """
 
   Scenario: Transactions query
@@ -43,63 +43,62 @@ Feature: Search API test
 
     When  GraphQL requested with
     """
-      fragment accountFields on Account {
-        name
-        isBalanceCheck
-        currency
+    fragment accountFields on Account {
+      name
+      isBalanceCheck
+    }
+
+    fragment transferFields on Transfer {
+      amount
+      currency
+      credit {
+        ...accountFields
+      }
+      debit {
+        ...accountFields
+      }
+    }
+
+    fragment transactionFields on Transaction {
+      status
+      transfers {
+        ...transferFields
+      }
+    }
+
+    query {
+      Transfers(tenant: "SEARCH") {
+        ...transferFields
       }
 
-      fragment transferFields on Transfer {
-        amount
-        currency
-        credit {
-          ...accountFields
-        }
-        debit {
-          ...accountFields
-        }
+      Transactions(tenant: "SEARCH") {
+        ...transactionFields
       }
-
-      fragment transactionFields on Transaction {
-        status
-        transfers {
-          ...transferFields
-        }
-      }
-
-      query {
-        Transfers(tenant: "SEARCH") {
-          ...transferFields
-        }
-
-        Transactions(tenant: "SEARCH") {
-          ...transactionFields
-        }
-      }
+    }
     """
     Then GraphQL responsed with
     """
-      {
-        "data": {
-          "Transactions": [
-            {
-              "status": "committed",
-              "transfers": [
-                {
-                  "credit": {
-                    "isBalanceCheck": true,
-                    "name": "Credit"
-                  },
-                  "debit": {
-                    "isBalanceCheck": false,
-                    "name": "Debit"
-                  },
-                  "amount": "1",
-                  "currency": "EUR"
-                }
-              ]
-            }
-          ]
-        }
+    {
+      "data": {
+        "Transactions": [
+          {
+            "status": "committed",
+            "transfers": [
+              {
+                "credit": {
+                  "isBalanceCheck": true,
+                  "name": "Credit"
+                },
+                "debit": {
+                  "isBalanceCheck": false,
+                  "name": "Debit"
+                },
+                "amount": "1",
+                "currency": "EUR"
+              }
+            ]
+          }
+        ]
       }
+    }
     """

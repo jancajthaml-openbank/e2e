@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import threading
+
 
 def patch_thread_join():
   threading.currentThread()

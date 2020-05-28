@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 import subprocess
@@ -7,6 +7,7 @@ from threading import Thread, Event
 from time import sleep
 
 _NPROCESSORS_ONLN = int(subprocess.check_output(["getconf", "_NPROCESSORS_ONLN"]).strip()) # * 100
+
 
 class Worker(Thread):
 
@@ -35,6 +36,7 @@ class Worker(Thread):
         pass
       finally:
         self.queue.task_done()
+
 
 class Pool(object):
 
