@@ -169,12 +169,14 @@ class ApplianceHelper(object):
 
   def cleanup(self):
     for unit in self.units:
+      service = unit.split('.service')[0].split('@')[0]
       (code, result) = execute([
-        'journalctl', '-o', 'short-precise', '-t', '{}.service'.format(unit), '--no-pager'
+        'journalctl', '-o', 'cat', '-t', service, '-u', unit, '--no-pager'
       ], silent=True)
-      if code == 0:
-        with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
-          f.write(result)
+      if code != 0 or not result:
+        continue
+      with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
+        f.write(result)
 
   def teardown(self):
     for unit in self.units:

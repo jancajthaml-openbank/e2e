@@ -61,7 +61,6 @@ class Steps:
 
   def random_uniform_accounts(self, number_of_accounts=None):
     with timeit('random_uniform_accounts(_, {0})'.format(number_of_accounts)):
-      #debug("random uniform accounts to all tenants")
 
       def callback(response, url, request, tenant):
         if response.status != 200:
