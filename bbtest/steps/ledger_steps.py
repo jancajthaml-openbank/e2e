@@ -42,24 +42,6 @@ def create_transaction_literal(context, tenant):
   assert response.status in [200, 201]
 
 
-@given('{transaction} {transfer} {side} side is forwarded to {tenantTo}/{accountTo} from tenant {tenantFrom}')
-@when('{transaction} {transfer} {side} side is forwarded to {tenantTo}/{accountTo} from tenant {tenantFrom}')
-def forward_transaction(context, transaction, transfer, side, tenantFrom, tenantTo, accountTo):
-  uri = "https://127.0.0.1:4401/transaction/{}/{}/{}".format(tenantFrom, transaction, transfer)
-
-  payload = {
-    'side': side,
-    'target': {
-      'tenant': tenantTo,
-      'name': accountTo
-    }
-  }
-
-  response = context.http.request('PATCH', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5)
-
-  assert response.status in [200, 201]
-
-
 @given('following transaction is created {times} times from tenant {tenant}')
 @when('following transaction is created {times} times from tenant {tenant}')
 def forward_transaction(context, times, tenant):

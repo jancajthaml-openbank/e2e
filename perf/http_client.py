@@ -17,16 +17,14 @@ from parallel.pool import Pool
 
 class HttpClient(object):
 
-  def __init__(self):
-    self.http = urllib3.PoolManager()
-
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
     counter = ProgressCounter()
+    http = urllib3.PoolManager()
 
     def process_one(url, body, payload, tenant) -> None:
       try:
-        resp = self.http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'}, retries=urllib3.Retry(1, redirect=0), timeout=45)
+        resp = http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'})
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, body, tenant)
@@ -52,10 +50,11 @@ class HttpClient(object):
   def get(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
     total = len(reqs)
     counter = ProgressCounter()
+    http = urllib3.PoolManager()
 
     def process_one(url, body, tenant) -> None:
       try:
-        resp = self.http.request('GET', url, retries=urllib3.Retry(1, redirect=0), timeout=45)
+        resp = http.request('GET', url)
         if resp and resp.status == 200:
           counter.ok()
           pre_process(resp, url, body, tenant)

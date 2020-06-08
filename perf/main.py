@@ -93,11 +93,11 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 300000
+      total = 200000
 
       manager.bootstrap()
 
-      for _ in range(6):
+      for _ in range(10):
         manager.onboard()
 
       integration.clear()
@@ -110,7 +110,7 @@ def main():
       manager.teardown()
 
     with timeit('get accounts scenario'):
-      total = 5000
+      total = 1000
 
       manager.bootstrap()
       manager.onboard()
@@ -118,7 +118,7 @@ def main():
       integration.clear()
       eventually_ready(manager)
 
-      splits = 50
+      splits = 100
       chunk = int(total/splits)
       total = splits*chunk
       no_accounts = chunk
@@ -146,7 +146,7 @@ def main():
 
       eventually_ready(manager)
 
-      steps.random_uniform_accounts(40)
+      steps.random_uniform_accounts(100)
 
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
         steps.random_uniform_transactions(total)
