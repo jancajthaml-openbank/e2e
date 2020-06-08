@@ -158,9 +158,11 @@ def main():
 
     debug("end tests")
 
-  except (KeyboardInterrupt, SystemExit):
+  except KeyboardInterrupt:
     interrupt_stdout()
     warn('Interrupt')
+  except SystemExit:
+    warn('Exit')
   except Exception as ex:
     print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
   finally:
