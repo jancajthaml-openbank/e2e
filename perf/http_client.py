@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
+import os
+import signal
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -33,7 +34,7 @@ class HttpClient(object):
           counter.fail()
       except urllib3.exceptions.ProtocolError as ex:
         print('procotol error {}'.format(ex))
-        sys.exit(1)
+        os.kill(os.getpid(), signal.SIGINT)
       except Exception as ex:
         print('generic error {}'.format(ex))
         counter.fail()
@@ -63,7 +64,7 @@ class HttpClient(object):
           counter.fail()
       except urllib3.exceptions.ProtocolError as ex:
         print('procotol error {}'.format(ex))
-        sys.exit(1)
+        os.kill(os.getpid(), signal.SIGINT)
       except Exception as ex:
         print(ex)
         counter.fail()
