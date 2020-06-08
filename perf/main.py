@@ -118,7 +118,7 @@ def main():
       integration.clear()
       eventually_ready(manager)
 
-      splits = 100
+      splits = 10
       chunk = int(total/splits)
       total = splits*chunk
       no_accounts = chunk
