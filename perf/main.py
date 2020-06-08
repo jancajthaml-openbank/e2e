@@ -97,7 +97,7 @@ def main():
 
       manager.bootstrap()
 
-      for _ in range(6):
+      for _ in range(10):
         manager.onboard()
 
       integration.clear()
