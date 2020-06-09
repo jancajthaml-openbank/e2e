@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 
 from functools import partial
 from utils import debug, warn, info, interrupt_stdout, clear_dir, timeit
@@ -62,6 +63,8 @@ def eventually_ready(manager):
     p.join()
 
 def main():
+  code = 0
+
   debug("starting")
 
   debug("asserting empty journal, logs and metrics")
@@ -158,14 +161,17 @@ def main():
 
     debug("end tests")
 
-  except KeyboardInterrupt:
+  except (KeyboardInterrupt, SystemExit):
     interrupt_stdout()
     warn('Interrupt')
+    code = 1
   except Exception as ex:
     print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
+    code = 1
   finally:
     manager.teardown()
     debug("terminated")
+    sys.exit(code)
 
 if __name__ == "__main__":
   with timeit('test run'):

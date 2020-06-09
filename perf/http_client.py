@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
+import signal
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -25,16 +27,16 @@ class HttpClient(object):
     def process_one(url, body, payload, tenant) -> None:
       try:
         resp = http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'})
-        if resp and resp.status == 200:
+        if resp and resp.status in [200, 201, 202]:
           counter.ok()
           pre_process(resp, url, body, tenant)
         else:
           counter.fail()
       except urllib3.exceptions.ProtocolError as ex:
         print('procotol error {}'.format(ex))
-        counter.fail()
+        os.kill(os.getpid(), signal.SIGINT)
       except Exception as ex:
-        print(ex)
+        print('generic error {}'.format(ex))
         counter.fail()
       finally:
         on_progress(counter.progress, total)
@@ -55,14 +57,14 @@ class HttpClient(object):
     def process_one(url, body, tenant) -> None:
       try:
         resp = http.request('GET', url)
-        if resp and resp.status == 200:
+        if resp and resp.status in [200, 201, 202]:
           counter.ok()
           pre_process(resp, url, body, tenant)
         else:
           counter.fail()
       except urllib3.exceptions.ProtocolError as ex:
         print('procotol error {}'.format(ex))
-        counter.fail()
+        os.kill(os.getpid(), signal.SIGINT)
       except Exception as ex:
         print(ex)
         counter.fail()
