@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 
 from functools import partial
 from utils import debug, warn, info, interrupt_stdout, clear_dir, timeit
@@ -170,7 +171,7 @@ def main():
   finally:
     manager.teardown()
     debug("terminated")
-    os.exit(code)
+    sys.exit(code)
 
 if __name__ == "__main__":
   with timeit('test run'):
