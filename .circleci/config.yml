@@ -46,10 +46,9 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   report:
-    docker:
-      - image: circleci/python:3.6.4
-        environment:
-          - LANG: C.UTF-8
+    machine:
+      image: circleci/classic:201808-01
+      docker_layer_caching: true
     environment:
       - METRICS_PATH: /home/circleci/project/reports/perf_metrics
     working_directory: /home/circleci/project
@@ -76,7 +75,7 @@ jobs:
 
             cd health-check
 
-            pyenv global 3.5.2
+            pyenv global 3.6.4
 
             pip3 install --user -r requirements.txt
 
@@ -100,7 +99,7 @@ jobs:
   performance:
     machine:
       image: circleci/classic:201808-01
-      docker_layer_caching: true
+      docker_layer_caching: false
     environment:
       - LANG: C.UTF-8
       - NO_TTY: 1
