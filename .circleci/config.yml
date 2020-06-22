@@ -72,10 +72,7 @@ jobs:
             fi
 
             cp -v ${METRICS_PATH}/* health-check/reports/
-
             cd health-check
-
-            pyenv versions
 
             pyenv global 3.6.5
 
