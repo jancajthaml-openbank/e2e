@@ -46,9 +46,7 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   report:
-    machine:
-      image: circleci/classic:201808-01
-      docker_layer_caching: true
+    machine: true
     environment:
       - METRICS_PATH: /home/circleci/project/reports/perf_metrics
     working_directory: /home/circleci/project
@@ -99,7 +97,7 @@ jobs:
   performance:
     machine:
       image: circleci/classic:201808-01
-      docker_layer_caching: false
+      docker_layer_caching: true
     environment:
       - LANG: C.UTF-8
       - NO_TTY: 1
