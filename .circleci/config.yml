@@ -46,7 +46,9 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   report:
-    machine: true
+    machine:
+      image: circleci/python:3.6.4
+      docker_layer_caching: false
     environment:
       - METRICS_PATH: /home/circleci/project/reports/perf_metrics
     working_directory: /home/circleci/project
