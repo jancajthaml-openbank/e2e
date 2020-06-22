@@ -77,7 +77,7 @@ jobs:
 
             pyenv versions
 
-            pyenv global 3.6.8
+            pyenv global 3.6.5
 
             pip3 install --user -r requirements.txt
 
