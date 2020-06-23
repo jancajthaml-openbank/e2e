@@ -46,7 +46,9 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   report:
-    machine: true
+    machine:
+      image: circleci/classic:201808-01
+      docker_layer_caching: false
     environment:
       - METRICS_PATH: /home/circleci/project/reports/perf_metrics
     working_directory: /home/circleci/project
@@ -63,17 +65,16 @@ jobs:
             git config --global user.email "jan.cajthaml@gmail.com"
             git config --global user.name "CircleCI e2e rolling update"
 
-            git clone git@github.com:jancajthaml-openbank/health-check.git
+            echo yes | git clone git@github.com:jancajthaml-openbank/health-check.git
 
             if [ "$(ls -A health-check/reports)" ] ; then
               rm -rf health-check/reports/*
             fi
 
             cp -v ${METRICS_PATH}/* health-check/reports/
-
             cd health-check
 
-            pyenv global 3.5.2
+            pyenv global 3.6.5
 
             pip3 install --user -r requirements.txt
 
@@ -119,7 +120,7 @@ jobs:
                 -v /home/circleci/project/reports:/reports \
               jancajthaml/bbtest:amd64 \
             ) python3 /opt/perf/main.py
-          no_output_timeout: 1h
+          no_output_timeout: 2h
       - store_artifacts:
           path: /home/circleci/project/reports
           destination: reports

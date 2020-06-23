@@ -17,7 +17,10 @@ from parallel.pool import Pool
 from time import sleep
 
 from parallel.monkey_patch import patch_thread_join
+
+
 patch_thread_join()
+
 
 class metrics():
 
@@ -61,6 +64,7 @@ def eventually_ready(manager):
 
     p.run()
     p.join()
+
 
 def main():
   code = 0
@@ -172,6 +176,7 @@ def main():
     manager.teardown()
     debug("terminated")
     sys.exit(code)
+
 
 if __name__ == "__main__":
   with timeit('test run'):

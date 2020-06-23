@@ -16,6 +16,7 @@ import time
 import fcntl
 from functools import partial
 
+
 this = sys.modules[__name__]
 
 fd = sys.stdin.fileno()
@@ -31,6 +32,7 @@ __TTY = sys.stdout.isatty() and (int(os.environ.get('NO_TTY', 0)) == 0)
 
 _, term_w, _, _ = struct.unpack('HHHH', fcntl.ioctl(0, termios.TIOCGWINSZ, struct.pack('HHHH', 0, 0, 0, 0)))
 buster = (' '*term_w)
+
 
 def interrupt_stdout() -> None:
   termios.tcsetattr(fd, termios.TCSAFLUSH, old)

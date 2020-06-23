@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 import os
 import sys
@@ -12,7 +14,6 @@ except AttributeError:
   pass
 else:
   ssl._create_default_https_context = _create_unverified_https_context
-
 
 
 def after_feature(context, feature):
