@@ -223,6 +223,7 @@ class ProgressCounter():
   def progress(self) -> int:
     return self._progress
 
+
 class Counter():
 
   def __init__(self, value=0) -> None:

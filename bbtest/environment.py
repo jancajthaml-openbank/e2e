@@ -23,10 +23,7 @@ def after_feature(context, feature):
 def before_all(context):
   context.appliance = ApplianceHelper(context)
   context.http = urllib3.PoolManager()
-
-  os.system('mkdir -p /tmp/reports /tmp/reports/blackbox-tests /tmp/reports/blackbox-tests/logs /tmp/reports/blackbox-tests/metrics')
   os.system('rm -rf /tmp/reports/blackbox-tests/logs/*.log /tmp/reports/blackbox-tests/metrics/*.json')
-
   try:
     context.appliance.download()
     context.appliance.install()

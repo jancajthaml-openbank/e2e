@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import os
 from systemd.common import Unit
 from metrics.aggregator import MetricsAggregator
 import subprocess
@@ -80,16 +81,18 @@ class Lake(Unit):
   def reconfigure(self, params) -> None:
     d = {}
 
-    with open('/etc/init/lake.conf', 'r') as f:
-      for line in f:
-        (key, val) = line.rstrip().split('=')
-        d[key] = val
+    if os.path.exists('/etc/init/lake.conf'):
+      with open('/etc/init/lake.conf', 'r') as f:
+        for line in f:
+          (key, val) = line.rstrip().split('=')
+          d[key] = val
 
     for k, v in params.items():
       key = 'LAKE_{0}'.format(k)
       if key in d:
         d[key] = v
 
+    os.makedirs("/etc/init", exist_ok=True)
     with open('/etc/init/lake.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 

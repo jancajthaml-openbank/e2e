@@ -66,12 +66,14 @@ class VaultUnit(Unit):
 
   def watch_metrics(self) -> None:
     metrics_output = None
-    with open('/etc/init/vault.conf', 'r') as f:
-      for line in f:
-        (key, val) = line.rstrip().split('=')
-        if key == 'VAULT_METRICS_OUTPUT':
-          metrics_output = '{0}/metrics.{1}.json'.format(val, self._tenant)
-          break
+
+    if os.path.exists('/etc/init/vault.conf'):
+      with open('/etc/init/vault.conf', 'r') as f:
+        for line in f:
+          (key, val) = line.rstrip().split('=')
+          if key == 'VAULT_METRICS_OUTPUT':
+            metrics_output = '{0}/metrics.{1}.json'.format(val, self._tenant)
+            break
 
     if metrics_output:
       self.__metrics = MetricsAggregator(metrics_output)
@@ -85,16 +87,18 @@ class VaultUnit(Unit):
   def reconfigure(self, params) -> None:
     d = {}
 
-    with open('/etc/init/vault.conf', 'r') as f:
-      for line in f:
-        (key, val) = line.rstrip().split('=')
-        d[key] = val
+    if os.path.exists('/etc/init/vault.conf'):
+      with open('/etc/init/vault.conf', 'r') as f:
+        for line in f:
+          (key, val) = line.rstrip().split('=')
+          d[key] = val
 
     for k, v in params.items():
       key = 'VAULT_{0}'.format(k)
       if key in d:
         d[key] = v
 
+    os.makedirs("/etc/init", exist_ok=True)
     with open('/etc/init/vault.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 

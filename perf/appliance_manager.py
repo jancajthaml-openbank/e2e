@@ -33,6 +33,7 @@ import string
 import random
 secure_random = random.SystemRandom()
 
+
 class ApplianceManager(object):
 
   def image_exists(self, image, tag):

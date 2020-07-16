@@ -24,6 +24,7 @@ bbtest-%: %
 	@(docker rm -f $$(docker ps -a --filter="name=e2e_bbtest_$^" -q) &> /dev/null || :)
 	@docker exec -t $$(\
 		docker run -d \
+			--cpuset-cpus=1 \
 			--name=e2e_bbtest_$^ \
 			-e GITHUB_RELEASE_TOKEN="$(GITHUB_RELEASE_TOKEN)" \
 			-e UNIT_ARCH="$^" \
