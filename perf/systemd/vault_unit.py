@@ -7,6 +7,8 @@ import subprocess
 import multiprocessing
 import string
 import time
+import os
+
 
 class VaultUnit(Unit):
 

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
 from systemd.common import Unit
 from metrics.aggregator import MetricsAggregator
 import subprocess
 import multiprocessing
 import string
 import time
+import os
 
 
 class Lake(Unit):
