@@ -93,6 +93,8 @@ class ApplianceHelper(object):
         raise
       pass
 
+    pulls = []
+
     scratch_docker_cmd = ['FROM alpine']
 
     for service in self.services:
@@ -101,9 +103,14 @@ class ApplianceHelper(object):
         raise RuntimeError('missing version for {}'.format(service))
 
       if meta:
+        pulls.append('openbank/{0}:v{1}-{2}'.format(service, version, meta))
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-{2} /opt/artifacts/{0}_{1}+{2}_{3}.deb /tmp/packages/{0}.deb'.format(service, version, meta, self.arch))
       else:
+        pulls.append('openbank/{0}:v{1}'.format(service, version))
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /tmp/packages/{0}.deb'.format(service, version, self.arch))
+
+    for image in pulls:
+      execute(["docker", "pull", image], silent=False)
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
