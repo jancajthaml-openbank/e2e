@@ -101,7 +101,6 @@ jobs:
       docker_layer_caching: true
     environment:
       - LANG: C.UTF-8
-      - NO_TTY: 1
     working_directory: /home/circleci/project
     steps:
       - checkout
@@ -110,8 +109,10 @@ jobs:
           name: Run performance tests
           command: |
             docker exec -it $(\
-              docker run -d -ti \
-                -e NO_TTY=${NO_TTY} \
+              docker run \
+                -d \
+                -t \
+                -e CI=1 \
                 -e GITHUB_RELEASE_TOKEN="${GITHUB_RELEASE_TOKEN}" \
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /var/run/docker.sock:/var/run/docker.sock \
@@ -146,12 +147,14 @@ jobs:
             docker run -d --name=e2e_postgres e2e_postgres &> /dev/null
 
             docker exec -it $(\
-              docker run -d -t \
+              docker run \
+                -d \
+                -t \
                 --cpuset-cpus=1 \
                 --link=e2e_postgres:postgres \
                 -e GITHUB_RELEASE_TOKEN="${GITHUB_RELEASE_TOKEN}" \
                 -e UNIT_ARCH="amd64" \
-                -e NO_TTY=1 \
+                -e CI=1 \
                 -v /tmp/reports:/reports/bbtest \
                 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
                 -v /var/run/docker.sock:/var/run/docker.sock \

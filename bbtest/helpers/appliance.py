@@ -93,8 +93,6 @@ class ApplianceHelper(object):
         raise
       pass
 
-    pulls = []
-
     scratch_docker_cmd = ['FROM alpine']
 
     for service in self.services:
@@ -103,14 +101,9 @@ class ApplianceHelper(object):
         raise RuntimeError('missing version for {}'.format(service))
 
       if meta:
-        pulls.append('openbank/{0}:v{1}-{2}'.format(service, version, meta))
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-{2} /opt/artifacts/{0}_{1}+{2}_{3}.deb /tmp/packages/{0}.deb'.format(service, version, meta, self.arch))
       else:
-        pulls.append('openbank/{0}:v{1}'.format(service, version))
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /tmp/packages/{0}.deb'.format(service, version, self.arch))
-
-    for image in pulls:
-      execute(["docker", "pull", image], silent=False)
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
@@ -118,7 +111,7 @@ class ApplianceHelper(object):
         for item in scratch_docker_cmd:
           f.write("%s\n" % item)
 
-      for chunk in self.docker.build(fileobj=temp, rm=True, decode=True, tag='bbtest_artifacts-scratch'):
+      for chunk in self.docker.build(fileobj=temp, pull=True, rm=True, decode=True, tag='bbtest_artifacts-scratch'):
         if 'stream' in chunk:
           for line in chunk['stream'].splitlines():
             if len(line):
