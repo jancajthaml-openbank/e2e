@@ -25,6 +25,7 @@ def before_all(context):
   context.http = urllib3.PoolManager()
   os.system('rm -rf /tmp/reports/blackbox-tests/logs/*.log /tmp/reports/blackbox-tests/metrics/*.json')
   try:
+    context.appliance.setup()
     context.appliance.download()
     context.appliance.install()
   except Exception as ex:

@@ -142,8 +142,13 @@ jobs:
       - run:
           name: Run blackbox tests
           command: |
+            docker build -f /home/circleci/project/bbtest/postgres/Dockerfile -t e2e_postgres /home/circleci/project/bbtest/postgres
+            docker run -d --name=e2e_postgres e2e_postgres &> /dev/null
+
             docker exec -it $(\
               docker run -d -t \
+                --cpuset-cpus=1 \
+                --link=e2e_postgres:postgres \
                 -e GITHUB_RELEASE_TOKEN="${GITHUB_RELEASE_TOKEN}" \
                 -e UNIT_ARCH="amd64" \
                 -e NO_TTY=1 \

@@ -31,7 +31,7 @@ class ApplianceHelper(object):
       "lake",
       "vault",
       "ledger",
-      "search",
+      "data-warehouse",
     ]
     self.docker = docker.APIClient(base_url='unix://var/run/docker.sock')
     self.context = context
@@ -75,6 +75,15 @@ class ApplianceHelper(object):
       version = version[1:]
 
     return (version, meta)
+
+  def setup(self):
+    os.makedirs("/etc/init", exist_ok=True)
+
+    with open('/etc/init/data-warehouse.conf', 'w') as fd:
+      fd.write("DWH_LOG_LEVEL=DEBUG\n")
+      fd.write("DWH_SECRETS=/opt/data-warehouse/secrets\n")
+      fd.write("DWH_HTTP_PORT=8080\n")
+      fd.write("DWH_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank\n")
 
   def download(self):
     try:
@@ -163,15 +172,14 @@ class ApplianceHelper(object):
       return False
 
     services = [item.split(' ')[0].strip() for item in result.split('\n')]
-    services = [item for item in services if item.split('-')[0].split('.')[0] in self.services]
+    services = [item for item in services if len([item for pivot in self.services if pivot in item])]
 
     self.units = services
 
   def cleanup(self):
     for unit in self.units:
-      service = unit.split('.service')[0].split('@')[0]
       (code, result) = execute([
-        'journalctl', '-o', 'cat', '-t', service, '-u', unit, '--no-pager'
+        'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
       ], silent=True)
       if code != 0 or not result:
         continue
