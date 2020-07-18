@@ -100,7 +100,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 200000
+      total = 100000
 
       manager.bootstrap()
 
@@ -144,7 +144,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 50000
+      total = 10000
 
       manager.bootstrap()
       manager.onboard()
