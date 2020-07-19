@@ -49,22 +49,10 @@ class metrics():
     self.__metrics.persist(self.__label)
 
 def eventually_ready(manager):
-  debug("waiting until everyone is ready")
-
-  with timeit('eventually_ready'):
-    def one_ready(unit):
-      if not unit.is_healthy:
-        raise RuntimeError('Health check of {0} failed. Aborting test'.format(unit))
-
-    p = Pool()
-
+  with timeit('waiting until everyone is ready'):
     for units in manager.values():
       for unit in units:
-        p.enqueue(one_ready, unit)
-
-    p.run()
-    p.join()
-
+        assert unit.is_healthy, '{} is not healthy {}'.format(unit)
 
 def main():
   code = 0

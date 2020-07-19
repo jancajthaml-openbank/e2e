@@ -117,19 +117,14 @@ class VaultUnit(Unit):
 
   @property
   def is_healthy(self) -> bool:
-    def single_check():
-      (code, result) = execute([
-        "systemctl", "show", "-p", "SubState", 'vault-unit@{0}'.format(self._tenant)
-      ])
-      return "SubState=running" == str(result)
-
-    if single_check():
-      return True
-
-    @eventually(3)
-    def eventual_check():
-      assert single_check() is True
-
-    eventual_check()
-
+    try:
+      @eventually(10)
+      def eventual_check():
+        (code, result) = execute([
+          "systemctl", "show", "-p", "SubState", 'vault-unit@{0}'.format(self._tenant)
+        ])
+        assert "SubState=running" == str(result).strip(), str(result)
+      eventual_check()
+    except:
+      return False
     return True

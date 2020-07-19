@@ -107,19 +107,14 @@ class LedgerRest(Unit):
 
   @property
   def is_healthy(self) -> bool:
-    def single_check():
-      (code, result) = execute([
-        "systemctl", "show", "-p", "SubState", "ledger-rest"
-      ])
-      return "SubState=running" == str(result)
-
-    if single_check():
-      return True
-
-    @eventually(3)
-    def eventual_check():
-      assert single_check() is True
-
-    eventual_check()
-
+    try:
+      @eventually(10)
+      def eventual_check():
+        (code, result) = execute([
+          "systemctl", "show", "-p", "SubState", "ledger-rest"
+        ])
+        assert "SubState=running" == str(result).strip(), str(result)
+      eventual_check()
+    except:
+      return False
     return True

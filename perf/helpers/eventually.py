@@ -27,6 +27,6 @@ class eventually():
         return self.__block(*args, **kwargs)
       except AssertionError as ex:
         self.__last_exception = ex
-        time.sleep(0.5)
+        time.sleep(1)
       except Exception as ex:
         raise ex
