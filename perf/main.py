@@ -100,15 +100,21 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 10000
+      total = 1000
+
+      debug("bootstraping appliance")
 
       manager.bootstrap()
+
+      debug("onboarding services")
 
       for _ in range(10):
         manager.onboard()
 
       integration.clear()
       eventually_ready(manager)
+
+      debug("appliance ready")
 
       with metrics(manager, 's1_new_account_latencies_{0}'.format(total)):
         steps.random_uniform_accounts(total)
@@ -119,11 +125,18 @@ def main():
     with timeit('get accounts scenario'):
       total = 100
 
+      debug("bootstraping appliance")
+
       manager.bootstrap()
+
+      debug("onboarding services")
+
       manager.onboard()
 
       integration.clear()
       eventually_ready(manager)
+
+      debug("appliance ready")
 
       splits = 10
       chunk = int(total/splits)
@@ -146,12 +159,19 @@ def main():
     with timeit('new transaction scenario'):
       total = 1000
 
+      debug("bootstraping appliance")
+
       manager.bootstrap()
+
+      debug("onboarding services")
+
       manager.onboard()
 
       integration.clear()
 
       eventually_ready(manager)
+
+      debug("appliance ready")
 
       steps.random_uniform_accounts(10)
 
@@ -169,7 +189,7 @@ def main():
     interrupt_stdout()
     warn('Interrupt')
     code = 1
-  except Exception as ex:
+  except (Exception, AssertionError) as ex:
     print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
     code = 1
   finally:

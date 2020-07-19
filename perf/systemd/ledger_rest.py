@@ -3,8 +3,8 @@
 
 from systemd.common import Unit
 from metrics.aggregator import MetricsAggregator
-import subprocess
-import multiprocessing
+from helpers.eventually import eventually
+from helpers.shell import execute
 import string
 import time
 import os
@@ -15,10 +15,10 @@ class LedgerRest(Unit):
   def __init__(self):
     self.__metrics = None
 
-    try:
-      subprocess.check_call(["systemctl", "start", 'ledger-rest'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as ex:
-      raise RuntimeError("Failed to onboard 'ledger-rest' with error {0}".format(ex))
+    (code, result) = execute([
+      "systemctl", "start", 'ledger-rest'
+    ])
+    assert code == 0, str(result)
 
     self.watch_metrics()
 
@@ -26,37 +26,41 @@ class LedgerRest(Unit):
     return 'LedgerRest()'
 
   def teardown(self):
+    @eventually(5)
     def eventual_teardown():
-      try:
-        out = subprocess.check_output(["journalctl", "-o", "cat", '-t', 'ledger-rest', '-u', "ledger-rest.service"], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/ledger-rest.log', 'w') as the_file:
-          the_file.write(out)
-        subprocess.check_call(["systemctl", "stop", "ledger-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-        out = subprocess.check_output(["journalctl", "-o", "cat", '-t', 'ledger-rest', '-u', "ledger-rest.service"], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/ledger-rest.log', 'w') as the_file:
-          the_file.write(out)
-      except subprocess.CalledProcessError as ex:
-        pass
+      (code, result) = execute([
+        'journalctl', '-o', 'cat', '-u', 'ledger-rest.service', '--no-pager'
+      ])
+      if code == 0 and result:
+        with open('/reports/perf_logs/ledger-rest.log', 'w') as f:
+          f.write(result)
 
-    action_process = multiprocessing.Process(target=eventual_teardown)
-    action_process.start()
-    action_process.join(timeout=5)
-    action_process.terminate()
+      (code, result) = execute([
+        'systemctl', 'stop', 'ledger-rest'
+      ])
+      assert code == 0, str(result)
+
+      (code, result) = execute([
+        'journalctl', '-o', 'cat', '-u', 'ledger-rest.service', '--no-pager'
+      ])
+      if code == 0 and result:
+        with open('/reports/perf_logs/ledger-rest.log', 'w') as f:
+          f.write(result)
+
+    eventual_teardown()
 
     if self.__metrics:
       self.__metrics.stop()
 
   def restart(self) -> bool:
+    @eventually(2)
     def eventual_restart():
-      try:
-        subprocess.check_call(["systemctl", "restart", "ledger-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-      except subprocess.CalledProcessError as ex:
-        raise RuntimeError("Failed to restart ledger-rest with error {0}".format(ex))
+      (code, result) = execute([
+        "systemctl", "restart", 'ledger-rest'
+      ])
+      assert code == 0, str(result)
 
-    action_process = multiprocessing.Process(target=eventual_restart)
-    action_process.start()
-    action_process.join(timeout=2)
-    action_process.terminate()
+    eventual_restart()
 
     return self.is_healthy
 
@@ -104,21 +108,18 @@ class LedgerRest(Unit):
   @property
   def is_healthy(self) -> bool:
     def single_check():
-      out = subprocess.check_output(["systemctl", "show", "-p", "SubState", "ledger-rest"], stderr=subprocess.STDOUT).decode("utf-8").strip()
-      return out == "SubState=running"
+      (code, result) = execute([
+        "systemctl", "show", "-p", "SubState", "ledger-rest"
+      ])
+      return "SubState=running" == str(result)
 
     if single_check():
       return True
 
+    @eventually(3)
     def eventual_check():
-      while True:
-        if single_check():
-          exit(0)
-        time.sleep(0.1)
+      assert single_check() is True
 
-    action_process = multiprocessing.Process(target=eventual_check)
-    action_process.start()
-    action_process.join(timeout=3)
-    action_process.terminate()
+    eventual_check()
 
-    return action_process.exitcode == 0
+    return True
