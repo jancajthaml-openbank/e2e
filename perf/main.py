@@ -88,7 +88,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 1000
+      total = 200000
 
       debug("bootstraping appliance")
 
@@ -111,7 +111,7 @@ def main():
       manager.teardown()
 
     with timeit('get accounts scenario'):
-      total = 100
+      total = 1000
 
       debug("bootstraping appliance")
 
@@ -145,7 +145,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 1000
+      total = 50000
 
       debug("bootstraping appliance")
 
@@ -161,7 +161,7 @@ def main():
 
       debug("appliance ready")
 
-      steps.random_uniform_accounts(10)
+      steps.random_uniform_accounts(100)
 
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
         steps.random_uniform_transactions(total)
