@@ -12,7 +12,7 @@ Feature: Search API test
     When  GraphQL requested with
     """
     query {
-      Accounts(tenant: "SEARCH") {
+      accounts(tenant: "SEARCH", limit: 100, offset: 0) {
         name
         currency
       }
@@ -22,7 +22,7 @@ Feature: Search API test
     """
     {
       "data": {
-        "Accounts": [
+        "accounts": [
           {
             "name": "ReplayCredit",
             "currency": "EUR"
@@ -43,12 +43,11 @@ Feature: Search API test
 
     When  GraphQL requested with
     """
-    fragment accountFields on Account {
+    fragment accountFields on account {
       name
-      isBalanceCheck
     }
 
-    fragment transferFields on Transfer {
+    fragment transferFields on transfer {
       amount
       currency
       credit {
@@ -59,20 +58,9 @@ Feature: Search API test
       }
     }
 
-    fragment transactionFields on Transaction {
-      status
-      transfers {
-        ...transferFields
-      }
-    }
-
     query {
-      Transfers(tenant: "SEARCH") {
+      transfers(tenant: "SEARCH", limit: 100, offset: 0) {
         ...transferFields
-      }
-
-      Transactions(tenant: "SEARCH") {
-        ...transactionFields
       }
     }
     """
@@ -80,23 +68,16 @@ Feature: Search API test
     """
     {
       "data": {
-        "Transactions": [
+        "transfers": [
           {
-            "status": "committed",
-            "transfers": [
-              {
-                "credit": {
-                  "isBalanceCheck": true,
-                  "name": "Credit"
-                },
-                "debit": {
-                  "isBalanceCheck": false,
-                  "name": "Debit"
-                },
-                "amount": "1",
-                "currency": "EUR"
-              }
-            ]
+            "credit": {
+              "name": "Credit"
+            },
+            "debit": {
+              "name": "Debit"
+            },
+            "amount": 1,
+            "currency": "EUR"
           }
         ]
       }

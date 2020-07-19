@@ -49,22 +49,10 @@ class metrics():
     self.__metrics.persist(self.__label)
 
 def eventually_ready(manager):
-  debug("waiting until everyone is ready")
-
-  with timeit('eventually_ready'):
-    def one_ready(unit):
-      if not unit.is_healthy:
-        raise RuntimeError('Health check of {0} failed. Aborting test'.format(unit))
-
-    p = Pool()
-
+  with timeit('waiting until everyone is ready'):
     for units in manager.values():
       for unit in units:
-        p.enqueue(one_ready, unit)
-
-    p.run()
-    p.join()
-
+        assert unit.is_healthy, '{} is not healthy {}'.format(unit)
 
 def main():
   code = 0
@@ -102,13 +90,19 @@ def main():
     with timeit('new accounts scenario'):
       total = 200000
 
+      debug("bootstraping appliance")
+
       manager.bootstrap()
+
+      debug("onboarding services")
 
       for _ in range(10):
         manager.onboard()
 
       integration.clear()
       eventually_ready(manager)
+
+      debug("appliance ready")
 
       with metrics(manager, 's1_new_account_latencies_{0}'.format(total)):
         steps.random_uniform_accounts(total)
@@ -119,11 +113,18 @@ def main():
     with timeit('get accounts scenario'):
       total = 1000
 
+      debug("bootstraping appliance")
+
       manager.bootstrap()
+
+      debug("onboarding services")
+
       manager.onboard()
 
       integration.clear()
       eventually_ready(manager)
+
+      debug("appliance ready")
 
       splits = 10
       chunk = int(total/splits)
@@ -146,12 +147,19 @@ def main():
     with timeit('new transaction scenario'):
       total = 50000
 
+      debug("bootstraping appliance")
+
       manager.bootstrap()
+
+      debug("onboarding services")
+
       manager.onboard()
 
       integration.clear()
 
       eventually_ready(manager)
+
+      debug("appliance ready")
 
       steps.random_uniform_accounts(100)
 
@@ -169,7 +177,7 @@ def main():
     interrupt_stdout()
     warn('Interrupt')
     code = 1
-  except Exception as ex:
+  except (Exception, AssertionError) as ex:
     print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
     code = 1
   finally:

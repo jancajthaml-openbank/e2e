@@ -28,7 +28,7 @@ this.__progress_running = False
 
 termios.tcsetattr(fd, termios.TCSANOW, new)
 
-__TTY = sys.stdout.isatty() and (int(os.environ.get('NO_TTY', 0)) == 0)
+__TTY = sys.stdout.isatty() and (int(os.environ.get('CI', 0)) == 0)
 
 _, term_w, _, _ = struct.unpack('HHHH', fcntl.ioctl(0, termios.TIOCGWINSZ, struct.pack('HHHH', 0, 0, 0, 0)))
 buster = (' '*term_w)
@@ -93,6 +93,8 @@ class timeit():
 
   def __enter__(self):
     self.ts = time.time()
+    sys.stdout.write('\033[95m   info | \033[0mstarting {0}\033[K\n'.format(self.__label))
+    sys.stdout.flush()
 
   def __exit__(self, exception_type, exception_value, traceback):
     if exception_type == KeyboardInterrupt:
@@ -222,6 +224,7 @@ class ProgressCounter():
   @property
   def progress(self) -> int:
     return self._progress
+
 
 class Counter():
 

@@ -59,13 +59,15 @@ def check_graphql_response(context):
       assert type(a) == type(b), 'types differ at {} expected: {} actual: {}'.format(path, type(a), type(b))
       assert a == b, 'values differ at {} expected: {} actual: {}'.format(path, a, b)
 
-  response = context.http.request('POST', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
+  @eventually(10)
+  def impl():
+    response = context.http.request('POST', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=20, retries=urllib3.Retry(total=0))
+    assert response.status == 200, 'expected status {} actual {} with body {}'.format(200, response.status, response.data.decode('utf-8'))
+    expected = json.loads(context.text)
+    actual = json.loads(response.data.decode('utf-8'))
+    diff('', expected, actual)
 
-  assert response.status == 200, 'expected status {} actual {}'.format(200, response.status)
-
-  expected = json.loads(context.text)
-  actual = json.loads(response.data.decode('utf-8'))
-  diff('', expected, actual)
+  impl()
 
 
 @when('I request HTTP {uri}')

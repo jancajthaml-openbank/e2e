@@ -3,10 +3,11 @@
 
 from systemd.common import Unit
 from metrics.aggregator import MetricsAggregator
-import subprocess
-import multiprocessing
+from helpers.eventually import eventually
+from helpers.shell import execute
 import string
 import time
+import os
 
 
 class LedgerRest(Unit):
@@ -14,10 +15,10 @@ class LedgerRest(Unit):
   def __init__(self):
     self.__metrics = None
 
-    try:
-      subprocess.check_call(["systemctl", "start", 'ledger-rest'], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-    except subprocess.CalledProcessError as ex:
-      raise RuntimeError("Failed to onboard 'ledger-rest' with error {0}".format(ex))
+    (code, result) = execute([
+      "systemctl", "start", 'ledger-rest'
+    ])
+    assert code == 0, str(result)
 
     self.watch_metrics()
 
@@ -25,48 +26,54 @@ class LedgerRest(Unit):
     return 'LedgerRest()'
 
   def teardown(self):
+    @eventually(5)
     def eventual_teardown():
-      try:
-        out = subprocess.check_output(["journalctl", "-o", "cat", '-t', 'ledger-rest', '-u', "ledger-rest.service"], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/ledger-rest.log', 'w') as the_file:
-          the_file.write(out)
-        subprocess.check_call(["systemctl", "stop", "ledger-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-        out = subprocess.check_output(["journalctl", "-o", "cat", '-t', 'ledger-rest', '-u', "ledger-rest.service"], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        with open('/reports/perf_logs/ledger-rest.log', 'w') as the_file:
-          the_file.write(out)
-      except subprocess.CalledProcessError as ex:
-        pass
+      (code, result) = execute([
+        'journalctl', '-o', 'cat', '-u', 'ledger-rest.service', '--no-pager'
+      ])
+      if code == 0 and result:
+        with open('/reports/perf_logs/ledger-rest.log', 'w') as f:
+          f.write(result)
 
-    action_process = multiprocessing.Process(target=eventual_teardown)
-    action_process.start()
-    action_process.join(timeout=5)
-    action_process.terminate()
+      (code, result) = execute([
+        'systemctl', 'stop', 'ledger-rest'
+      ])
+      assert code == 0, str(result)
+
+      (code, result) = execute([
+        'journalctl', '-o', 'cat', '-u', 'ledger-rest.service', '--no-pager'
+      ])
+      if code == 0 and result:
+        with open('/reports/perf_logs/ledger-rest.log', 'w') as f:
+          f.write(result)
+
+    eventual_teardown()
 
     if self.__metrics:
       self.__metrics.stop()
 
   def restart(self) -> bool:
+    @eventually(2)
     def eventual_restart():
-      try:
-        subprocess.check_call(["systemctl", "restart", "ledger-rest"], stdout=Unit.FNULL, stderr=subprocess.STDOUT)
-      except subprocess.CalledProcessError as ex:
-        raise RuntimeError("Failed to restart ledger-rest with error {0}".format(ex))
+      (code, result) = execute([
+        "systemctl", "restart", 'ledger-rest'
+      ])
+      assert code == 0, str(result)
 
-    action_process = multiprocessing.Process(target=eventual_restart)
-    action_process.start()
-    action_process.join(timeout=2)
-    action_process.terminate()
+    eventual_restart()
 
     return self.is_healthy
 
   def watch_metrics(self) -> None:
     metrics_output = None
-    with open('/etc/init/ledger.conf', 'r') as f:
-      for line in f:
-        (key, val) = line.rstrip().split('=')
-        if key == 'LEDGER_METRICS_OUTPUT':
-          metrics_output = '{0}/metrics.json'.format(val)
-          break
+
+    if os.path.exists('/etc/init/ledger.conf'):
+      with open('/etc/init/ledger.conf', 'r') as f:
+        for line in f:
+          (key, val) = line.rstrip().split('=')
+          if key == 'LEDGER_METRICS_OUTPUT':
+            metrics_output = '{0}/metrics.json'.format(val)
+            break
 
     if metrics_output:
       self.__metrics = MetricsAggregator(metrics_output)
@@ -80,16 +87,18 @@ class LedgerRest(Unit):
   def reconfigure(self, params) -> None:
     d = {}
 
-    with open('/etc/init/ledger.conf', 'r') as f:
-      for line in f:
-        (key, val) = line.rstrip().split('=')
-        d[key] = val
+    if os.path.exists('/etc/init/ledger.conf'):
+      with open('/etc/init/ledger.conf', 'r') as f:
+        for line in f:
+          (key, val) = line.rstrip().split('=')
+          d[key] = val
 
     for k, v in params.items():
       key = 'LEDGER_{0}'.format(k)
       if key in d:
         d[key] = v
 
+    os.makedirs("/etc/init", exist_ok=True)
     with open('/etc/init/ledger.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
@@ -98,22 +107,14 @@ class LedgerRest(Unit):
 
   @property
   def is_healthy(self) -> bool:
-    def single_check():
-      out = subprocess.check_output(["systemctl", "show", "-p", "SubState", "ledger-rest"], stderr=subprocess.STDOUT).decode("utf-8").strip()
-      return out == "SubState=running"
-
-    if single_check():
-      return True
-
-    def eventual_check():
-      while True:
-        if single_check():
-          exit(0)
-        time.sleep(0.1)
-
-    action_process = multiprocessing.Process(target=eventual_check)
-    action_process.start()
-    action_process.join(timeout=3)
-    action_process.terminate()
-
-    return action_process.exitcode == 0
+    try:
+      @eventually(10)
+      def eventual_check():
+        (code, result) = execute([
+          "systemctl", "show", "-p", "SubState", "ledger-rest"
+        ])
+        assert "SubState=running" == str(result).strip(), str(result)
+      eventual_check()
+    except:
+      return False
+    return True

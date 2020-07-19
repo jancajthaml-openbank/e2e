@@ -5,7 +5,6 @@ from behave import *
 import urllib3
 import json
 import time
-from helpers.eventually import eventually
 
 
 @given('{amount} {currency} is transferred from {tenantFrom}/{accountFrom} to {tenantTo}/{accountTo}')

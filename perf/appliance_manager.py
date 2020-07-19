@@ -33,6 +33,7 @@ import string
 import random
 secure_random = random.SystemRandom()
 
+
 class ApplianceManager(object):
 
   def image_exists(self, image, tag):
@@ -119,7 +120,7 @@ class ApplianceManager(object):
         for item in scratch_docker_cmd:
           f.write("%s\n" % item)
 
-      for chunk in self.docker.build(fileobj=temp, rm=True, decode=True, tag='perf_artifacts-scratch'):
+      for chunk in self.docker.build(fileobj=temp, pull=True, rm=True, decode=True, tag='perf_artifacts-scratch'):
         if 'stream' in chunk:
           for line in chunk['stream'].splitlines():
             if len(line):

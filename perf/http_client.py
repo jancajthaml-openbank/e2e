@@ -17,6 +17,7 @@ else:
 from utils import ProgressCounter
 from parallel.pool import Pool
 
+
 class HttpClient(object):
 
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None):
