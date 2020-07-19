@@ -93,7 +93,7 @@ class timeit():
 
   def __enter__(self):
     self.ts = time.time()
-    sys.stdout.write('\033[95m   info | \033[0m starting {0}\033[K\n'.format(msg))
+    sys.stdout.write('\033[95m   info | \033[0m starting {0}\033[K\n'.format(self.__label))
     sys.stdout.flush()
 
   def __exit__(self, exception_type, exception_value, traceback):
