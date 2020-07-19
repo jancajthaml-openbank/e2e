@@ -100,7 +100,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 100000
+      total = 10000
 
       manager.bootstrap()
 
@@ -117,7 +117,7 @@ def main():
       manager.teardown()
 
     with timeit('get accounts scenario'):
-      total = 1000
+      total = 100
 
       manager.bootstrap()
       manager.onboard()
@@ -144,7 +144,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 10000
+      total = 1000
 
       manager.bootstrap()
       manager.onboard()
@@ -153,7 +153,7 @@ def main():
 
       eventually_ready(manager)
 
-      steps.random_uniform_accounts(100)
+      steps.random_uniform_accounts(10)
 
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
         steps.random_uniform_transactions(total)
