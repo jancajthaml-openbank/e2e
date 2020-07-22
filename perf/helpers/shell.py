@@ -62,4 +62,4 @@ def execute(command, timeout=60) -> None:
 
     return (p.returncode, result)
   except subprocess.CalledProcessError:
-    return (-1, None)
+    return (-1, '')

@@ -55,7 +55,7 @@ class Lake(Unit):
     @eventually(2)
     def eventual_restart():
       (code, result) = execute([
-        "systemctl", "restart", 'lake-relay'
+        'systemctl', 'restart', 'lake-relay'
       ])
       assert code == 0, str(result)
 
@@ -65,12 +65,14 @@ class Lake(Unit):
 
   def watch_metrics(self) -> None:
     metrics_output = None
-    with open('/etc/init/lake.conf', 'r') as f:
-      for line in f:
-        (key, val) = line.rstrip().split('=')
-        if key == 'LAKE_METRICS_OUTPUT':
-          metrics_output = '{0}/metrics.json'.format(val)
-          break
+
+    if os.path.exists('/etc/lake/conf.d/init.conf'):
+      with open('/etc/lake/conf.d/init.conf', 'r') as f:
+        for line in f:
+          (key, val) = line.rstrip().split('=')
+          if key == 'LAKE_METRICS_OUTPUT':
+            metrics_output = '{0}/metrics.json'.format(val)
+            break
 
     if metrics_output:
       self.__metrics = MetricsAggregator(metrics_output)
@@ -84,8 +86,8 @@ class Lake(Unit):
   def reconfigure(self, params) -> None:
     d = {}
 
-    if os.path.exists('/etc/init/lake.conf'):
-      with open('/etc/init/lake.conf', 'r') as f:
+    if os.path.exists('/etc/lake/conf.d/init.conf'):
+      with open('/etc/lake/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           d[key] = val
@@ -95,8 +97,8 @@ class Lake(Unit):
       if key in d:
         d[key] = v
 
-    os.makedirs("/etc/init", exist_ok=True)
-    with open('/etc/init/lake.conf', 'w') as f:
+    os.makedirs('/etc/lake/conf.d', exist_ok=True)
+    with open('/etc/lake/conf.d/init.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
     if not self.restart():

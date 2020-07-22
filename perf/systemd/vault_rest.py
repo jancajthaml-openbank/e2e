@@ -67,8 +67,8 @@ class VaultRest(Unit):
   def watch_metrics(self) -> None:
     metrics_output = None
 
-    if os.path.exists('/etc/init/vault.conf'):
-      with open('/etc/init/vault.conf', 'r') as f:
+    if os.path.exists('/etc/vault/conf.d/init.conf'):
+      with open('/etc/vault/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           if key == 'VAULT_METRICS_OUTPUT':
@@ -87,8 +87,8 @@ class VaultRest(Unit):
   def reconfigure(self, params) -> None:
     d = {}
 
-    if os.path.exists('/etc/init/vault.conf'):
-      with open('/etc/init/vault.conf', 'r') as f:
+    if os.path.exists('/etc/vault/conf.d/init.conf'):
+      with open('/etc/vault/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           d[key] = val
@@ -98,8 +98,8 @@ class VaultRest(Unit):
       if key in d:
         d[key] = v
 
-    os.makedirs("/etc/init", exist_ok=True)
-    with open('/etc/init/vault.conf', 'w') as f:
+    os.makedirs('/etc/vault/conf.d', exist_ok=True)
+    with open('/etc/vault/conf.d/init.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
     if not self.restart():

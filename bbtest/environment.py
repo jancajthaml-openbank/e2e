@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 from helpers.appliance import ApplianceHelper
 import urllib3
@@ -23,7 +22,6 @@ def after_feature(context, feature):
 def before_all(context):
   context.appliance = ApplianceHelper(context)
   context.http = urllib3.PoolManager()
-  os.system('rm -rf /tmp/reports/blackbox-tests/logs/*.log /tmp/reports/blackbox-tests/metrics/*.json')
   try:
     context.appliance.setup()
     context.appliance.download()

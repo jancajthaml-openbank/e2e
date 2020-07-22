@@ -80,10 +80,10 @@ class ApplianceManager(object):
   def __init__(self):
     self.arch = self.get_arch()
 
-    self.store = {}
-    self.versions = {}
-    self.units = {}
-    self.services = []
+    self.store = dict()
+    self.versions = dict()
+    self.units = dict()
+    self.services = list()
     self.docker = docker.APIClient(base_url='unix://var/run/docker.sock')
 
     DEVNULL = open(os.devnull, 'w')

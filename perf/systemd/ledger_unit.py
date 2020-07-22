@@ -77,8 +77,8 @@ class LedgerUnit(Unit):
   def watch_metrics(self) -> None:
     metrics_output = None
 
-    if os.path.exists('/etc/init/ledger.conf'):
-      with open('/etc/init/ledger.conf', 'r') as f:
+    if os.path.exists('/etc/ledger/conf.d/init.conf'):
+      with open('/etc/ledger/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           if key == 'LEDGER_METRICS_OUTPUT':
@@ -97,8 +97,8 @@ class LedgerUnit(Unit):
   def reconfigure(self, params) -> None:
     d = {}
 
-    if os.path.exists('/etc/init/ledger.conf'):
-      with open('/etc/init/ledger.conf', 'r') as f:
+    if os.path.exists('/etc/ledger/conf.d/init.conf'):
+      with open('/etc/ledger/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           d[key] = val
@@ -108,8 +108,8 @@ class LedgerUnit(Unit):
       if key in d:
         d[key] = v
 
-    os.makedirs("/etc/init", exist_ok=True)
-    with open('/etc/init/ledger.conf', 'w') as f:
+    os.makedirs('/etc/ledger/conf.d', exist_ok=True)
+    with open('/etc/ledger/conf.d/init.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
     if not self.restart():

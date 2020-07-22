@@ -101,7 +101,7 @@ class ApplianceHelper(object):
         raise RuntimeError('missing version for {}'.format(service))
 
       if meta:
-        scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-{2} /opt/artifacts/{0}_{1}+{2}_{3}.deb /tmp/packages/{0}.deb'.format(service, version, meta, self.arch))
+        scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-{2} /opt/artifacts/{0}_{1}_{3}.deb /tmp/packages/{0}.deb'.format(service, version, meta, self.arch))
       else:
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /tmp/packages/{0}.deb'.format(service, version, self.arch))
 
