@@ -269,3 +269,11 @@ class ApplianceManager(object):
         continue
       with open('/tmp/reports/perf-tests/logs/{}.log'.format(unit), 'w') as f:
         f.write(result)
+
+    (code, result) = execute([
+      'journalctl', '-o', 'cat', '--no-pager'
+    ])
+    if code != 0 or not result:
+      continue
+    with open('/tmp/reports/perf-tests/logs/journal.log', 'w') as f:
+      f.write(result)

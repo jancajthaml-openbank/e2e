@@ -214,6 +214,14 @@ class ApplianceHelper(object):
       with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
         f.write(result)
 
+    (code, result) = execute([
+      'journalctl', '-o', 'cat', '--no-pager'
+    ])
+    if code != 0 or not result:
+      continue
+    with open('/tmp/reports/blackbox-tests/logs/journal.log', 'w') as f:
+      f.write(result)
+
   def teardown(self):
     for unit in self.units:
       execute(['systemctl', 'stop', unit], silent=True)
