@@ -182,7 +182,7 @@ class ApplianceHelper(object):
       if not unit.endswith('.service'):
         continue
       (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
-      print('{} is {}'.format(unit, result))
+      print('{} is {} -> '.format(unit, result, ('SubState=running' in result or 'SubState=exited' in result)))
       all_running &= ('SubState=running' in result or 'SubState=exited' in result)
 
     return all_running
