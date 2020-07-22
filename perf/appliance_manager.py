@@ -251,7 +251,7 @@ class ApplianceManager(object):
   def cleanup(self) -> None:
     def openbank_unit(unit) -> bool:
       for mask in ['vault', 'ledger', 'lake', 'data-warehouse']:
-        if mask in item:
+        if mask in unit:
           return True
       return False
 

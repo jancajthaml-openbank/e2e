@@ -194,8 +194,8 @@ class ApplianceHelper(object):
 
   def cleanup(self):
     def openbank_unit(unit):
-      for mask in ['vault', 'ledger', 'lake', 'data-warehouse']:
-        if mask in item:
+      for mask in self.services:
+        if mask in unit:
           return True
       return False
 
