@@ -121,7 +121,7 @@ class ApplianceManager(object):
         for item in scratch_docker_cmd:
           f.write("%s\n" % item)
 
-      for chunk in self.docker.build(fileobj=temp, pull=True, rm=True, decode=True, tag='perf_artifacts-scratch'):
+      for chunk in self.docker.build(fileobj=temp, pull=False, rm=True, decode=True, tag='perf_artifacts-scratch'):
         if 'stream' in chunk:
           for line in chunk['stream'].splitlines():
             if len(line):

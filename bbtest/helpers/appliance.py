@@ -119,7 +119,7 @@ class ApplianceHelper(object):
         for item in scratch_docker_cmd:
           f.write("%s\n" % item)
 
-      for chunk in self.docker.build(fileobj=temp, pull=True, rm=True, decode=True, tag='bbtest_artifacts-scratch'):
+      for chunk in self.docker.build(fileobj=temp, pull=False, rm=True, decode=True, tag='bbtest_artifacts-scratch'):
         if 'stream' in chunk:
           for line in chunk['stream'].splitlines():
             if len(line):
@@ -133,16 +133,16 @@ class ApplianceHelper(object):
       tar_name = tempfile.NamedTemporaryFile(delete=True)
 
       for service in self.services:
-        tar_stream, stat = self.docker.get_archive(scratch['Id'], '/tmp/packages/{}.deb'.format(service))
+        tar_stream, stat = self.docker.get_archive(scratch['Id'], '/opt/artifacts/{}.deb'.format(service))
         with open(tar_name.name, 'wb') as destination:
           for chunk in tar_stream:
             destination.write(chunk)
 
         archive = tarfile.TarFile(tar_name.name)
-        archive.extract('{}.deb'.format(service), '/tmp/packages')
+        archive.extract('{}.deb'.format(service), '/opt/artifacts')
 
         (code, result) = execute([
-          'dpkg', '-c', '/tmp/packages/{}.deb'.format(service)
+          'dpkg', '-c', '/opt/artifacts/{}.deb'.format(service)
         ])
         if code != 0:
           raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
@@ -155,9 +155,8 @@ class ApplianceHelper(object):
   def install(self):
     for service in self.services:
       (code, result) = execute([
-        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/opt/artifacts/{}.deb'.format(service)
       ])
-
       if code != 0:
         raise RuntimeError('code: {}, stdout: {}'.format(code, result))
       self.update_units()
