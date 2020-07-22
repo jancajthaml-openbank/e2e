@@ -141,7 +141,7 @@ class ApplianceHelper(object):
   def install(self):
     for service in self.services:
       (code, result) = execute([
-        'apt-get', '-y', 'install', '-qq', '-o=Dpkg::Use-Pty=0', '-f', '/tmp/packages/{}.deb'.format(service)
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
       ])
 
       if code != 0:

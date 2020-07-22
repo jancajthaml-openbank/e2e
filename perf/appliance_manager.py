@@ -21,6 +21,7 @@ from systemd.vault_rest import VaultRest
 from systemd.ledger_unit import LedgerUnit
 from systemd.ledger_rest import LedgerRest
 from systemd.lake import Lake
+from helpers.shell import execute
 
 import platform
 import tarfile
@@ -28,7 +29,6 @@ import tempfile
 import errno
 import os
 import json
-import subprocess
 import string
 import random
 secure_random = random.SystemRandom()
@@ -85,8 +85,6 @@ class ApplianceManager(object):
     self.units = dict()
     self.services = list()
     self.docker = docker.APIClient(base_url='unix://var/run/docker.sock')
-
-    DEVNULL = open(os.devnull, 'w')
 
     try:
       os.mkdir("/opt/artifacts")
@@ -146,10 +144,10 @@ class ApplianceManager(object):
         debug('downloaded {0}'.format(stat['name']))
 
       for service in ['lake', 'vault', 'ledger']:
-        try:
-          contents = subprocess.check_output(["dpkg", "-c", "/opt/artifacts/{0}.deb".format(service)], stderr=subprocess.STDOUT).decode("utf-8").strip()
-        except subprocess.CalledProcessError as e:
-          raise Exception(e.output.decode("utf-8").strip())
+        (code, result) = execute([
+          "dpkg", "-c", "/opt/artifacts/{0}.deb".format(service)
+        ])
+        assert code == 0, str(result)
 
       self.docker.remove_container(scratch['Id'])
     finally:
@@ -159,12 +157,17 @@ class ApplianceManager(object):
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
       progress('installing {0} {1}'.format(service, version))
-      subprocess.check_call(["apt-get", "-y", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", '/opt/artifacts/{0}.deb'.format(service)], stdout=DEVNULL, stderr=subprocess.STDOUT)
+      (code, result) = execute([
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
+      ])
+      assert code == 0, str(result)
       success('installed {0} {1}'.format(service, version))
 
-    DEVNULL.close()
+    (code, result) = execute([
+      "systemctl", "-t", "service", "--no-legend"
+    ])
+    assert code == 0, str(result)
 
-    installed = subprocess.check_output(["systemctl", "-t", "service", "--no-legend"], stderr=subprocess.STDOUT).decode("utf-8").strip()
     self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in installed.splitlines()])
 
   def __len__(self):
