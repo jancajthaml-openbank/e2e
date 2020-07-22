@@ -146,6 +146,8 @@ class ApplianceHelper(object):
         ])
         if code != 0:
           raise RuntimeError('code: {}, stdout: [{}]'.format(code, result))
+        with open('/tmp/reports/perf-tests/logs/debian.{}.txt'.format(service), 'w') as f:
+          f.write(result)
 
       self.docker.remove_container(scratch['Id'])
     finally:
@@ -197,19 +199,19 @@ class ApplianceHelper(object):
           return True
       return False
 
-    (code, result, error) = execute([
+    (code, result) = execute([
       'systemctl', 'list-units', '--no-legend'
     ])
     result = [item.split(' ')[0].strip() for item in result.split('\n')]
     result = [item for item in result if openbank_unit(item)]
 
     for unit in result:
-      (code, result, error) = execute([
+      (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
       ])
       if code != 0 or not result:
         continue
-      with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
+      with open('/tmp/reports/perf-tests/logs/{}.log'.format(unit), 'w') as f:
         f.write(result)
 
   def teardown(self):

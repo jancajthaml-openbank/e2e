@@ -152,6 +152,9 @@ class ApplianceManager(object):
         if code != 0:
           raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
 
+        with open('/tmp/reports/blackbox-tests/logs/debian.{}.txt'.format(service), 'w') as f:
+          f.write(result)
+
         debug('downloaded {0}'.format(stat['name']))
 
       self.docker.remove_container(scratch['Id'])
@@ -252,14 +255,14 @@ class ApplianceManager(object):
           return True
       return False
 
-    (code, result, error) = execute([
+    (code, result) = execute([
       'systemctl', 'list-units', '--no-legend'
     ])
     result = [item.split(' ')[0].strip() for item in result.split('\n')]
     result = [item for item in result if openbank_unit(item)]
 
     for unit in result:
-      (code, result, error) = execute([
+      (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
       ])
       if code != 0 or not result:
