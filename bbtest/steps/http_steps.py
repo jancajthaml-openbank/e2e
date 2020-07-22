@@ -25,9 +25,9 @@ def onboard_unit(context, service, tenant):
   context.appliance.update_units()
 
   @eventually(5)
-  def impl():
+  def wait_for_appliance_up():
     assert context.appliance.running()
-  impl()
+  wait_for_appliance_up()
 
 
 @when('GraphQL requested with')

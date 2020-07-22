@@ -172,9 +172,15 @@ class ApplianceHelper(object):
     if code != 0:
       return False
 
+    print('check if is running')
+    print('check if is running')
+    print('check if is running')
+    print('check if is running')
+
     all_running = True
-    for service in self.units:
-      (code, result) = execute(["systemctl", "show", "-p", "SubState", service], silent=True)
+    for unit in self.units:
+      (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
+      print('{} is {}'.format(unit, result))
       all_running &= ('SubState=running' in result or 'SubState=exited' in result)
 
     return all_running
