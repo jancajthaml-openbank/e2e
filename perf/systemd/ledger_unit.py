@@ -25,12 +25,12 @@ class LedgerUnit(Unit):
 
     (code, result) = execute([
       "systemctl", "enable", 'ledger-unit@{0}'.format(self._tenant)
-    ])
+    ], silent=True)
     assert code == 0, str(result)
 
     (code, result) = execute([
       "systemctl", "start", 'ledger-unit@{0}'.format(self._tenant)
-    ])
+    ], silent=True)
     assert code == 0, str(result)
 
     self.watch_metrics()
@@ -40,19 +40,19 @@ class LedgerUnit(Unit):
     def eventual_teardown():
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'ledger-unit@{0}.service'.format(self._tenant), '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/ledger-unit-{0}.log'.format(self._tenant), 'w') as f:
           f.write(result)
 
       (code, result) = execute([
         'systemctl', 'stop', 'ledger-unit@{0}'.format(self._tenant)
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'ledger-unit@{0}.service'.format(self._tenant), '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/ledger-unit-{0}.log'.format(self._tenant), 'w') as f:
           f.write(result)
@@ -67,7 +67,7 @@ class LedgerUnit(Unit):
     def eventual_restart():
       (code, result) = execute([
         "systemctl", "restart", 'ledger-unit@{0}'.format(self._tenant)
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
     eventual_restart()
@@ -92,10 +92,10 @@ class LedgerUnit(Unit):
   def get_metrics(self) -> None:
     if self.__metrics:
       return self.__metrics.get_metrics()
-    return {}
+    return dict()
 
   def reconfigure(self, params) -> None:
-    d = {}
+    d = dict()
 
     if os.path.exists('/etc/ledger/conf.d/init.conf'):
       with open('/etc/ledger/conf.d/init.conf', 'r') as f:

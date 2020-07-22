@@ -17,7 +17,7 @@ class VaultRest(Unit):
 
     (code, result) = execute([
       "systemctl", "start", 'vault-rest'
-    ])
+    ], silent=True)
     assert code == 0, str(result)
 
     self.watch_metrics()
@@ -30,19 +30,19 @@ class VaultRest(Unit):
     def eventual_teardown():
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'vault-rest.service', '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/vault-rest.log', 'w') as f:
           f.write(result)
 
       (code, result) = execute([
         'systemctl', 'stop', 'vault-rest'
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'vault-rest.service', '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/vault-rest.log', 'w') as f:
           f.write(result)
@@ -57,7 +57,7 @@ class VaultRest(Unit):
     def eventual_restart():
       (code, result) = execute([
         "systemctl", "restart", 'vault-rest'
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
     eventual_restart()
@@ -82,10 +82,10 @@ class VaultRest(Unit):
   def get_metrics(self) -> None:
     if self.__metrics:
       return self.__metrics.get_metrics()
-    return {}
+    return dict()
 
   def reconfigure(self, params) -> None:
-    d = {}
+    d = dict()
 
     if os.path.exists('/etc/vault/conf.d/init.conf'):
       with open('/etc/vault/conf.d/init.conf', 'r') as f:

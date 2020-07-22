@@ -25,12 +25,12 @@ class VaultUnit(Unit):
 
     (code, result) = execute([
       "systemctl", "enable", 'vault-unit@{0}'.format(self._tenant)
-    ])
+    ], silent=True)
     assert code == 0, str(result)
 
     (code, result) = execute([
       "systemctl", "start", 'vault-unit@{0}'.format(self._tenant)
-    ])
+    ], silent=True)
     assert code == 0, str(result)
 
     self.watch_metrics()
@@ -40,19 +40,19 @@ class VaultUnit(Unit):
     def eventual_teardown():
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'vault-unit@{0}.service'.format(self._tenant), '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/vault-unit-{0}.log'.format(self._tenant), 'w') as f:
           f.write(result)
 
       (code, result) = execute([
         'systemctl', 'stop', 'vault-unit@{0}'.format(self._tenant)
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'vault-unit@{0}.service'.format(self._tenant), '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/vault-unit-{0}.log'.format(self._tenant), 'w') as f:
           f.write(result)
@@ -67,7 +67,7 @@ class VaultUnit(Unit):
     def eventual_restart():
       (code, result) = execute([
         "systemctl", "restart", 'vault-unit@{0}'.format(self._tenant)
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
     eventual_restart()
@@ -92,10 +92,10 @@ class VaultUnit(Unit):
   def get_metrics(self) -> None:
     if self.__metrics:
       return self.__metrics.get_metrics()
-    return {}
+    return dict()
 
   def reconfigure(self, params) -> None:
-    d = {}
+    d = dict()
 
     if os.path.exists('/etc/vault/conf.d/init.conf'):
       with open('/etc/vault/conf.d/init.conf', 'r') as f:
