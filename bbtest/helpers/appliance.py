@@ -146,7 +146,7 @@ class ApplianceHelper(object):
         ])
         if code != 0:
           raise RuntimeError('code: {}, stdout: [{}]'.format(code, result))
-        with open('/tmp/reports/perf-tests/logs/debian.{}.txt'.format(service), 'w') as f:
+        with open('/tmp/reports/blackbox-tests/logs/debian.{}.txt'.format(service), 'w') as f:
           f.write(result)
 
       self.docker.remove_container(scratch['Id'])
@@ -211,7 +211,7 @@ class ApplianceHelper(object):
       ])
       if code != 0 or not result:
         continue
-      with open('/tmp/reports/perf-tests/logs/{}.log'.format(unit), 'w') as f:
+      with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
         f.write(result)
 
   def teardown(self):
