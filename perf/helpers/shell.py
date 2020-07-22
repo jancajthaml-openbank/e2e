@@ -27,7 +27,7 @@ class Deadline(threading.Thread):
     self.join()
 
 
-def execute(command, timeout=60) -> None:
+def execute(command, timeout=10, silent=False) -> None:
   try:
     p = subprocess.Popen(
       command,
@@ -56,6 +56,8 @@ def execute(command, timeout=60) -> None:
       line = line.decode('utf-8')
       if len(line):
         result += line
+        if not silent:
+          print(line.strip('\r\n'))
 
     deadline.cancel()
     p.wait()

@@ -179,11 +179,19 @@ class ApplianceHelper(object):
 
     all_running = True
     for unit in self.units:
+      if unit.endswith('.service'):
+        continue
       (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
       print('{} is {}'.format(unit, result))
       all_running &= ('SubState=running' in result or 'SubState=exited' in result)
 
     return all_running
+
+  def __is_openbank_unit(self, unit):
+    for mask in self.services:
+      if mask in unit:
+        return True
+    return False
 
   def update_units(self):
     (code, result) = execute([
@@ -194,22 +202,16 @@ class ApplianceHelper(object):
       return False
 
     services = [item.split(' ')[0].strip() for item in result.split('\n')]
-    services = [item for item in services if len([item for pivot in self.services if pivot in item])]
+    services = [item for item in services if self.__is_openbank_unit(item)]
 
     self.units = services
 
   def cleanup(self):
-    def openbank_unit(unit):
-      for mask in self.services:
-        if mask in unit:
-          return True
-      return False
-
     (code, result) = execute([
       'systemctl', 'list-units', '--no-legend'
     ], silent=True)
     result = [item.split(' ')[0].strip() for item in result.split('\n')]
-    result = [item for item in result if openbank_unit(item)]
+    result = [item for item in result if self.__is_openbank_unit(item)]
 
     for unit in result:
       (code, result) = execute([
