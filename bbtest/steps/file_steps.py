@@ -35,5 +35,5 @@ def directory_should_contain_len(context, directory, count):
       pass
     assert len(entries) == int(count), "expected {} files but found {}".format(count, entries)
 
-  directory_should_exist(directory)
+  directory_should_exist(context, directory)
   wait_files_exists()
