@@ -14,14 +14,13 @@ def step_impl(context, tenant, numberOfAccounts):
   @eventually(2)
   def wait_for_file_existence():
     assert os.path.isfile(path)
-  wait_for_file_existence()
 
-  actual = dict()
-  with open(path, 'r') as fd:
-    actual.update(json.loads(fd.read()))
-
-  @eventually(3)
+  @eventually(5)
   def wait_for_metrics_update():
-    assert actual["createdAccounts"] == numberOfAccounts
+    actual = dict()
+    with open(path, 'r') as fd:
+      actual.update(json.loads(fd.read()))
+    assert actual["createdAccounts"] == numberOfAccounts, 'expected createdAccounts to equal {} but got {}'.format(numberOfAccounts, actual['createdAccounts'])
 
+  wait_for_file_existence()
   wait_for_metrics_update()
