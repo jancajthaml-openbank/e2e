@@ -185,6 +185,12 @@ class ApplianceHelper(object):
       print('{} is {} -> {}'.format(unit, result, ('SubState=running' in result or 'SubState=exited' in result)))
       all_running &= ('SubState=running' in result or 'SubState=exited' in result)
 
+    print('is running {}'.format(all_running))
+    print('is running {}'.format(all_running))
+    print('is running {}'.format(all_running))
+    print('is running {}'.format(all_running))
+    print('is running {}'.format(all_running))
+
     return all_running
 
   def __is_openbank_unit(self, unit):
