@@ -179,7 +179,7 @@ class ApplianceHelper(object):
 
     all_running = True
     for unit in self.units:
-      if unit.endswith('.service'):
+      if not unit.endswith('.service'):
         continue
       (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
       print('{} is {}'.format(unit, result))
