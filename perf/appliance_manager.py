@@ -144,6 +144,13 @@ class ApplianceManager(object):
         archive = tarfile.TarFile(tar_name)
         archive.extract('{0}.deb'.format(service), '/opt/artifacts')
         os.remove(tar_name)
+
+        (code, result) = execute([
+          'dpkg', '-c', '/opt/artifacts/{}.deb'.format(service)
+        ])
+        if code != 0:
+          raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
+
         debug('downloaded {0}'.format(stat['name']))
 
       self.docker.remove_container(scratch['Id'])
@@ -155,7 +162,7 @@ class ApplianceManager(object):
       version = self.versions[service]
       progress('installing {0} {1}'.format(service, version))
       (code, result) = execute([
-        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/opt/artifacts/{}.deb'.format(service)
       ])
       assert code == 0, str(result)
       success('installed {0} {1}'.format(service, version))
