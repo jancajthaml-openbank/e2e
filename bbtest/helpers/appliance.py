@@ -141,7 +141,7 @@ class ApplianceHelper(object):
         archive = tarfile.TarFile(tar_name.name)
         archive.extract('{}.deb'.format(service), '/tmp/packages')
 
-        (code, result, error) = execute([
+        (code, result) = execute([
           'dpkg', '-c', '/tmp/packages/{}.deb'.format(service)
         ])
         if code != 0:
