@@ -112,7 +112,7 @@ class VaultRest(Unit):
       def eventual_check():
         (code, result) = execute([
           "systemctl", "show", "-p", "SubState", "vault-rest"
-        ])
+        ], silent=True)
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()
     except:

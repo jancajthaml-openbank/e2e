@@ -111,7 +111,7 @@ class Lake(Unit):
       def eventual_check():
         (code, result) = execute([
           "systemctl", "show", "-p", "SubState", "lake-relay"
-        ])
+        ], silent=True)
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()
     except:

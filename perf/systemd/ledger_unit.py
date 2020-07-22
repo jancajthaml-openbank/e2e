@@ -122,7 +122,7 @@ class LedgerUnit(Unit):
       def eventual_check():
         (code, result) = execute([
           "systemctl", "show", "-p", "SubState", 'ledger-unit@{0}'.format(self._tenant)
-        ])
+        ], silent=True)
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()
     except:

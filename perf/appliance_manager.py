@@ -112,8 +112,8 @@ class ApplianceManager(object):
       scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /opt/artifacts/{2}.deb'.format(image, package, service))
 
     for image in pulls:
-      execute(['docker', 'rmi', '-f', image])
-      (code, result) = execute(['docker', 'pull', image])
+      execute(['docker', 'rmi', '-f', image], silent=True)
+      (code, result) = execute(['docker', 'pull', image], silent=True)
       assert code == 0, str(result)
 
     temp = tempfile.NamedTemporaryFile(delete=True)
@@ -167,7 +167,7 @@ class ApplianceManager(object):
       progress('installing {0} {1}'.format(service, version))
       (code, result) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/opt/artifacts/{}.deb'.format(service)
-      ])
+      ], silent=True)
       assert code == 0, str(result)
       success('installed {0} {1}'.format(service, version))
 

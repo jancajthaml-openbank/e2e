@@ -79,7 +79,8 @@ def main():
     info("reconfigure units")
 
     manager.reconfigure({
-      'METRICS_REFRESHRATE': '1000ms'
+      'METRICS_REFRESHRATE': '1000ms',
+      'LOG_LEVEL': 'ERROR'
     })
     manager.teardown()
 
