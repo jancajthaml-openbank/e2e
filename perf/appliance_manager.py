@@ -143,12 +143,6 @@ class ApplianceManager(object):
         os.remove(tar_name)
         debug('downloaded {0}'.format(stat['name']))
 
-      for service in ['lake', 'vault', 'ledger']:
-        (code, result) = execute([
-          "dpkg", "-c", "/opt/artifacts/{0}.deb".format(service)
-        ])
-        assert code == 0, str(result)
-
       self.docker.remove_container(scratch['Id'])
     finally:
       temp.close()
