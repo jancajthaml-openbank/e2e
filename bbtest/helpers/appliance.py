@@ -80,10 +80,10 @@ class ApplianceHelper(object):
     os.makedirs("/etc/init", exist_ok=True)
 
     with open('/etc/init/data-warehouse.conf', 'w') as fd:
-      fd.write("DWH_LOG_LEVEL=DEBUG\n")
-      fd.write("DWH_SECRETS=/opt/data-warehouse/secrets\n")
-      fd.write("DWH_HTTP_PORT=8080\n")
-      fd.write("DWH_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank\n")
+      fd.write("DATA_WAREHOUSE_LOG_LEVEL=DEBUG\n")
+      fd.write("DATA_WAREHOUSE_SECRETS=/opt/data-warehouse/secrets\n")
+      fd.write("DATA_WAREHOUSE_HTTP_PORT=8080\n")
+      fd.write("DATA_WAREHOUSE_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank\n")
 
   def download(self):
     try:
