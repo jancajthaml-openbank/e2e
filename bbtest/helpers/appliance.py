@@ -185,13 +185,9 @@ class ApplianceHelper(object):
     return False
 
   def update_units(self):
-    (code, result) = execute([
-      "systemctl", "list-units", "--no-legend"
-    ], silent=True)
-
+    (code, result) = execute(["systemctl", "list-units", "--no-legend"], silent=True)
     if code != 0:
-      return False
-
+      return
     services = [item.split(' ')[0].strip() for item in result.split('\n')]
     services = [item for item in services if self.__is_openbank_unit(item)]
 

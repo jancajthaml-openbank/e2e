@@ -37,6 +37,13 @@ def prepare_graphql_request(context):
 
 @then('GraphQL responsed with')
 def check_graphql_response(context):
+  @eventually(240)
+  def wait_for_warehouse_to_be_healthy():
+    response = context.http.request('GET', 'http://127.0.0.1:8080/health')
+    assert response.status == 200
+    status = json.loads(response.data.decode('utf-8'))
+    assert status['healthy'] is True
+
   uri = "http://127.0.0.1:8080/graphql"
   payload = {
     'query': context.http_request,
@@ -67,6 +74,7 @@ def check_graphql_response(context):
     actual = json.loads(response.data.decode('utf-8'))
     diff('', expected, actual)
 
+  wait_for_warehouse_to_be_healthy()
   wait_for_graphql_to_respond()
 
 
