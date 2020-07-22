@@ -133,19 +133,19 @@ class ApplianceHelper(object):
       tar_name = tempfile.NamedTemporaryFile(delete=True)
 
       for service in self.services:
-        tar_stream, stat = self.docker.get_archive(scratch['Id'], '/opt/artifacts/{}.deb'.format(service))
+        tar_stream, stat = self.docker.get_archive(scratch['Id'], '/tmp/packages/{}.deb'.format(service))
         with open(tar_name.name, 'wb') as destination:
           for chunk in tar_stream:
             destination.write(chunk)
 
         archive = tarfile.TarFile(tar_name.name)
-        archive.extract('{}.deb'.format(service), '/opt/artifacts')
+        archive.extract('{}.deb'.format(service), '/tmp/packages')
 
         (code, result) = execute([
-          'dpkg', '-c', '/opt/artifacts/{}.deb'.format(service)
+          'dpkg', '-c', '/tmp/packages/{}.deb'.format(service)
         ])
         if code != 0:
-          raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
+          raise RuntimeError('code: {}, stdout: [{}]'.format(code, result))
 
       self.docker.remove_container(scratch['Id'])
     finally:
@@ -155,8 +155,9 @@ class ApplianceHelper(object):
   def install(self):
     for service in self.services:
       (code, result) = execute([
-        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/opt/artifacts/{}.deb'.format(service)
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
       ])
+
       if code != 0:
         raise RuntimeError('code: {}, stdout: {}'.format(code, result))
       self.update_units()
@@ -190,10 +191,22 @@ class ApplianceHelper(object):
     self.units = services
 
   def cleanup(self):
-    for unit in self.units:
-      (code, result) = execute([
+    def openbank_unit(unit):
+      for mask in ['vault', 'ledger', 'lake', 'data-warehouse']:
+        if mask in item:
+          return True
+      return False
+
+    (code, result, error) = execute([
+      'systemctl', 'list-units', '--no-legend'
+    ])
+    result = [item.split(' ')[0].strip() for item in result.split('\n')]
+    result = [item for item in result if openbank_unit(item)]
+
+    for unit in result:
+      (code, result, error) = execute([
         'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
-      ], silent=True)
+      ])
       if code != 0 or not result:
         continue
       with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
