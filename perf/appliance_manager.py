@@ -273,7 +273,6 @@ class ApplianceManager(object):
     (code, result) = execute([
       'journalctl', '-o', 'cat', '--no-pager'
     ])
-    if code != 0 or not result:
-      continue
-    with open('/reports/perf_logs/journal.log', 'w') as f:
-      f.write(result)
+    if code == 0:
+      with open('/reports/perf_logs/journal.log', 'w') as f:
+        f.write(result)
