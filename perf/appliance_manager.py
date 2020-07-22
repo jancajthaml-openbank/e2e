@@ -148,7 +148,7 @@ class ApplianceManager(object):
 
         (code, result) = execute([
           'dpkg', '-c', '/opt/artifacts/{}.deb'.format(service)
-        ])
+        ], silent=True)
         if code != 0:
           raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
 
@@ -172,8 +172,8 @@ class ApplianceManager(object):
       success('installed {0} {1}'.format(service, version))
 
     (code, result) = execute([
-      "systemctl", "-t", "service", "--no-legend"
-    ])
+      "systemctl", "list-units", "--no-legend"
+    ], silent=True)
     assert code == 0, str(result)
 
     self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in result.splitlines()])
@@ -257,14 +257,14 @@ class ApplianceManager(object):
 
     (code, result) = execute([
       'systemctl', 'list-units', '--no-legend'
-    ])
+    ], silent=True)
     result = [item.split(' ')[0].strip() for item in result.split('\n')]
     result = [item for item in result if openbank_unit(item)]
 
     for unit in result:
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
-      ])
+      ], silent=True)
       if code != 0 or not result:
         continue
       with open('/reports/perf_logs/{}.log'.format(unit), 'w') as f:
@@ -272,7 +272,7 @@ class ApplianceManager(object):
 
     (code, result) = execute([
       'journalctl', '-o', 'cat', '--no-pager'
-    ])
+    ], silent=True)
     if code == 0:
       with open('/reports/perf_logs/journal.log', 'w') as f:
         f.write(result)

@@ -143,7 +143,7 @@ class ApplianceHelper(object):
 
         (code, result) = execute([
           'dpkg', '-c', '/tmp/packages/{}.deb'.format(service)
-        ])
+        ], silent=True)
         if code != 0:
           raise RuntimeError('code: {}, stdout: [{}]'.format(code, result))
         with open('/tmp/reports/blackbox-tests/logs/debian.{}.txt'.format(service), 'w') as f:
@@ -201,14 +201,14 @@ class ApplianceHelper(object):
 
     (code, result) = execute([
       'systemctl', 'list-units', '--no-legend'
-    ])
+    ], silent=True)
     result = [item.split(' ')[0].strip() for item in result.split('\n')]
     result = [item for item in result if openbank_unit(item)]
 
     for unit in result:
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
-      ])
+      ], silent=True)
       if code != 0 or not result:
         continue
       with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
@@ -216,7 +216,7 @@ class ApplianceHelper(object):
 
     (code, result) = execute([
       'journalctl', '-o', 'cat', '--no-pager'
-    ])
+    ], silent=True)
     if code == 0:
       with open('/tmp/reports/blackbox-tests/logs/journal.log', 'w') as f:
         f.write(result)
