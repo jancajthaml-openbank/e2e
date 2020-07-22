@@ -152,7 +152,7 @@ class ApplianceManager(object):
         if code != 0:
           raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
 
-        with open('/tmp/reports/perf-tests/logs/debian.{}.txt'.format(service), 'w') as f:
+        with open('/reports/perf_logs/debian.{}.txt'.format(service), 'w') as f:
           f.write(result)
 
         debug('downloaded {0}'.format(stat['name']))
@@ -267,7 +267,7 @@ class ApplianceManager(object):
       ])
       if code != 0 or not result:
         continue
-      with open('/tmp/reports/perf-tests/logs/{}.log'.format(unit), 'w') as f:
+      with open('/reports/perf_logs/{}.log'.format(unit), 'w') as f:
         f.write(result)
 
     (code, result) = execute([
@@ -275,5 +275,5 @@ class ApplianceManager(object):
     ])
     if code != 0 or not result:
       continue
-    with open('/tmp/reports/perf-tests/logs/journal.log', 'w') as f:
+    with open('/reports/perf_logs/journal.log', 'w') as f:
       f.write(result)
