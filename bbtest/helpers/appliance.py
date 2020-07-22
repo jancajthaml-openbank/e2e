@@ -77,9 +77,8 @@ class ApplianceHelper(object):
     return (version, meta)
 
   def setup(self):
-    os.makedirs("/etc/init", exist_ok=True)
-
-    with open('/etc/init/data-warehouse.conf', 'w') as fd:
+    os.makedirs("/etc/data-warehouse/conf.d", exist_ok=True)
+    with open('/etc/data-warehouse/conf.d/init.conf', 'w') as fd:
       fd.write("DATA_WAREHOUSE_LOG_LEVEL=DEBUG\n")
       fd.write("DATA_WAREHOUSE_SECRETS=/opt/data-warehouse/secrets\n")
       fd.write("DATA_WAREHOUSE_HTTP_PORT=8080\n")
@@ -109,7 +108,7 @@ class ApplianceHelper(object):
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /tmp/packages/{0}.deb'.format(service, version, self.arch))
 
     for image in pulls:
-      (code, result) = execute(['docker', 'pull', image])
+      (code, result) = execute(['docker', 'pull', image], silent=True)
       assert code == 0, str(result)
 
     temp = tempfile.NamedTemporaryFile(delete=True)
@@ -158,7 +157,7 @@ class ApplianceHelper(object):
     for service in self.services:
       (code, result) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
-      ])
+      ], silent=True)
 
       if code != 0:
         raise RuntimeError('code: {}, stdout: {}'.format(code, result))
