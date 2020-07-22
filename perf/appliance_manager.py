@@ -172,7 +172,7 @@ class ApplianceManager(object):
     ])
     assert code == 0, str(result)
 
-    self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in installed.splitlines()])
+    self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in result.splitlines()])
 
   def __len__(self):
     return sum([len(x) for x in self.units.values()])
