@@ -93,6 +93,7 @@ class ApplianceHelper(object):
         raise
       pass
 
+    pulls = []
     scratch_docker_cmd = ['FROM alpine']
 
     for service in self.services:
@@ -101,11 +102,14 @@ class ApplianceHelper(object):
         raise RuntimeError('missing version for {}'.format(service))
 
       if meta:
+        pulls.append('openbank/{0}:v{1}-{2}'.format(service, version, meta))
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-{2} /opt/artifacts/{0}_{1}_{3}.deb /tmp/packages/{0}.deb'.format(service, version, meta, self.arch))
       else:
+        pulls.append('openbank/{0}:v{1}'.format(service, version))
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /tmp/packages/{0}.deb'.format(service, version, self.arch))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
+
     try:
       with open(temp.name, 'w') as f:
         for item in scratch_docker_cmd:
@@ -122,6 +126,10 @@ class ApplianceHelper(object):
       if scratch['Warnings']:
         raise Exception(scratch['Warnings'])
 
+      for image in pulls:
+        (code, result) = execute(['docker', 'pull', image])
+        assert code == 0, str(result)
+
       tar_name = tempfile.NamedTemporaryFile(delete=True)
 
       for service in self.services:
@@ -132,6 +140,12 @@ class ApplianceHelper(object):
 
         archive = tarfile.TarFile(tar_name.name)
         archive.extract('{}.deb'.format(service), '/tmp/packages')
+
+        (code, result, error) = execute([
+          'dpkg', '-c', '/tmp/packages/{}.deb'.format(service)
+        ])
+        if code != 0:
+          raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
 
       self.docker.remove_container(scratch['Id'])
     finally:

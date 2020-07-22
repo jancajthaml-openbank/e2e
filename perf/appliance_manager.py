@@ -95,22 +95,25 @@ class ApplianceManager(object):
 
     self.fetch_versions()
 
+    pulls = []
+
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
       if self.image_exists('openbank/{0}'.format(service), 'v{0}-master'.format(version)):
         image = 'openbank/{0}:v{1}-master'.format(service, version)
+        pulls.append(image)
         package = '{0}_{1}_{2}'.format(service, version, self.arch)
       else:
         image = 'openbank/{0}:v{1}'.format(service, version)
+        pulls.append(image)
         package = '{0}_{1}_{2}'.format(service, version, self.arch)
 
-      try:
-        self.docker.remove_image(image, force=True)
-      except:
-        pass
-      finally:
-        scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /opt/artifacts/{2}.deb'.format(image, package, service))
+      scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /opt/artifacts/{2}.deb'.format(image, package, service))
+
+    for image in pulls:
+      (code, result) = execute(['docker', 'pull', image])
+      assert code == 0, str(result)
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
