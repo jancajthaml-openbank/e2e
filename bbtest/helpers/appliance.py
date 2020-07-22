@@ -108,6 +108,10 @@ class ApplianceHelper(object):
         pulls.append('openbank/{0}:v{1}'.format(service, version))
         scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /tmp/packages/{0}.deb'.format(service, version, self.arch))
 
+    for image in pulls:
+      (code, result) = execute(['docker', 'pull', image])
+      assert code == 0, str(result)
+
     temp = tempfile.NamedTemporaryFile(delete=True)
 
     try:
@@ -125,10 +129,6 @@ class ApplianceHelper(object):
 
       if scratch['Warnings']:
         raise Exception(scratch['Warnings'])
-
-      for image in pulls:
-        (code, result) = execute(['docker', 'pull', image])
-        assert code == 0, str(result)
 
       tar_name = tempfile.NamedTemporaryFile(delete=True)
 
