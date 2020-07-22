@@ -112,6 +112,7 @@ class ApplianceManager(object):
       scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /opt/artifacts/{2}.deb'.format(image, package, service))
 
     for image in pulls:
+      execute(['docker', 'rmi', '-f', image])
       (code, result) = execute(['docker', 'pull', image])
       assert code == 0, str(result)
 
@@ -242,3 +243,26 @@ class ApplianceManager(object):
     else:
       for name in list(self.units):
         del self[name]
+    self.cleanup()
+
+  def cleanup(self) -> None:
+    def openbank_unit(unit) -> bool:
+      for mask in ['vault', 'ledger', 'lake', 'data-warehouse']:
+        if mask in item:
+          return True
+      return False
+
+    (code, result, error) = execute([
+      'systemctl', 'list-units', '--no-legend'
+    ])
+    result = [item.split(' ')[0].strip() for item in result.split('\n')]
+    result = [item for item in result if openbank_unit(item)]
+
+    for unit in result:
+      (code, result, error) = execute([
+        'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
+      ])
+      if code != 0 or not result:
+        continue
+      with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
+        f.write(result)

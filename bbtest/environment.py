@@ -27,6 +27,7 @@ def before_all(context):
     context.appliance.download()
     context.appliance.install()
   except Exception as ex:
+    context.appliance.teardown()
     print(ex)
     sys.exit(1)
 

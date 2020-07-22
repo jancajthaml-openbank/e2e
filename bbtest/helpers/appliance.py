@@ -215,5 +215,4 @@ class ApplianceHelper(object):
   def teardown(self):
     for unit in self.units:
       execute(['systemctl', 'stop', unit], silent=True)
-
     self.cleanup()
