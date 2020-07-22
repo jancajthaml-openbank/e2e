@@ -165,31 +165,16 @@ class ApplianceHelper(object):
       self.update_units()
 
   def running(self):
-    (code, result) = execute([
-      "systemctl", "list-units", "--no-legend"
-    ], silent=True)
-
+    (code, result) = execute(["systemctl", "list-units", "--no-legend"], silent=True)
     if code != 0:
       return False
-
-    print('check if is running')
-    print('check if is running')
-    print('check if is running')
-    print('check if is running')
 
     all_running = True
     for unit in self.units:
       if not unit.endswith('.service'):
         continue
       (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
-      print('{} is {} -> {}'.format(unit, result, ('SubState=running' in result or 'SubState=exited' in result)))
       all_running &= ('SubState=running' in result or 'SubState=exited' in result)
-
-    print('is running {}'.format(all_running))
-    print('is running {}'.format(all_running))
-    print('is running {}'.format(all_running))
-    print('is running {}'.format(all_running))
-    print('is running {}'.format(all_running))
 
     return all_running
 
