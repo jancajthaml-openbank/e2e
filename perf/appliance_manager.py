@@ -100,7 +100,7 @@ class ApplianceManager(object):
       version = self.versions[service]
       if self.image_exists('openbank/{0}'.format(service), 'v{0}-master'.format(version)):
         image = 'openbank/{0}:v{1}-master'.format(service, version)
-        package = '{0}_{1}+master_{2}'.format(service, version, self.arch)
+        package = '{0}_{1}_{2}'.format(service, version, self.arch)
       else:
         image = 'openbank/{0}:v{1}'.format(service, version)
         package = '{0}_{1}_{2}'.format(service, version, self.arch)
