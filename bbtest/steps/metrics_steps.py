@@ -20,7 +20,7 @@ def step_impl(context, tenant, numberOfAccounts):
     actual = dict()
     with open(path, 'r') as fd:
       actual.update(json.loads(fd.read()))
-    assert actual["createdAccounts"] == numberOfAccounts, 'expected createdAccounts to equal {} but got {}'.format(numberOfAccounts, actual['createdAccounts'])
+    assert str(actual["createdAccounts"]) == str(numberOfAccounts), 'expected createdAccounts to equal {} but got {}'.format(numberOfAccounts, actual['createdAccounts'])
 
   wait_for_file_existence()
   wait_for_metrics_update()
