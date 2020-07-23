@@ -65,7 +65,7 @@ def check_graphql_response(context):
       assert type(a) == type(b), 'types differ at {} expected: {} actual: {}'.format(path, type(a), type(b))
       assert a == b, 'values differ at {} expected: {} actual: {}'.format(path, a, b)
 
-  @eventually(60)
+  @eventually(320)
   def wait_for_graphql_to_respond():
     response = context.http.request('POST', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=20, retries=urllib3.Retry(total=0))
     assert response.status == 200, 'expected status {} actual {} with body {}'.format(200, response.status, response.data.decode('utf-8'))

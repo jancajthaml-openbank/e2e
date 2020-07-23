@@ -95,4 +95,4 @@ Feature: Journal integrity test
     And   directory /data/t_JOURNAL/account/C/events/0000000000 should contain 2 files
     And   file /data/t_JOURNAL/account/C/events/0000000000/0_123456789123313.000422901124_yyy should exist
     And   file /data/t_JOURNAL/account/C/events/0000000000/2_123456789123313.000422901124_yyy should exist
-    And   directory /data/t_JOURNAL/account/D/events/0000000000 should contain 0 files
+    And   file /data/t_JOURNAL/account/D/events/0000000000/2_-123456789123313.000422901124_yyy should
