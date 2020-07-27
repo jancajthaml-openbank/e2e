@@ -21,8 +21,6 @@ def onboard_unit(context, service, tenant):
   response = context.http.request('POST', uri, headers={'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
   assert response.status == 200
 
-  context.appliance.update_units()
-
   @eventually(5)
   def wait_for_appliance_up():
     assert context.appliance.running()
@@ -41,7 +39,8 @@ def check_graphql_response(context):
     response = context.http.request('GET', 'http://127.0.0.1:8080/health')
     assert response.status == 200
     status = json.loads(response.data.decode('utf-8'))
-    assert status['healthy'] is True
+    assert status['healthy'] is True, 'service is not healthy'
+    assert status['graphql'] is True, 'graphql is not healthy'
 
   uri = "http://127.0.0.1:8080/graphql"
   payload = {

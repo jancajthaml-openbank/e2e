@@ -16,7 +16,7 @@ else:
 
 
 def after_feature(context, feature):
-  context.appliance.cleanup()
+  context.appliance.collect_logs()
 
 
 def before_all(context):
