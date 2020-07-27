@@ -246,33 +246,4 @@ class ApplianceManager(object):
     else:
       for name in list(self.units):
         del self[name]
-    self.cleanup()
 
-  def cleanup(self) -> None:
-    def openbank_unit(unit) -> bool:
-      for mask in ['vault', 'ledger', 'lake', 'data-warehouse']:
-        if mask in unit:
-          return True
-      return False
-
-    (code, result) = execute([
-      'systemctl', 'list-units', '--no-legend'
-    ], silent=True)
-    result = [item.split(' ')[0].strip() for item in result.split('\n')]
-    result = [item for item in result if openbank_unit(item)]
-
-    for unit in result:
-      (code, result) = execute([
-        'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
-      ], silent=True)
-      if code != 0 or not result:
-        continue
-      with open('/reports/perf_logs/{}.log'.format(unit), 'w') as f:
-        f.write(result)
-
-    (code, result) = execute([
-      'journalctl', '-o', 'cat', '--no-pager'
-    ], silent=True)
-    if code == 0:
-      with open('/reports/perf_logs/journal.log', 'w') as f:
-        f.write(result)

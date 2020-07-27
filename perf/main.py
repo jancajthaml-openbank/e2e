@@ -92,22 +92,21 @@ def main():
       total = 200000
 
       debug("bootstraping appliance")
-
       manager.bootstrap()
 
       debug("onboarding services")
-
       for _ in range(10):
         manager.onboard()
 
       integration.clear()
       eventually_ready(manager)
-
       debug("appliance ready")
 
+      debug("scenario starting")
       with metrics(manager, 's1_new_account_latencies_{0}'.format(total)):
         steps.random_uniform_accounts(total)
         manager.restart()
+      debug("scenario finished")
 
       manager.teardown()
 
@@ -115,31 +114,28 @@ def main():
       total = 1000
 
       debug("bootstraping appliance")
-
       manager.bootstrap()
 
       debug("onboarding services")
-
       manager.onboard()
 
       integration.clear()
       eventually_ready(manager)
-
       debug("appliance ready")
 
-      splits = 10
+      splits = 5
       chunk = int(total/splits)
       total = splits*chunk
       no_accounts = chunk
 
+      debug("scenario starting")
       while no_accounts <= total:
         steps.random_uniform_accounts(chunk)
-
         with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
           steps.check_balances()
           manager.restart()
-
         no_accounts += chunk
+      debug("scenario finished")
 
       manager.teardown()
 
@@ -149,24 +145,22 @@ def main():
       total = 50000
 
       debug("bootstraping appliance")
-
       manager.bootstrap()
 
       debug("onboarding services")
-
       manager.onboard()
 
       integration.clear()
-
       eventually_ready(manager)
-
       debug("appliance ready")
 
       steps.random_uniform_accounts(100)
 
+      debug("scenario starting")
       with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
         steps.random_uniform_transactions(total)
         manager.restart()
+      debug("scenario finished")
 
       manager.teardown()
 

@@ -81,10 +81,10 @@ class Lake(Unit):
   def get_metrics(self) -> None:
     if self.__metrics:
       return self.__metrics.get_metrics()
-    return {}
+    return dict()
 
   def reconfigure(self, params) -> None:
-    d = {}
+    d = dict()
 
     if os.path.exists('/etc/lake/conf.d/init.conf'):
       with open('/etc/lake/conf.d/init.conf', 'r') as f:
