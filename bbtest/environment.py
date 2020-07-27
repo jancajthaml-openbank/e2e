@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 from helpers.appliance import ApplianceHelper
 import urllib3
@@ -17,18 +16,18 @@ else:
 
 
 def after_feature(context, feature):
-  context.appliance.cleanup()
+  context.appliance.collect_logs()
 
 
 def before_all(context):
   context.appliance = ApplianceHelper(context)
   context.http = urllib3.PoolManager()
-  os.system('rm -rf /tmp/reports/blackbox-tests/logs/*.log /tmp/reports/blackbox-tests/metrics/*.json')
   try:
     context.appliance.setup()
     context.appliance.download()
     context.appliance.install()
   except Exception as ex:
+    context.appliance.teardown()
     print(ex)
     sys.exit(1)
 

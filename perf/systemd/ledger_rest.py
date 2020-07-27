@@ -17,7 +17,7 @@ class LedgerRest(Unit):
 
     (code, result) = execute([
       "systemctl", "start", 'ledger-rest'
-    ])
+    ], silent=True)
     assert code == 0, str(result)
 
     self.watch_metrics()
@@ -30,19 +30,19 @@ class LedgerRest(Unit):
     def eventual_teardown():
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'ledger-rest.service', '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/ledger-rest.log', 'w') as f:
           f.write(result)
 
       (code, result) = execute([
         'systemctl', 'stop', 'ledger-rest'
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'ledger-rest.service', '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/ledger-rest.log', 'w') as f:
           f.write(result)
@@ -57,7 +57,7 @@ class LedgerRest(Unit):
     def eventual_restart():
       (code, result) = execute([
         "systemctl", "restart", 'ledger-rest'
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
     eventual_restart()
@@ -67,8 +67,8 @@ class LedgerRest(Unit):
   def watch_metrics(self) -> None:
     metrics_output = None
 
-    if os.path.exists('/etc/init/ledger.conf'):
-      with open('/etc/init/ledger.conf', 'r') as f:
+    if os.path.exists('/etc/ledger/conf.d/init.conf'):
+      with open('/etc/ledger/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           if key == 'LEDGER_METRICS_OUTPUT':
@@ -82,13 +82,13 @@ class LedgerRest(Unit):
   def get_metrics(self) -> None:
     if self.__metrics:
       return self.__metrics.get_metrics()
-    return {}
+    return dict()
 
   def reconfigure(self, params) -> None:
-    d = {}
+    d = dict()
 
-    if os.path.exists('/etc/init/ledger.conf'):
-      with open('/etc/init/ledger.conf', 'r') as f:
+    if os.path.exists('/etc/ledger/conf.d/init.conf'):
+      with open('/etc/ledger/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           d[key] = val
@@ -98,8 +98,8 @@ class LedgerRest(Unit):
       if key in d:
         d[key] = v
 
-    os.makedirs("/etc/init", exist_ok=True)
-    with open('/etc/init/ledger.conf', 'w') as f:
+    os.makedirs('/etc/ledger/conf.d', exist_ok=True)
+    with open('/etc/ledger/conf.d/init.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
     if not self.restart():
@@ -112,7 +112,7 @@ class LedgerRest(Unit):
       def eventual_check():
         (code, result) = execute([
           "systemctl", "show", "-p", "SubState", "ledger-rest"
-        ])
+        ], silent=True)
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()
     except:

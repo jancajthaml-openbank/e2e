@@ -29,19 +29,19 @@ class Lake(Unit):
     def eventual_teardown():
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'lake-relay.service', '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/lake.log', 'w') as f:
           f.write(result)
 
       (code, result) = execute([
         'systemctl', 'stop', 'lake-relay'
-      ])
+      ], silent=True)
       assert code == 0, str(result)
 
       (code, result) = execute([
         'journalctl', '-o', 'cat', '-u', 'lake-relay.service', '--no-pager'
-      ])
+      ], silent=True)
       if code == 0 and result:
         with open('/reports/perf_logs/lake.log', 'w') as f:
           f.write(result)
@@ -55,8 +55,8 @@ class Lake(Unit):
     @eventually(2)
     def eventual_restart():
       (code, result) = execute([
-        "systemctl", "restart", 'lake-relay'
-      ])
+        'systemctl', 'restart', 'lake-relay'
+      ], silent=True)
       assert code == 0, str(result)
 
     eventual_restart()
@@ -65,12 +65,14 @@ class Lake(Unit):
 
   def watch_metrics(self) -> None:
     metrics_output = None
-    with open('/etc/init/lake.conf', 'r') as f:
-      for line in f:
-        (key, val) = line.rstrip().split('=')
-        if key == 'LAKE_METRICS_OUTPUT':
-          metrics_output = '{0}/metrics.json'.format(val)
-          break
+
+    if os.path.exists('/etc/lake/conf.d/init.conf'):
+      with open('/etc/lake/conf.d/init.conf', 'r') as f:
+        for line in f:
+          (key, val) = line.rstrip().split('=')
+          if key == 'LAKE_METRICS_OUTPUT':
+            metrics_output = '{0}/metrics.json'.format(val)
+            break
 
     if metrics_output:
       self.__metrics = MetricsAggregator(metrics_output)
@@ -79,13 +81,13 @@ class Lake(Unit):
   def get_metrics(self) -> None:
     if self.__metrics:
       return self.__metrics.get_metrics()
-    return {}
+    return dict()
 
   def reconfigure(self, params) -> None:
-    d = {}
+    d = dict()
 
-    if os.path.exists('/etc/init/lake.conf'):
-      with open('/etc/init/lake.conf', 'r') as f:
+    if os.path.exists('/etc/lake/conf.d/init.conf'):
+      with open('/etc/lake/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           d[key] = val
@@ -95,8 +97,8 @@ class Lake(Unit):
       if key in d:
         d[key] = v
 
-    os.makedirs("/etc/init", exist_ok=True)
-    with open('/etc/init/lake.conf', 'w') as f:
+    os.makedirs('/etc/lake/conf.d', exist_ok=True)
+    with open('/etc/lake/conf.d/init.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
     if not self.restart():
@@ -109,7 +111,7 @@ class Lake(Unit):
       def eventual_check():
         (code, result) = execute([
           "systemctl", "show", "-p", "SubState", "lake-relay"
-        ])
+        ], silent=True)
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()
     except:

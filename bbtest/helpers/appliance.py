@@ -26,7 +26,7 @@ class ApplianceHelper(object):
 
   def __init__(self, context):
     self.arch = self.get_arch()
-    self.units = []
+    self.units = list()
     self.services = [
       "lake",
       "vault",
@@ -77,13 +77,15 @@ class ApplianceHelper(object):
     return (version, meta)
 
   def setup(self):
-    os.makedirs("/etc/init", exist_ok=True)
+    os.makedirs("/etc/data-warehouse/conf.d", exist_ok=True)
 
-    with open('/etc/init/data-warehouse.conf', 'w') as fd:
-      fd.write("DWH_LOG_LEVEL=DEBUG\n")
-      fd.write("DWH_SECRETS=/opt/data-warehouse/secrets\n")
-      fd.write("DWH_HTTP_PORT=8080\n")
-      fd.write("DWH_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank\n")
+    with open('/etc/data-warehouse/conf.d/init.conf', 'w') as fd:
+      fd.write(str(os.linesep).join([
+        "DATA_WAREHOUSE_LOG_LEVEL=DEBUG",
+        "DATA_WAREHOUSE_HTTP_PORT=8080",
+        "DATA_WAREHOUSE_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank",
+        "DATA_WAREHOUSE_PRIMARY_STORAGE_PATH=/data"
+      ]))
 
   def download(self):
     try:
@@ -93,6 +95,7 @@ class ApplianceHelper(object):
         raise
       pass
 
+    pulls = []
     scratch_docker_cmd = ['FROM alpine']
 
     for service in self.services:
@@ -100,22 +103,30 @@ class ApplianceHelper(object):
       if not version:
         raise RuntimeError('missing version for {}'.format(service))
 
-      if meta:
-        scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1}-{2} /opt/artifacts/{0}_{1}+{2}_{3}.deb /tmp/packages/{0}.deb'.format(service, version, meta, self.arch))
-      else:
-        scratch_docker_cmd.append('COPY --from=openbank/{0}:v{1} /opt/artifacts/{0}_{1}_{2}.deb /tmp/packages/{0}.deb'.format(service, version, self.arch))
+      image = 'openbank/{}:v{}'.format(service, (version+'-'+meta) if meta else version)
+      package = '/opt/artifacts/{}_{}_{}.deb'.format(service, version, self.arch)
+      target = '/tmp/packages/{}.deb'.format(service)
+
+      scratch_docker_cmd.append('COPY --from={} {} {}'.format(image, package, target))
+      pulls.append(image)
+
+    for image in pulls:
+      (code, result) = execute(['docker', 'pull', image], silent=False)
+      assert code == 0, str(result)
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
-      with open(temp.name, 'w') as f:
-        for item in scratch_docker_cmd:
-          f.write("%s\n" % item)
+      with open(temp.name, 'w') as fd:
+        fd.write(str(os.linesep).join(scratch_docker_cmd))
 
-      for chunk in self.docker.build(fileobj=temp, pull=True, rm=True, decode=True, tag='bbtest_artifacts-scratch'):
-        if 'stream' in chunk:
-          for line in chunk['stream'].splitlines():
-            if len(line):
-              print(line.strip('\r\n'))
+      for chunk in self.docker.build(fileobj=temp, pull=False, rm=True, decode=True, tag='bbtest_artifacts-scratch'):
+        if not 'stream' in chunk:
+          continue
+        for line in chunk['stream'].splitlines():
+          l = line.strip(os.linesep)
+          if not len(l):
+            continue
+          print(l)
 
       scratch = self.docker.create_container('bbtest_artifacts-scratch', '/bin/true')
 
@@ -133,6 +144,20 @@ class ApplianceHelper(object):
         archive = tarfile.TarFile(tar_name.name)
         archive.extract('{}.deb'.format(service), '/tmp/packages')
 
+        (code, result) = execute([
+          'dpkg', '-c', '/tmp/packages/{}.deb'.format(service)
+        ], silent=True)
+        if code != 0:
+          raise RuntimeError('code: {}, stdout: [{}]'.format(code, result))
+        with open('/tmp/reports/blackbox-tests/meta/debian.{}.txt'.format(service), 'w') as f:
+          f.write(result)
+
+        result = [item for item in result.split(os.linesep)]
+        result = [item.rsplit('/', 1)[-1].strip() for item in result if "/lib/systemd/system/{}".format(service) in item]
+        result = [item for item in result if not item.endswith('@.service')]
+
+        self.units += result
+
       self.docker.remove_container(scratch['Id'])
     finally:
       temp.close()
@@ -141,53 +166,53 @@ class ApplianceHelper(object):
   def install(self):
     for service in self.services:
       (code, result) = execute([
-        'apt-get', '-y', 'install', '-qq', '-o=Dpkg::Use-Pty=0', '-f', '/tmp/packages/{}.deb'.format(service)
-      ])
-
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
+      ], silent=True)
       if code != 0:
         raise RuntimeError('code: {}, stdout: {}'.format(code, result))
-      self.update_units()
 
   def running(self):
-    (code, result) = execute([
-      "systemctl", "list-units", "--no-legend"
-    ], silent=True)
-
+    (code, result) = execute(["systemctl", "list-units", "--no-legend"], silent=True)
     if code != 0:
       return False
 
     all_running = True
-    for service in self.units:
-      (code, result) = execute(["systemctl", "show", "-p", "SubState", service], silent=True)
+    for unit in self.units:
+      if not unit.endswith('.service'):
+        continue
+      (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
       all_running &= ('SubState=running' in result or 'SubState=exited' in result)
 
     return all_running
 
-  def update_units(self):
-    (code, result) = execute([
-      "systemctl", "list-units", "--no-legend"
-    ], silent=True)
+  def __is_openbank_unit(self, unit):
+    for mask in self.services:
+      if mask in unit:
+        return True
+    return False
 
-    if code != 0:
-      return False
-
-    services = [item.split(' ')[0].strip() for item in result.split('\n')]
-    services = [item for item in services if len([item for pivot in self.services if pivot in item])]
-
-    self.units = services
-
-  def cleanup(self):
-    for unit in self.units:
-      (code, result) = execute([
-        'journalctl', '-o', 'cat', '-u', unit, '--no-pager'
-      ], silent=True)
+  def collect_logs(self):
+    for unit in set(self.__get_systemd_units() + self.units):
+      (code, result) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'], silent=True)
       if code != 0 or not result:
         continue
-      with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as f:
-        f.write(result)
+      with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
+        fd.write(result)
+
+    (code, result) = execute(['journalctl', '-o', 'cat', '--no-pager'], silent=True)
+    if code == 0:
+      with open('/tmp/reports/blackbox-tests/logs/journal.log', 'w') as fd:
+        fd.write(result)
+
+  def __get_systemd_units(self):
+    (code, result) = execute(['systemctl', 'list-units', '--no-legend'], silent=True)
+    result = [item.split(' ')[0].strip() for item in result.split(os.linesep)]
+    result = [item for item in result if not item.endswith('unit.slice')]
+    result = [item for item in result if self.__is_openbank_unit(item)]
+    return result
 
   def teardown(self):
-    for unit in self.units:
+    self.collect_logs()
+    for unit in self.__get_systemd_units():
       execute(['systemctl', 'stop', unit], silent=True)
-
-    self.cleanup()
+    self.collect_logs()

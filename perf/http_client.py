@@ -64,7 +64,6 @@ class HttpClient(object):
         else:
           counter.fail()
       except urllib3.exceptions.ProtocolError as ex:
-        print('procotol error {}'.format(ex))
         os.kill(os.getpid(), signal.SIGINT)
       except Exception as ex:
         print(ex)

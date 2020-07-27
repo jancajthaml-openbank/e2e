@@ -8,6 +8,6 @@ from helpers.eventually import eventually
 @given('appliance is running')
 def appliance_running(context):
   @eventually(5)
-  def impl():
+  def wait_for_appliance_up():
     assert context.appliance.running()
-  impl()
+  wait_for_appliance_up()
