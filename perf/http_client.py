@@ -27,12 +27,17 @@ class HttpClient(object):
 
     def process_one(url, body, payload, tenant) -> None:
       try:
-        resp = http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'})
-        if resp and resp.status in [200, 201, 202]:
-          counter.ok()
-          pre_process(resp, url, body, tenant)
-        else:
+        while True:
+          resp = http.request('POST', url, body=payload, headers={'Content-Type': 'application/json'})
+          if resp and resp.status in [200, 201, 202]:
+            counter.ok()
+            pre_process(resp, url, body, tenant)
+            break
+          if resp and resp.status >= 500:
+            continue
+          print(resp.status)
           counter.fail()
+          break
       except urllib3.exceptions.ProtocolError as ex:
         print('procotol error {}'.format(ex))
         os.kill(os.getpid(), signal.SIGINT)
@@ -57,12 +62,17 @@ class HttpClient(object):
 
     def process_one(url, body, tenant) -> None:
       try:
-        resp = http.request('GET', url)
-        if resp and resp.status in [200, 201, 202]:
-          counter.ok()
-          pre_process(resp, url, body, tenant)
-        else:
+        while True:
+          resp = http.request('GET', url)
+          if resp and resp.status in [200, 201, 202]:
+            counter.ok()
+            pre_process(resp, url, body, tenant)
+            break
+          if resp and resp.status >= 500:
+            continue
+          print(resp.status)
           counter.fail()
+          break
       except urllib3.exceptions.ProtocolError as ex:
         os.kill(os.getpid(), signal.SIGINT)
       except Exception as ex:
