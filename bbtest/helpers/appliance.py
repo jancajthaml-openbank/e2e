@@ -33,7 +33,7 @@ class ApplianceHelper(object):
       "ledger",
       "data-warehouse",
     ]
-    self.docker = docker.APIClient(base_url='unix://var/run/docker.sock')
+    self.docker = docker.from_env()
     self.context = context
 
   def get_latest_version(self, service):
@@ -51,7 +51,6 @@ class ApplianceHelper(object):
       return None
 
     body = json.loads(response.read().decode('utf-8')).get('results', [])
-
     tags = []
 
     for entry in body:
@@ -78,48 +77,37 @@ class ApplianceHelper(object):
 
   def setup(self):
     os.makedirs("/etc/data-warehouse/conf.d", exist_ok=True)
-
     with open('/etc/data-warehouse/conf.d/init.conf', 'w') as fd:
       fd.write(str(os.linesep).join([
-        "DATA_WAREHOUSE_LOG_LEVEL=DEBUG",
+        "DATA_WAREHOUSE_LOG_LEVEL=ERROR",
         "DATA_WAREHOUSE_HTTP_PORT=8080",
         "DATA_WAREHOUSE_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank",
         "DATA_WAREHOUSE_PRIMARY_STORAGE_PATH=/data"
       ]))
 
   def download(self):
-    try:
-      os.mkdir("/tmp/packages")
-    except OSError as exc:
-      if exc.errno != errno.EEXIST:
-        raise
-      pass
+    failure = None
+    os.makedirs('/tmp/packages', exist_ok=True)
 
-    pulls = []
     scratch_docker_cmd = ['FROM alpine']
 
     for service in self.services:
       version, meta = self.get_latest_version(service)
-      if not version:
-        raise RuntimeError('missing version for {}'.format(service))
+      assert version, 'missing version for {}'.format(service)
 
       image = 'openbank/{}:v{}'.format(service, (version+'-'+meta) if meta else version)
       package = '/opt/artifacts/{}_{}_{}.deb'.format(service, version, self.arch)
       target = '/tmp/packages/{}.deb'.format(service)
 
       scratch_docker_cmd.append('COPY --from={} {} {}'.format(image, package, target))
-      pulls.append(image)
-
-    for image in pulls:
-      (code, result) = execute(['docker', 'pull', image], silent=False)
-      assert code == 0, str(result)
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
       with open(temp.name, 'w') as fd:
         fd.write(str(os.linesep).join(scratch_docker_cmd))
 
-      for chunk in self.docker.build(fileobj=temp, pull=False, rm=True, decode=True, tag='bbtest_artifacts-scratch'):
+      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=False, tag='bbtest_artifacts-scratch')
+      for chunk in stream:
         if not 'stream' in chunk:
           continue
         for line in chunk['stream'].splitlines():
@@ -128,29 +116,24 @@ class ApplianceHelper(object):
             continue
           print(l)
 
-      scratch = self.docker.create_container('bbtest_artifacts-scratch', '/bin/true')
-
-      if scratch['Warnings']:
-        raise Exception(scratch['Warnings'])
+      scratch = self.docker.containers.run('bbtest_artifacts-scratch', ['/bin/true'], detach=True)
 
       tar_name = tempfile.NamedTemporaryFile(delete=True)
 
       for service in self.services:
-        tar_stream, stat = self.docker.get_archive(scratch['Id'], '/tmp/packages/{}.deb'.format(service))
-        with open(tar_name.name, 'wb') as destination:
-          for chunk in tar_stream:
-            destination.write(chunk)
+        bits, stat = scratch.get_archive('/tmp/packages/{}.deb'.format(service))
+        with open(tar_name.name, 'wb') as fd:
+          for chunk in bits:
+            fd.write(chunk)
 
         archive = tarfile.TarFile(tar_name.name)
         archive.extract('{}.deb'.format(service), '/tmp/packages')
 
-        (code, result) = execute([
-          'dpkg', '-c', '/tmp/packages/{}.deb'.format(service)
-        ], silent=True)
-        if code != 0:
-          raise RuntimeError('code: {}, stdout: [{}]'.format(code, result))
-        with open('/tmp/reports/blackbox-tests/meta/debian.{}.txt'.format(service), 'w') as f:
-          f.write(result)
+        (code, result) = execute(['dpkg', '-c', '/tmp/packages/{}.deb'.format(service)], silent=True)
+        assert code == 0, str(code) + ' ' + result
+
+        with open('reports/blackbox-tests/meta/debian.{}.txt'.format(service), 'w') as fd:
+          fd.write(result)
 
         result = [item for item in result.split(os.linesep)]
         result = [item.rsplit('/', 1)[-1].strip() for item in result if "/lib/systemd/system/{}".format(service) in item]
@@ -158,18 +141,25 @@ class ApplianceHelper(object):
 
         self.units += result
 
-      self.docker.remove_container(scratch['Id'])
+      scratch.remove()
+    except Exception as ex:
+      failure = ex
     finally:
       temp.close()
-      self.docker.remove_image('bbtest_artifacts-scratch', force=True)
+      try:
+        self.docker.images.remove('bbtest_artifacts-scratch', force=True)
+      except:
+        pass
+
+    if failure:
+      raise failure
 
   def install(self):
     for service in self.services:
       (code, result) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
       ], silent=True)
-      if code != 0:
-        raise RuntimeError('code: {}, stdout: {}'.format(code, result))
+      assert code == 0, str(code) + ' ' + result
 
   def running(self):
     (code, result) = execute(["systemctl", "list-units", "--no-legend"], silent=True)
@@ -196,12 +186,12 @@ class ApplianceHelper(object):
       (code, result) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'], silent=True)
       if code != 0 or not result:
         continue
-      with open('/tmp/reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
+      with open('reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
         fd.write(result)
 
     (code, result) = execute(['journalctl', '-o', 'cat', '--no-pager'], silent=True)
     if code == 0:
-      with open('/tmp/reports/blackbox-tests/logs/journal.log', 'w') as fd:
+      with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
 
   def __get_systemd_units(self):

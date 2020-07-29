@@ -9,7 +9,7 @@ workflows:
   commit:
     jobs:
       - performance
-      - bbtest
+      - blackbox-test-amd64
       - report:
           requires:
             - performance
@@ -23,7 +23,7 @@ workflows:
               only:
                 - master
     jobs:
-      - bbtest
+      - blackbox-test-amd64
 
   rolling_performance:
     triggers:
@@ -41,14 +41,78 @@ workflows:
 
 # ---------------------------------------------------------------------------- #
 
+executors:
+
+  machine:
+    machine:
+      image: circleci/classic:201808-01
+      docker_layer_caching: false
+
+  bbtest:
+    docker:
+      - image: docker.io/jancajthaml/bbtest:amd64
+
+# ---------------------------------------------------------------------------- #
+
 jobs:
 
   # -------------------------------------------------------------------------- #
 
+  blackbox-test-amd64:
+    executor: bbtest
+    working_directory: /mnt/ramdisk
+    steps:
+      - checkout
+      - run:
+          name: Run blackbox tests
+          command: |
+            python3 /mnt/ramdisk/bbtest/main.py
+          no_output_timeout: 5m
+      - store_test_results:
+          path: /mnt/ramdisk/reports/blackbox-tests/junit
+      - store_artifacts:
+          path: /mnt/ramdisk/reports/blackbox-tests
+          destination: reports
+
+  # -------------------------------------------------------------------------- #
+
+  performance:
+    executor: machine
+    environment:
+      - LANG: C.UTF-8
+    working_directory: /home/circleci/project
+    steps:
+      - checkout
+      - run: docker pull jancajthaml/bbtest:amd64
+      - run:
+          name: Run performance tests
+          command: |
+            docker exec -it $(\
+              docker run \
+                -d \
+                -t \
+                -e CI=1 \
+                -e GITHUB_RELEASE_TOKEN="${GITHUB_RELEASE_TOKEN}" \
+                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                -v /var/lib/docker/containers:/var/lib/docker/containers \
+                -v /home/circleci/project/perf:/opt/perf \
+                -v /home/circleci/project/reports:/reports \
+              jancajthaml/bbtest:amd64 \
+            ) python3 /opt/perf/main.py
+          no_output_timeout: 3h
+      - store_artifacts:
+          path: /home/circleci/project/reports
+          destination: reports
+      - persist_to_workspace:
+          root: /home/circleci/project
+          paths:
+            - reports
+
+  # -------------------------------------------------------------------------- #
+
   report:
-    machine:
-      image: circleci/classic:201808-01
-      docker_layer_caching: false
+    executor: machine
     environment:
       - METRICS_PATH: /home/circleci/project/reports/perf_metrics
     working_directory: /home/circleci/project
@@ -92,82 +156,5 @@ jobs:
             git branch -m master
             git push -f origin master
             git push origin --delete rolling
-
-  # -------------------------------------------------------------------------- #
-
-  performance:
-    machine:
-      image: circleci/classic:201808-01
-      docker_layer_caching: true
-    environment:
-      - LANG: C.UTF-8
-    working_directory: /home/circleci/project
-    steps:
-      - checkout
-      - run: docker pull jancajthaml/bbtest:amd64
-      - run:
-          name: Run performance tests
-          command: |
-            docker exec -it $(\
-              docker run \
-                -d \
-                -t \
-                -e CI=1 \
-                -e GITHUB_RELEASE_TOKEN="${GITHUB_RELEASE_TOKEN}" \
-                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-                -v /var/run/docker.sock:/var/run/docker.sock \
-                -v /var/lib/docker/containers:/var/lib/docker/containers \
-                -v /home/circleci/project/perf:/opt/perf \
-                -v /home/circleci/project/reports:/reports \
-              jancajthaml/bbtest:amd64 \
-            ) python3 /opt/perf/main.py
-          no_output_timeout: 3h
-      - store_artifacts:
-          path: /home/circleci/project/reports
-          destination: reports
-      - persist_to_workspace:
-          root: /home/circleci/project
-          paths:
-            - reports
-
-  # -------------------------------------------------------------------------- #
-
-  bbtest:
-    machine:
-      image: circleci/classic:201808-01
-      docker_layer_caching: true
-    working_directory: /home/circleci/project
-    steps:
-      - checkout
-      - run: docker pull jancajthaml/bbtest:amd64
-      - run:
-          name: Run blackbox tests
-          command: |
-            docker build -f /home/circleci/project/bbtest/postgres/Dockerfile -t e2e_postgres /home/circleci/project/bbtest/postgres
-            docker run -d --name=e2e_postgres e2e_postgres &> /dev/null
-
-            docker exec -it $(\
-              docker run \
-                -d \
-                -t \
-                --cpuset-cpus=1 \
-                --link=e2e_postgres:postgres \
-                -e GITHUB_RELEASE_TOKEN="${GITHUB_RELEASE_TOKEN}" \
-                -e UNIT_ARCH="amd64" \
-                -e CI=1 \
-                -v /tmp/reports:/reports/bbtest \
-                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-                -v /var/run/docker.sock:/var/run/docker.sock \
-                -v /var/lib/docker/containers:/var/lib/docker/containers \
-                -v /home/circleci/project/bbtest:/opt/app \
-                -v /home/circleci/project/reports:/tmp/reports \
-                -w /opt/app \
-              jancajthaml/bbtest:amd64 \
-            ) python3 /opt/app/main.py
-      - store_test_results:
-          path: /home/circleci/project/bbtest
-      - store_artifacts:
-          path: /home/circleci/project/reports
-          destination: reports
 
 # ---------------------------------------------------------------------------- #

@@ -1,0 +1,66 @@
+version: '3.7'
+
+# ---------------------------------------------------------------------------- #
+
+services:
+
+  # -------------------------------------------------------------------------- #
+
+  postgres:
+    hostname: postgres
+    build:
+      dockerfile: Dockerfile
+      context: bbtest/postgres
+
+  # -------------------------------------------------------------------------- #
+
+  bbtest-amd64:
+    image: docker.io/jancajthaml/bbtest:amd64
+    depends_on:
+      - postgres
+    environment:
+      UNIT_ARCH: amd64
+      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
+      CI: ${CI:-false}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /var/lib/docker/containers:/var/lib/docker/containers:rw
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - .:/opt/app
+    working_dir: /opt/app
+
+  # -------------------------------------------------------------------------- #
+
+  bbtest-arm64:
+    image: docker.io/jancajthaml/bbtest:arm64
+    depends_on:
+      - postgres
+    environment:
+      UNIT_ARCH: arm64
+      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
+      CI: ${CI:-false}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /var/lib/docker/containers:/var/lib/docker/containers:rw
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - .:/opt/app
+    working_dir: /opt/app
+
+  # -------------------------------------------------------------------------- #
+
+  bbtest-armhf:
+    image: docker.io/jancajthaml/bbtest:armhf
+    depends_on:
+      - postgres
+    environment:
+      UNIT_ARCH: armhf
+      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
+      CI: ${CI:-false}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /var/lib/docker/containers:/var/lib/docker/containers:rw
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - .:/opt/app
+    working_dir: /opt/app
+
+# ---------------------------------------------------------------------------- #
