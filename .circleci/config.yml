@@ -56,7 +56,7 @@ jobs:
 
   blackbox-test-amd64:
     executor: machine
-    working_directory: /mnt/ramdisk
+    working_directory: /home/circleci/project
     steps:
       - checkout
       - run: docker pull docker.io/jancajthaml/bbtest:amd64
@@ -68,9 +68,9 @@ jobs:
             docker-compose down -v
           no_output_timeout: 5m
       - store_test_results:
-          path: /mnt/ramdisk/reports/blackbox-tests/junit
+          path: /home/circleci/project/reports/blackbox-tests/junit
       - store_artifacts:
-          path: /mnt/ramdisk/reports/blackbox-tests
+          path: /home/circleci/project/reports/blackbox-tests
           destination: reports
 
   # -------------------------------------------------------------------------- #
