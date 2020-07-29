@@ -122,12 +122,19 @@ class ApplianceManager(object):
       for service in ['lake', 'vault', 'ledger']:
         tar_name = '/tmp/packages/{0}.tar'.format(service)
         bits, stat = scratch.get_archive('/tmp/packages/{}.deb'.format(service))
-        with open(tar_name, 'wb') as fd:
-          total_bytes = 0
-          for chunk in bits:
-            total_bytes += len(chunk)
-            progress('extracting {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
+
+        if TTY:
+          with open(tar_name, 'wb') as fd:
+            total_bytes = 0
+            for chunk in bits:
+              total_bytes += len(chunk)
+              progress('extracting {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
+              fd.write(chunk)
+        else:
+          progress('extracting {0}'.format(stat['name']))
+          with open(tar_name, 'wb') as fd:
             fd.write(chunk)
+
         archive = tarfile.TarFile(tar_name)
         archive.extract('{0}.deb'.format(service), '/tmp/packages')
         os.remove(tar_name)
