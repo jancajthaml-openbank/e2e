@@ -115,14 +115,12 @@ jobs:
           name: Regenerate reports
           command: |
             echo "1"
-            ls -la /home/circleci/project
+            ls -la /home/circleci/project/metrics
             echo "2"
-            ls -la /home/circleci/project/reports/perf-tests
+            ls -la /home/circleci/project/metrics
             echo "3"
-            ls -la /home/circleci/project/reports/perf-tests
-            echo "4"
 
-            METRICS_PATH=/home/circleci/project/reports/reports/perf-tests/metrics
+            METRICS_PATH=/home/circleci/project/metrics
 
             if [ ! -d ${METRICS_PATH} ] ; then
               exit 1
