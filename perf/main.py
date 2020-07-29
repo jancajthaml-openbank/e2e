@@ -63,7 +63,8 @@ def main():
 
   for path in [
     '/data',
-    'reports/perf-tests/metrics'
+    'reports/perf-tests/metrics',
+    'reports/perf-tests/logs'
   ]:
     os.system('mkdir -p {}'.format(path))
     os.system('rm -rf {}/*'.format(path))
