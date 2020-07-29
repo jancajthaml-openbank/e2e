@@ -6,7 +6,7 @@ import random
 secure_random = random.SystemRandom()
 
 import time
-from utils import info, progress, warn, success, Counter, timeit
+from utils import info, progress, warn, success, Counter, timeit, __TTY
 from http_client import HttpClient
 
 
@@ -19,6 +19,7 @@ class Steps:
   def random_targeted_accounts(self, tenant_name, number_of_accounts=None):
     with timeit('random_targeted_accounts(_, {0}, {1})'.format(tenant_name, num_of_accounts)):
 
+      last_progress = 0
       def callback(response, url, request, tenant):
         if response.status != 200:
           return None
@@ -34,7 +35,11 @@ class Steps:
         return response
 
       def on_progress(processed, total):
-        progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
+        next_progress = 100 * (processed/total)
+        next_progress = next_progress if __TTY else int(next_progress)
+        if last_progress != next_progress:
+          last_progress = next_progress
+          progress('{1:.2f}% of {0}'.format(total, next_progress))
 
       tenants = self.integration.tenants
 
@@ -63,6 +68,8 @@ class Steps:
   def random_uniform_accounts(self, number_of_accounts=None):
     with timeit('random_uniform_accounts(_, {0})'.format(number_of_accounts)):
 
+      last_progress = 0
+
       def callback(response, url, request, tenant):
         if response.status != 200:
           return None
@@ -78,7 +85,11 @@ class Steps:
         return response
 
       def on_progress(processed, total):
-        progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
+        next_progress = 100 * (processed/total)
+        next_progress = next_progress if __TTY else int(next_progress)
+        if last_progress != next_progress:
+          last_progress = next_progress
+          progress('{1:.2f}% of {0}'.format(total, next_progress))
 
       tenants = self.integration.tenants
 
@@ -125,6 +136,8 @@ class Steps:
         max_transactions = min_transactions * 10
         number_of_transactions = secure_random.randrange(min_transactions, max_transactions)
 
+      last_progress = 0
+
       def callback(response, url, request, tenant_name):
         if response.status != 200:
           return None
@@ -135,7 +148,11 @@ class Steps:
         return response
 
       def on_progress(processed, total):
-        progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
+        next_progress = 100 * (processed/total)
+        next_progress = next_progress if __TTY else int(next_progress)
+        if last_progress != next_progress:
+          last_progress = next_progress
+          progress('{1:.2f}% of {0}'.format(total, next_progress))
 
       partitions = []
       chunks = len(tenants)
@@ -179,6 +196,7 @@ class Steps:
 
       info("prepared checking balance of {0} accounts".format(num_of_accounts))
 
+      last_progress = 0
       def callback(response, url, request, tenant_name):
         if response.status != 200:
           return None
@@ -190,7 +208,11 @@ class Steps:
           return None
 
       def on_progress(processed, total):
-        progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
+        next_progress = 100 * (processed/total)
+        next_progress = next_progress if __TTY else int(next_progress)
+        if last_progress != next_progress:
+          last_progress = next_progress
+          progress('{1:.2f}% of {0}'.format(total, next_progress))
 
       client = HttpClient()
       passed, failed = client.get(prepared, callback, on_progress)

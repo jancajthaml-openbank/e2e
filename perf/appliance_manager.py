@@ -14,7 +14,7 @@ else:
 
 import docker
 
-from utils import progress, success, debug
+from utils import progress, success, debug, __TTY
 
 from systemd.vault_unit import VaultUnit
 from systemd.vault_rest import VaultRest
@@ -110,11 +110,12 @@ class ApplianceManager(object):
           f.write("%s\n" % item)
 
       image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=False, tag='perf_artifacts-scratch')
-      for chunk in stream:
-        if 'stream' in chunk:
-          for line in chunk['stream'].splitlines():
-            if len(line):
-              progress('docker {0}'.format(line.rstrip()))
+      if __TTY:
+        for chunk in stream:
+          if 'stream' in chunk:
+            for line in chunk['stream'].splitlines():
+              if len(line):
+                progress('docker {0}'.format(line.rstrip()))
 
       scratch = self.docker.containers.run('perf_artifacts-scratch', ['/bin/true'], detach=True)
 
