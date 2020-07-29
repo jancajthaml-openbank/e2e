@@ -133,7 +133,8 @@ class ApplianceManager(object):
         else:
           progress('extracting {0}'.format(stat['name']))
           with open(tar_name, 'wb') as fd:
-            fd.write(chunk)
+            for chunk in bits:
+              fd.write(chunk)
 
         archive = tarfile.TarFile(tar_name)
         archive.extract('{0}.deb'.format(service), '/tmp/packages')
