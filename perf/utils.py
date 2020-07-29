@@ -36,7 +36,7 @@ buster = (' '*term_w)
 
 def interrupt_stdout() -> None:
   termios.tcsetattr(fd, termios.TCSAFLUSH, old)
-  if this.__progress_running:
+  if this.__progress_running and __TTY:
     sys.stdout.write('\n')
     sys.stdout.flush()
   this.__progress_running = False
@@ -59,8 +59,12 @@ def info(msg) -> None:
 
 def progress(msg) -> None:
   this.__progress_running = True
-  sys.stdout.write('\033[94m        | {0}\033[K\r'.format(msg.rstrip()))
-  sys.stdout.flush()
+  if __TTY:
+    sys.stdout.write('\033[94m        | {0}\033[K\n'.format(msg.rstrip()))
+    sys.stdout.flush()
+  else:
+    sys.stdout.write('\033[94m        | {0}\033[K\r'.format(msg.rstrip()))
+    sys.stdout.flush()
 
 def error(msg) -> None:
   this.__progress_running = False
