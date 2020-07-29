@@ -28,7 +28,7 @@ this.__progress_running = False
 
 termios.tcsetattr(fd, termios.TCSANOW, new)
 
-__TTY = sys.stdout.isatty() and (int(os.environ.get('CI', 0)) == 0)
+__TTY = sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false')
 
 _, term_w, _, _ = struct.unpack('HHHH', fcntl.ioctl(0, termios.TIOCGWINSZ, struct.pack('HHHH', 0, 0, 0, 0)))
 buster = (' '*term_w)
@@ -156,41 +156,6 @@ class with_deadline():
 
   def __exit__(self, *args):
     signal.alarm(0)
-
-# fixme move under os_utils module
-def clear_dir(path_) -> None:
-  if not os.path.exists(path_):
-    os.makedirs(path_)
-    return
-
-  def __remove_readonly(fn, p, excinfo):
-    if fn is os.rmdir:
-      os.chmod(p, stat.S_IWRITE)
-      os.rmdir(p)
-    elif fn is os.remove:
-      os.lchmod(p, stat.S_IWRITE)
-      os.remove(p)
-
-  def __is_regular(p):
-    try:
-      mode = os.lstat(p).st_mode
-    except os.error:
-      mode = 0
-    return stat.S_ISDIR(mode)
-
-  if __is_regular(path_):
-    for name in os.listdir(path_):
-      fullpath = os.path.join(path_, name)
-      if __is_regular(fullpath):
-        shutil.rmtree(fullpath, onerror=__remove_readonly)
-      else:
-        try:
-          os.remove(fullpath)
-        except OSError:
-          os.lchmod(fullpath, stat.S_IWRITE)
-          os.remove(fullpath)
-  else:
-    raise OSError("Cannot call clear via symbolic link to a directory")
 
 
 class ProgressCounter():

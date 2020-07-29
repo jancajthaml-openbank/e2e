@@ -48,6 +48,10 @@ executors:
       image: circleci/classic:201808-01
       docker_layer_caching: false
 
+  git:
+    docker:
+      - image: docker.io/alpine/git
+
 # ---------------------------------------------------------------------------- #
 
 jobs:
@@ -60,6 +64,7 @@ jobs:
     steps:
       - checkout
       - run: docker pull docker.io/jancajthaml/bbtest:amd64
+      - run: docker-compose build postgres
       - run:
           name: Run blackbox tests
           command: |
@@ -77,43 +82,29 @@ jobs:
 
   performance:
     executor: machine
-    environment:
-      - LANG: C.UTF-8
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run: docker pull jancajthaml/bbtest:amd64
+      - run: docker pull docker.io/jancajthaml/bbtest:amd64
       - run:
           name: Run performance tests
           command: |
-            docker exec -it $(\
-              docker run \
-                -d \
-                -t \
-                -e CI=1 \
-                -e GITHUB_RELEASE_TOKEN="${GITHUB_RELEASE_TOKEN}" \
-                -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
-                -v /var/run/docker.sock:/var/run/docker.sock \
-                -v /var/lib/docker/containers:/var/lib/docker/containers \
-                -v /home/circleci/project/perf:/opt/perf \
-                -v /home/circleci/project/reports:/reports \
-              jancajthaml/bbtest:amd64 \
-            ) python3 /opt/perf/main.py
-          no_output_timeout: 3h
+            docker-compose up -d perf
+            docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
+            docker-compose down -v
+          no_output_timeout: 2h
       - store_artifacts:
-          path: /home/circleci/project/reports
+          path: /home/circleci/project/reports/perf-tests/metrics
           destination: reports
       - persist_to_workspace:
-          root: /home/circleci/project
+          root: /home/circleci/project/reports/perf-tests
           paths:
-            - reports
+            - metrics
 
   # -------------------------------------------------------------------------- #
 
   report:
-    executor: machine
-    environment:
-      - METRICS_PATH: /home/circleci/project/reports/perf_metrics
+    executor: git
     working_directory: /home/circleci/project
     steps:
       - attach_workspace:
@@ -121,6 +112,8 @@ jobs:
       - run:
           name: Regenerate reports
           command: |
+            METRICS_PATH=/home/circleci/project/reports/reports/perf-tests/metrics
+
             if [ ! -d ${METRICS_PATH} ] ; then
               exit 1
             fi

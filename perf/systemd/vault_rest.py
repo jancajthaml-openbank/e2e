@@ -29,23 +29,9 @@ class VaultRest(Unit):
     @eventually(5)
     def eventual_teardown():
       (code, result) = execute([
-        'journalctl', '-o', 'cat', '-u', 'vault-rest.service', '--no-pager'
-      ], silent=True)
-      if code == 0 and result:
-        with open('/reports/perf_logs/vault-rest.log', 'w') as f:
-          f.write(result)
-
-      (code, result) = execute([
         'systemctl', 'stop', 'vault-rest'
       ], silent=True)
       assert code == 0, str(result)
-
-      (code, result) = execute([
-        'journalctl', '-o', 'cat', '-u', 'vault-rest.service', '--no-pager'
-      ], silent=True)
-      if code == 0 and result:
-        with open('/reports/perf_logs/vault-rest.log', 'w') as f:
-          f.write(result)
 
     eventual_teardown()
 

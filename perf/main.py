@@ -5,7 +5,7 @@ import os
 import sys
 
 from functools import partial
-from utils import debug, warn, info, interrupt_stdout, clear_dir, timeit
+from utils import debug, warn, info, interrupt_stdout, timeit
 from metrics.manager import MetricsManager
 from appliance_manager import ApplianceManager
 
@@ -59,12 +59,14 @@ def main():
 
   debug("starting")
 
-  debug("asserting empty journal, logs and metrics")
+  debug("asserting empty data and metrics")
 
-  # fixme in parallel please
-  clear_dir("/data")
-  clear_dir("/reports/perf_logs")
-  clear_dir("/reports/perf_metrics")
+  for path in [
+    '/data',
+    '/reports/perf-tests/metrics'
+  ]:
+    os.system('mkdir -p {}'.format(path))
+    os.system('rm -rf {}/*'.format(path))
 
   info("preparing appliance")
   manager = ApplianceManager()

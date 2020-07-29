@@ -28,23 +28,9 @@ class Lake(Unit):
     @eventually(5)
     def eventual_teardown():
       (code, result) = execute([
-        'journalctl', '-o', 'cat', '-u', 'lake-relay.service', '--no-pager'
-      ], silent=True)
-      if code == 0 and result:
-        with open('/reports/perf_logs/lake.log', 'w') as f:
-          f.write(result)
-
-      (code, result) = execute([
         'systemctl', 'stop', 'lake-relay'
       ], silent=True)
       assert code == 0, str(result)
-
-      (code, result) = execute([
-        'journalctl', '-o', 'cat', '-u', 'lake-relay.service', '--no-pager'
-      ], silent=True)
-      if code == 0 and result:
-        with open('/reports/perf_logs/lake.log', 'w') as f:
-          f.write(result)
 
     eventual_teardown()
 
