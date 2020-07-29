@@ -48,10 +48,6 @@ executors:
       image: circleci/classic:201808-01
       docker_layer_caching: false
 
-  git:
-    docker:
-      - image: docker.io/alpine/git
-
 # ---------------------------------------------------------------------------- #
 
 jobs:
@@ -104,7 +100,7 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   report:
-    executor: git
+    executor: machine
     working_directory: /home/circleci/project
     steps:
       - attach_workspace:
