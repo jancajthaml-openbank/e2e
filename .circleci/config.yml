@@ -114,17 +114,13 @@ jobs:
       - run:
           name: Regenerate reports
           command: |
-            echo "1"
-            ls -la /home/circleci/project/metrics
-            echo "2"
-            ls -la /home/circleci/project/metrics
-            echo "3"
-
             METRICS_PATH=/home/circleci/project/metrics
 
             if [ ! -d ${METRICS_PATH} ] ; then
               exit 1
             fi
+
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
 
             git config --global user.email "jan.cajthaml@gmail.com"
             git config --global user.name "CircleCI e2e rolling update"
