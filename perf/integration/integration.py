@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import json
+import uuid
 import random
 from collections import OrderedDict
 from threading import Lock
@@ -84,6 +85,7 @@ class Integration(object):
 
     url = 'https://127.0.0.1:4401/transaction/{}'.format(tenant_name)
     body = {
+      "id": str(uuid.uuid4()),
       "transfers": transfers
     }
 
