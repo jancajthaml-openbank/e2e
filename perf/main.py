@@ -98,7 +98,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 200000
+      total = 100000
 
       debug("bootstraping appliance")
       manager.bootstrap()
@@ -121,7 +121,7 @@ def main():
       cleanup()
 
     with timeit('get accounts scenario'):
-      total = 1000
+      total = 2000
 
       debug("bootstraping appliance")
       manager.bootstrap()
@@ -153,7 +153,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 30000
+      total = 20000
 
       debug("bootstraping appliance")
       manager.bootstrap()
