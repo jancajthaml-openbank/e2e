@@ -32,7 +32,6 @@ class HttpClient(object):
           counter.ok()
           pre_process(resp, url, body, tenant)
         else:
-          print(resp.status)
           counter.fail()
       except urllib3.exceptions.ProtocolError as ex:
         print('procotol error {}'.format(ex))
@@ -63,7 +62,6 @@ class HttpClient(object):
           counter.ok()
           pre_process(resp, url, body, tenant)
         else:
-          print(resp.status)
           counter.fail()
       except urllib3.exceptions.ProtocolError as ex:
         os.kill(os.getpid(), signal.SIGINT)

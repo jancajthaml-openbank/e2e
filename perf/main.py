@@ -93,7 +93,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 20000
+      total = 200000
 
       debug("bootstraping appliance")
       manager.bootstrap()
@@ -146,7 +146,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 5000
+      total = 50000
 
       debug("bootstraping appliance")
       manager.bootstrap()
