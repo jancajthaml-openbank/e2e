@@ -114,7 +114,7 @@ class ApplianceManager(object):
         if 'stream' in chunk:
           for line in chunk['stream'].splitlines():
             if len(line):
-              progress('docker {0}'.format(line.strip('\r\n')))
+              progress('docker {0}'.format(line.rstrip()))
 
       scratch = self.docker.containers.run('perf_artifacts-scratch', ['/bin/true'], detach=True)
 
@@ -148,12 +148,12 @@ class ApplianceManager(object):
 
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      progress('installing {0} {1}'.format(service, version))
+      progress('installing {} {}'.format(service, version))
       (code, result) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
       ], silent=True)
       assert code == 0, str(result)
-      success('installed {0} {1}'.format(service, version))
+      success('installed {} {}'.format(service, version))
 
     (code, result) = execute([
       "systemctl", "list-units", "--no-legend"

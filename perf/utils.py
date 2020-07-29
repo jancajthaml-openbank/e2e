@@ -19,24 +19,14 @@ from functools import partial
 
 this = sys.modules[__name__]
 
-fd = sys.stdin.fileno()
-old = termios.tcgetattr(fd)
-new = copy.deepcopy(old)
-new[3] &= ~termios.ICANON & ~termios.ECHO
-
 this.__progress_running = False
 
-termios.tcsetattr(fd, termios.TCSANOW, new)
-
 __TTY = sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false')
-
-_, term_w, _, _ = struct.unpack('HHHH', fcntl.ioctl(0, termios.TIOCGWINSZ, struct.pack('HHHH', 0, 0, 0, 0)))
-buster = (' '*term_w)
 
 
 def interrupt_stdout() -> None:
   termios.tcsetattr(fd, termios.TCSAFLUSH, old)
-  if this.__progress_running and __TTY:
+  if this.__progress_running:
     sys.stdout.write('\n')
     sys.stdout.flush()
   this.__progress_running = False
@@ -58,12 +48,12 @@ def info(msg) -> None:
   sys.stdout.flush()
 
 def progress(msg) -> None:
-  this.__progress_running = True
   if __TTY:
-    sys.stdout.write('\033[94m        | {0}\033[K\n'.format(msg.rstrip()))
+    this.__progress_running = True
+    sys.stdout.write('\033[94m        | {0}\033[K\r'.format(msg.rstrip()))
     sys.stdout.flush()
   else:
-    sys.stdout.write('\033[94m        | {0}\033[K\r'.format(msg.rstrip()))
+    sys.stdout.write('\033[94m        | {0}\033[K\n'.format(msg.rstrip()))
     sys.stdout.flush()
 
 def error(msg) -> None:
