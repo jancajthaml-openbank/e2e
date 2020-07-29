@@ -69,6 +69,16 @@ def main():
 
   debug("starting")
 
+  debug("asserting empty data and metrics")
+
+  for path in [
+    '/data',
+    'reports/perf-tests/metrics',
+    'reports/perf-tests/logs'
+  ]:
+    os.system('mkdir -p {}'.format(path))
+    os.system('rm -rf {}/*'.format(path))
+
   info("preparing appliance")
   manager = ApplianceManager()
 
