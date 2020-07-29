@@ -48,6 +48,10 @@ executors:
       image: circleci/classic:201808-01
       docker_layer_caching: false
 
+  git:
+    docker:
+      - image: docker.io/alpine/git
+
 # ---------------------------------------------------------------------------- #
 
 jobs:
@@ -102,7 +106,7 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   report:
-    executor: machine
+    executor: git
     working_directory: /home/circleci/project
     steps:
       - attach_workspace:
@@ -110,6 +114,14 @@ jobs:
       - run:
           name: Regenerate reports
           command: |
+            echo "1"
+            ls -la /home/circleci/project
+            echo "2"
+            ls -la /home/circleci/project/reports/perf-tests
+            echo "3"
+            ls -la /home/circleci/project/reports/perf-tests
+            echo "4"
+
             METRICS_PATH=/home/circleci/project/reports/reports/perf-tests/metrics
 
             if [ ! -d ${METRICS_PATH} ] ; then
