@@ -6,7 +6,7 @@ import random
 secure_random = random.SystemRandom()
 
 import time
-from utils import info, progress, warn, success, Counter, timeit, __TTY
+from utils import info, progress, warn, success, Counter, timeit, TTY
 from http_client import HttpClient
 
 
@@ -36,7 +36,7 @@ class Steps:
 
       def on_progress(processed, total):
         next_progress = 100 * (processed/total)
-        next_progress = next_progress if __TTY else int(next_progress)
+        next_progress = next_progress if TTY else int(next_progress)
         if last_progress != next_progress:
           last_progress = next_progress
           progress('{1:.2f}% of {0}'.format(total, next_progress))
@@ -86,7 +86,7 @@ class Steps:
 
       def on_progress(processed, total):
         next_progress = 100 * (processed/total)
-        next_progress = next_progress if __TTY else int(next_progress)
+        next_progress = next_progress if TTY else int(next_progress)
         if last_progress != next_progress:
           last_progress = next_progress
           progress('{1:.2f}% of {0}'.format(total, next_progress))
@@ -149,7 +149,7 @@ class Steps:
 
       def on_progress(processed, total):
         next_progress = 100 * (processed/total)
-        next_progress = next_progress if __TTY else int(next_progress)
+        next_progress = next_progress if TTY else int(next_progress)
         if last_progress != next_progress:
           last_progress = next_progress
           progress('{1:.2f}% of {0}'.format(total, next_progress))
@@ -209,7 +209,7 @@ class Steps:
 
       def on_progress(processed, total):
         next_progress = 100 * (processed/total)
-        next_progress = next_progress if __TTY else int(next_progress)
+        next_progress = next_progress if TTY else int(next_progress)
         if last_progress != next_progress:
           last_progress = next_progress
           progress('{1:.2f}% of {0}'.format(total, next_progress))

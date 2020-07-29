@@ -14,7 +14,7 @@ else:
 
 import docker
 
-from utils import progress, success, debug, __TTY
+from utils import progress, success, debug, TTY
 
 from systemd.vault_unit import VaultUnit
 from systemd.vault_rest import VaultRest
@@ -94,11 +94,11 @@ class ApplianceManager(object):
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      if self.image_exists('openbank/{0}'.format(service), 'v{0}-master'.format(version)):
-        image = 'openbank/{0}:v{1}-master'.format(service, version)
+      if self.image_exists('docker.io/openbank/{0}'.format(service), 'v{0}-master'.format(version)):
+        image = 'docker.io/openbank/{0}:v{1}-master'.format(service, version)
         package = '{0}_{1}_{2}'.format(service, version, self.arch)
       else:
-        image = 'openbank/{0}:v{1}'.format(service, version)
+        image = 'docker.io/openbank/{0}:v{1}'.format(service, version)
         package = '{0}_{1}_{2}'.format(service, version, self.arch)
 
       scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /tmp/packages/{2}.deb'.format(image, package, service))
@@ -110,7 +110,7 @@ class ApplianceManager(object):
           f.write("%s\n" % item)
 
       image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=False, tag='perf_artifacts-scratch')
-      if __TTY:
+      if TTY:
         for chunk in stream:
           if 'stream' in chunk:
             for line in chunk['stream'].splitlines():

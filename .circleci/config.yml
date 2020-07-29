@@ -8,11 +8,11 @@ workflows:
 
   commit:
     jobs:
-      - performance
+      - performance-test
       - blackbox-test-amd64
       - report:
           requires:
-            - performance
+            - performance-test
 
   rolling_contract:
     triggers:
@@ -34,10 +34,10 @@ workflows:
               only:
                 - master
     jobs:
-      - performance
+      - performance-test
       - report:
           requires:
-            - performance
+            - performance-test
 
 # ---------------------------------------------------------------------------- #
 
@@ -80,7 +80,7 @@ jobs:
 
   # -------------------------------------------------------------------------- #
 
-  performance:
+  performance-test:
     executor: machine
     working_directory: /home/circleci/project
     steps:

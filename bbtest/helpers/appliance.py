@@ -95,7 +95,7 @@ class ApplianceHelper(object):
       version, meta = self.get_latest_version(service)
       assert version, 'missing version for {}'.format(service)
 
-      image = 'openbank/{}:v{}'.format(service, (version+'-'+meta) if meta else version)
+      image = 'docker.io/openbank/{}:v{}'.format(service, (version+'-'+meta) if meta else version)
       package = '/opt/artifacts/{}_{}_{}.deb'.format(service, version, self.arch)
       target = '/tmp/packages/{}.deb'.format(service)
 

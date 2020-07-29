@@ -21,7 +21,7 @@ this = sys.modules[__name__]
 
 this.__progress_running = False
 
-__TTY = sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false')
+TTY = sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false')
 
 
 def interrupt_stdout() -> None:
@@ -48,7 +48,7 @@ def info(msg) -> None:
   sys.stdout.flush()
 
 def progress(msg) -> None:
-  if __TTY:
+  if TTY:
     this.__progress_running = True
     sys.stdout.write('\033[94m        | {0}\033[K\r'.format(msg.rstrip()))
     sys.stdout.flush()
