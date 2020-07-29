@@ -94,7 +94,7 @@ jobs:
             docker-compose down -v
           no_output_timeout: 2h
       - store_artifacts:
-          path: /home/circleci/project/reports/perf-tests/metrics
+          path: /home/circleci/project/reports/perf-tests
           destination: reports
       - persist_to_workspace:
           root: /home/circleci/project/reports/perf-tests

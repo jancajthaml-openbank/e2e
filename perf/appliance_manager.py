@@ -240,3 +240,12 @@ class ApplianceManager(object):
       for name in list(self.units):
         del self[name]
 
+    self.collect_logs()
+
+  def collect_logs(self):
+    (code, result) = execute(['journalctl', '-o', 'cat', '--no-pager'], silent=True)
+    if code == 0:
+      with open('reports/perf-tests/logs/journal.log', 'w') as fd:
+        fd.write(result)
+
+
