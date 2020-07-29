@@ -55,20 +55,19 @@ def eventually_ready(manager):
         assert unit.is_healthy, '{} is not healthy {}'.format(unit)
     assert manager.is_healthy, 'manager is not healthy'
 
+def cleanup():
+  debug("asserting empty data")
+
+  for path in [
+    '/data'
+  ]:
+    os.system('mkdir -p {}'.format(path))
+    os.system('rm -rf {}/*'.format(path))
+
 def main():
   code = 0
 
   debug("starting")
-
-  debug("asserting empty data and metrics")
-
-  for path in [
-    '/data',
-    'reports/perf-tests/metrics',
-    'reports/perf-tests/logs'
-  ]:
-    os.system('mkdir -p {}'.format(path))
-    os.system('rm -rf {}/*'.format(path))
 
   info("preparing appliance")
   manager = ApplianceManager()
@@ -87,6 +86,7 @@ def main():
       'LOG_LEVEL': 'ERROR'
     })
     manager.teardown()
+    cleanup()
 
     info("start tests")
 
@@ -113,6 +113,7 @@ def main():
       debug("scenario finished")
 
       manager.teardown()
+      cleanup()
 
     with timeit('get accounts scenario'):
       total = 1000
@@ -142,6 +143,7 @@ def main():
       debug("scenario finished")
 
       manager.teardown()
+      cleanup()
 
     ############################################################################
 
@@ -167,6 +169,7 @@ def main():
       debug("scenario finished")
 
       manager.teardown()
+      cleanup()
 
     ############################################################################
 
