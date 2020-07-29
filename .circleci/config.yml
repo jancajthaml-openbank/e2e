@@ -59,6 +59,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
+      - run: docker system prune -f
       - run: docker pull docker.io/jancajthaml/bbtest:amd64
       - run: docker-compose build postgres
       - run:
@@ -81,6 +82,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
+      - run: docker system prune -f
       - run: docker pull docker.io/jancajthaml/bbtest:amd64
       - run:
           name: Run performance tests
