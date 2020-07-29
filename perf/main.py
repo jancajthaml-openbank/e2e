@@ -56,13 +56,8 @@ def eventually_ready(manager):
     assert manager.is_healthy, 'manager is not healthy'
 
 def cleanup():
-  debug("asserting empty data")
-
-  for path in [
-    '/data'
-  ]:
-    os.system('mkdir -p {}'.format(path))
-    os.system('rm -rf {}/*'.format(path))
+  debug("clearing primary storage")
+  os.system('rm -rf /data/*')
 
 def main():
   code = 0
@@ -158,7 +153,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 50000
+      total = 30000
 
       debug("bootstraping appliance")
       manager.bootstrap()
