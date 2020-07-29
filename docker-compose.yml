@@ -8,6 +8,8 @@ services:
 
   postgres:
     hostname: postgres
+    tmpfs:
+      - /tmp
     build:
       dockerfile: Dockerfile
       context: bbtest/postgres

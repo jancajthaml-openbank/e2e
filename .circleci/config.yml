@@ -48,10 +48,6 @@ executors:
       image: circleci/classic:201808-01
       docker_layer_caching: false
 
-  git:
-    docker:
-      - image: docker.io/alpine/git
-
 # ---------------------------------------------------------------------------- #
 
 jobs:
@@ -106,7 +102,7 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   report:
-    executor: git
+    executor: machine
     working_directory: /home/circleci/project
     steps:
       - attach_workspace:
@@ -114,13 +110,10 @@ jobs:
       - run:
           name: Regenerate reports
           command: |
-            METRICS_PATH=/home/circleci/project/metrics
-
-            if [ ! -d ${METRICS_PATH} ] ; then
+            if [ ! -d /home/circleci/project/metrics ] ; then
+              (>&2 echo "no metrics to generate report from")
               exit 1
             fi
-
-            ssh-keyscan github.com >> ~/.ssh/known_hosts
 
             git config --global user.email "jan.cajthaml@gmail.com"
             git config --global user.name "CircleCI e2e rolling update"
@@ -131,7 +124,8 @@ jobs:
               rm -rf health-check/reports/*
             fi
 
-            cp -v ${METRICS_PATH}/* health-check/reports/
+            cp -v /home/circleci/project/metrics/* health-check/reports/
+
             cd health-check
 
             pyenv global 3.6.5
@@ -146,7 +140,7 @@ jobs:
             git checkout --orphan rolling
 
             git add -A
-            git commit -am "auto-commit performance result update"
+            git commit -am "auto-commit cicleCI ${CIRCLE_STAGE}"
             git push -f origin rolling
             git branch -D master
             git branch -m master

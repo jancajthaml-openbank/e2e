@@ -9,7 +9,11 @@ export COMPOSE_PROJECT_NAME = e2e
 .PHONY: armhf
 
 .PHONY: all
-all: bbtest perf
+all: bootstrap bbtest perf
+
+.PHONY: bootstrap
+bootstrap:
+	@docker-compose build
 
 .PHONY: bbtest
 bbtest:
