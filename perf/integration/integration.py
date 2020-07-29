@@ -82,7 +82,7 @@ class Integration(object):
     for _ in range(number_of_transfers):
       transfers.append(Integration.prepare_transfer(tenant_name, credit_account_choice, debit_acount_choice))
 
-    url = 'https://127.0.0.1:4401/transaction/' + tenant_name
+    url = 'https://127.0.0.1:4401/transaction/{}'.format(tenant_name)
     body = {
       "transfers": transfers
     }
@@ -90,12 +90,12 @@ class Integration(object):
     return (url, body, json.dumps(body), tenant_name)
 
   def prepare_get_balance(self, tenant_name, account_name, reference):
-    url = 'https://127.0.0.1:4400/account/' + tenant_name + '/' + account_name
+    url = 'https://127.0.0.1:4400/account/{}/{}'.format(tenant_name, account_name)
 
     return (url, reference, tenant_name)
 
   def prepare_create_account(self, tenant_name, account_name, is_ballance_check):
-    url = 'https://127.0.0.1:4400/account/' + tenant_name
+    url = 'https://127.0.0.1:4400/account/{}'.format(tenant_name)
     body = {
       "name": account_name,
       "format": "perf",

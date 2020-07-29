@@ -22,6 +22,7 @@ from systemd.ledger_unit import LedgerUnit
 from systemd.ledger_rest import LedgerRest
 from systemd.lake import Lake
 from helpers.shell import execute
+from helpers.eventually import eventually
 
 import platform
 import tarfile
@@ -235,4 +236,21 @@ class ApplianceManager(object):
     if code == 0:
       with open('reports/perf-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
+
+  @property
+  def is_healthy(self) -> bool:
+    try:
+      @eventually(10)
+      def vault_rest_healthy():
+        assert self.http.request('GET', 'https://127.0.0.1:4400/health').status == 200
+
+      @eventually(10)
+      def ledger_rest_healthy():
+        assert self.http.request('GET', 'https://127.0.0.1:4401/health').status == 200
+
+      vault_rest_healthy()
+      ledger_rest_healthy()
+    except:
+      return False
+    return True
 

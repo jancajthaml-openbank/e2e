@@ -53,6 +53,7 @@ def eventually_ready(manager):
     for units in manager.values():
       for unit in units:
         assert unit.is_healthy, '{} is not healthy {}'.format(unit)
+    assert manager.is_healthy, 'manager is not healthy'
 
 def main():
   code = 0
