@@ -106,7 +106,7 @@ class ApplianceHelper(object):
       with open(temp.name, 'w') as fd:
         fd.write(str(os.linesep).join(scratch_docker_cmd))
 
-      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=False, tag='bbtest_artifacts-scratch')
+      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=True, tag='bbtest_artifacts-scratch')
       for chunk in stream:
         if not 'stream' in chunk:
           continue

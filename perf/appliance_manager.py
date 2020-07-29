@@ -36,11 +36,6 @@ secure_random = random.SystemRandom()
 
 class ApplianceManager(object):
 
-  def image_exists(self, image, tag):
-    uri = 'https://index.docker.io/v1/repositories/{0}/tags/{1}'.format(image, tag)
-    r = self.http.request('GET', uri)
-    return r.status == 200
-
   def get_latest_service_version(self, service):
     headers = {
       'User-Agent': 'https://api.github.com/meta'
@@ -94,22 +89,17 @@ class ApplianceManager(object):
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      if self.image_exists('docker.io/openbank/{0}'.format(service), 'v{0}-master'.format(version)):
-        image = 'docker.io/openbank/{0}:v{1}-master'.format(service, version)
-        package = '{0}_{1}_{2}'.format(service, version, self.arch)
-      else:
-        image = 'docker.io/openbank/{0}:v{1}'.format(service, version)
-        package = '{0}_{1}_{2}'.format(service, version, self.arch)
+      image = 'docker.io/openbank/{}:v{}-master'.format(service, version)
+      package = '{}_{}_{}'.format(service, version, self.arch)
 
       scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /tmp/packages/{2}.deb'.format(image, package, service))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
-      with open(temp.name, 'w') as f:
-        for item in scratch_docker_cmd:
-          f.write("%s\n" % item)
+      with open(temp.name, 'w') as fd:
+        fd.write(str(os.linesep).join(scratch_docker_cmd))
 
-      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=False, tag='perf_artifacts-scratch')
+      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=True, tag='perf_artifacts-scratch')
       if TTY:
         for chunk in stream:
           if 'stream' in chunk:
@@ -164,9 +154,7 @@ class ApplianceManager(object):
       assert code == 0, str(result)
       success('installed {} {}'.format(service, version))
 
-    (code, result) = execute([
-      "systemctl", "list-units", "--no-legend"
-    ], silent=True)
+    (code, result) = execute(["systemctl", "list-units", "--no-legend"], silent=True)
     assert code == 0, str(result)
 
     self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in result.splitlines()])
@@ -247,5 +235,4 @@ class ApplianceManager(object):
     if code == 0:
       with open('reports/perf-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
-
 
