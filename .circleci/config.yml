@@ -48,10 +48,6 @@ executors:
       image: circleci/classic:201808-01
       docker_layer_caching: false
 
-  bbtest:
-    docker:
-      - image: docker.io/jancajthaml/bbtest:amd64
-
 # ---------------------------------------------------------------------------- #
 
 jobs:
@@ -59,14 +55,17 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   blackbox-test-amd64:
-    executor: bbtest
+    executor: machine
     working_directory: /mnt/ramdisk
     steps:
       - checkout
+      - run: docker pull docker.io/jancajthaml/bbtest:amd64
       - run:
           name: Run blackbox tests
           command: |
-            python3 /mnt/ramdisk/bbtest/main.py
+            docker-compose up -d bbtest-amd64
+            docker exec -t $(docker-compose ps -q bbtest-amd64) python3 /opt/app/bbtest/main.py
+            docker-compose down -v
           no_output_timeout: 5m
       - store_test_results:
           path: /mnt/ramdisk/reports/blackbox-tests/junit
