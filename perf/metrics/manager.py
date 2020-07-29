@@ -11,10 +11,10 @@ class MetricsManager():
     self.__manager = manager
 
   def persist(self, label) -> None:
-    with open('{0}/{1}.json'.format('/reports/perf_metrics', label), mode='w', encoding='ascii') as f:
+    with open('reports/perf-tests/metrics/{}.json'.format(label), mode='w', encoding='ascii') as fd:
       store = {}
       for units in self.__manager.values():
         for unit in units:
           store.update(unit.get_metrics())
 
-      json.dump(store, f, indent=4, sort_keys=True)
+      json.dump(store, fd, indent=4, sort_keys=True)

@@ -39,23 +39,9 @@ class LedgerUnit(Unit):
     @eventually(5)
     def eventual_teardown():
       (code, result) = execute([
-        'journalctl', '-o', 'cat', '-u', 'ledger-unit@{0}.service'.format(self._tenant), '--no-pager'
-      ], silent=True)
-      if code == 0 and result:
-        with open('/reports/perf_logs/ledger-unit-{0}.log'.format(self._tenant), 'w') as f:
-          f.write(result)
-
-      (code, result) = execute([
         'systemctl', 'stop', 'ledger-unit@{0}'.format(self._tenant)
       ], silent=True)
       assert code == 0, str(result)
-
-      (code, result) = execute([
-        'journalctl', '-o', 'cat', '-u', 'ledger-unit@{0}.service'.format(self._tenant), '--no-pager'
-      ], silent=True)
-      if code == 0 and result:
-        with open('/reports/perf_logs/ledger-unit-{0}.log'.format(self._tenant), 'w') as f:
-          f.write(result)
 
     eventual_teardown()
 

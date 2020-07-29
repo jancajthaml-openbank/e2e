@@ -5,7 +5,7 @@ import os
 import sys
 
 from functools import partial
-from utils import debug, warn, info, interrupt_stdout, clear_dir, timeit
+from utils import debug, warn, info, interrupt_stdout, timeit
 from metrics.manager import MetricsManager
 from appliance_manager import ApplianceManager
 
@@ -53,18 +53,26 @@ def eventually_ready(manager):
     for units in manager.values():
       for unit in units:
         assert unit.is_healthy, '{} is not healthy {}'.format(unit)
+    assert manager.is_healthy, 'manager is not healthy'
+
+def cleanup():
+  debug("clearing primary storage")
+  os.system('rm -rf /data/*')
 
 def main():
   code = 0
 
   debug("starting")
 
-  debug("asserting empty journal, logs and metrics")
+  debug("asserting empty data and metrics")
 
-  # fixme in parallel please
-  clear_dir("/data")
-  clear_dir("/reports/perf_logs")
-  clear_dir("/reports/perf_metrics")
+  for path in [
+    '/data',
+    'reports/perf-tests/metrics',
+    'reports/perf-tests/logs'
+  ]:
+    os.system('mkdir -p {}'.format(path))
+    os.system('rm -rf {}/*'.format(path))
 
   info("preparing appliance")
   manager = ApplianceManager()
@@ -83,13 +91,14 @@ def main():
       'LOG_LEVEL': 'ERROR'
     })
     manager.teardown()
+    cleanup()
 
     info("start tests")
 
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 200000
+      total = 100000
 
       debug("bootstraping appliance")
       manager.bootstrap()
@@ -109,9 +118,10 @@ def main():
       debug("scenario finished")
 
       manager.teardown()
+      cleanup()
 
     with timeit('get accounts scenario'):
-      total = 1000
+      total = 2000
 
       debug("bootstraping appliance")
       manager.bootstrap()
@@ -138,11 +148,12 @@ def main():
       debug("scenario finished")
 
       manager.teardown()
+      cleanup()
 
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 50000
+      total = 20000
 
       debug("bootstraping appliance")
       manager.bootstrap()
@@ -163,6 +174,7 @@ def main():
       debug("scenario finished")
 
       manager.teardown()
+      cleanup()
 
     ############################################################################
 

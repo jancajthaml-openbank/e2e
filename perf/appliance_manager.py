@@ -14,7 +14,7 @@ else:
 
 import docker
 
-from utils import progress, success, debug
+from utils import progress, success, debug, TTY
 
 from systemd.vault_unit import VaultUnit
 from systemd.vault_rest import VaultRest
@@ -22,6 +22,7 @@ from systemd.ledger_unit import LedgerUnit
 from systemd.ledger_rest import LedgerRest
 from systemd.lake import Lake
 from helpers.shell import execute
+from helpers.eventually import eventually
 
 import platform
 import tarfile
@@ -35,11 +36,6 @@ secure_random = random.SystemRandom()
 
 
 class ApplianceManager(object):
-
-  def image_exists(self, image, tag):
-    uri = 'https://index.docker.io/v1/repositories/{0}/tags/{1}'.format(image, tag)
-    r = self.http.request('GET', uri)
-    return r.status == 200
 
   def get_latest_service_version(self, service):
     headers = {
@@ -84,96 +80,82 @@ class ApplianceManager(object):
     self.versions = dict()
     self.units = dict()
     self.services = list()
-    self.docker = docker.APIClient(base_url='unix://var/run/docker.sock')
+    self.docker = docker.from_env()
 
-    try:
-      os.mkdir("/opt/artifacts")
-    except OSError as exc:
-      if exc.errno != errno.EEXIST:
-        raise
-      pass
+    os.makedirs('/tmp/packages', exist_ok=True)
 
     self.fetch_versions()
 
-    pulls = []
-
+    failure = None
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      if self.image_exists('openbank/{0}'.format(service), 'v{0}-master'.format(version)):
-        image = 'openbank/{0}:v{1}-master'.format(service, version)
-        pulls.append(image)
-        package = '{0}_{1}_{2}'.format(service, version, self.arch)
-      else:
-        image = 'openbank/{0}:v{1}'.format(service, version)
-        pulls.append(image)
-        package = '{0}_{1}_{2}'.format(service, version, self.arch)
+      image = 'docker.io/openbank/{}:v{}-master'.format(service, version)
+      package = '{}_{}_{}'.format(service, version, self.arch)
 
-      scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /opt/artifacts/{2}.deb'.format(image, package, service))
-
-    for image in pulls:
-      execute(['docker', 'rmi', '-f', image], silent=True)
-      (code, result) = execute(['docker', 'pull', image], silent=True)
-      assert code == 0, str(result)
+      scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /tmp/packages/{2}.deb'.format(image, package, service))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
     try:
-      with open(temp.name, 'w') as f:
-        for item in scratch_docker_cmd:
-          f.write("%s\n" % item)
+      with open(temp.name, 'w') as fd:
+        fd.write(str(os.linesep).join(scratch_docker_cmd))
 
-      for chunk in self.docker.build(fileobj=temp, pull=False, rm=True, decode=True, tag='perf_artifacts-scratch'):
-        if 'stream' in chunk:
-          for line in chunk['stream'].splitlines():
-            if len(line):
-              progress('docker {0}'.format(line.strip('\r\n')))
+      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=True, tag='perf_artifacts-scratch')
+      if TTY:
+        for chunk in stream:
+          if 'stream' in chunk:
+            for line in chunk['stream'].splitlines():
+              if len(line):
+                progress('docker {0}'.format(line.rstrip()))
 
-      scratch = self.docker.create_container('perf_artifacts-scratch', '/bin/true')
-
-      if scratch['Warnings']:
-        raise Exception(scratch['Warnings'])
+      scratch = self.docker.containers.run('perf_artifacts-scratch', ['/bin/true'], detach=True)
 
       for service in ['lake', 'vault', 'ledger']:
-        tar_name = '/opt/artifacts/{0}.tar'.format(service)
-        tar_stream, stat = self.docker.get_archive(scratch['Id'], '/opt/artifacts/{0}.deb'.format(service))
-        with open(tar_name, 'wb') as destination:
-          total_bytes = 0
-          for chunk in tar_stream:
-            total_bytes += len(chunk)
-            progress('extracting {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
-            destination.write(chunk)
+        tar_name = '/tmp/packages/{0}.tar'.format(service)
+        bits, stat = scratch.get_archive('/tmp/packages/{}.deb'.format(service))
+
+        if TTY:
+          with open(tar_name, 'wb') as fd:
+            total_bytes = 0
+            for chunk in bits:
+              total_bytes += len(chunk)
+              progress('extracting {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
+              fd.write(chunk)
+        else:
+          progress('extracting {0}'.format(stat['name']))
+          with open(tar_name, 'wb') as fd:
+            for chunk in bits:
+              fd.write(chunk)
+
         archive = tarfile.TarFile(tar_name)
-        archive.extract('{0}.deb'.format(service), '/opt/artifacts')
+        archive.extract('{0}.deb'.format(service), '/tmp/packages')
         os.remove(tar_name)
-
-        (code, result) = execute([
-          'dpkg', '-c', '/opt/artifacts/{}.deb'.format(service)
-        ], silent=True)
-        if code != 0:
-          raise RuntimeError('code: {}, stdout: [{}], stderr: [{}]'.format(code, result, error))
-
-        with open('/reports/perf_logs/debian.{}.txt'.format(service), 'w') as f:
-          f.write(result)
 
         debug('downloaded {0}'.format(stat['name']))
 
-      self.docker.remove_container(scratch['Id'])
+      scratch.remove()
+    except Exception as ex:
+      failure = ex
     finally:
       temp.close()
-      self.docker.remove_image('perf_artifacts-scratch', force=True)
+      try:
+        self.docker.images.remove('perf_artifacts-scratch', force=True)
+      except:
+        pass
+
+    if failure:
+      raise failure
 
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      progress('installing {0} {1}'.format(service, version))
+      progress('installing {} {}'.format(service, version))
       (code, result) = execute([
-        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/opt/artifacts/{}.deb'.format(service)
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
       ], silent=True)
       assert code == 0, str(result)
-      success('installed {0} {1}'.format(service, version))
+      success('installed {} {}'.format(service, version))
 
-    (code, result) = execute([
-      "systemctl", "list-units", "--no-legend"
-    ], silent=True)
+    (code, result) = execute(["systemctl", "list-units", "--no-legend"], silent=True)
     assert code == 0, str(result)
 
     self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in result.splitlines()])
@@ -246,4 +228,29 @@ class ApplianceManager(object):
     else:
       for name in list(self.units):
         del self[name]
+
+    self.collect_logs()
+
+  def collect_logs(self):
+    (code, result) = execute(['journalctl', '-o', 'cat', '--no-pager'], silent=True)
+    if code == 0:
+      with open('reports/perf-tests/logs/journal.log', 'w') as fd:
+        fd.write(result)
+
+  @property
+  def is_healthy(self) -> bool:
+    try:
+      @eventually(10)
+      def vault_rest_healthy():
+        assert self.http.request('GET', 'https://127.0.0.1:4400/health').status == 200
+
+      @eventually(10)
+      def ledger_rest_healthy():
+        assert self.http.request('GET', 'https://127.0.0.1:4401/health').status == 200
+
+      vault_rest_healthy()
+      ledger_rest_healthy()
+    except:
+      return False
+    return True
 
