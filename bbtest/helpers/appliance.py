@@ -64,7 +64,6 @@ class ApplianceHelper(object):
       return (None, None)
 
     parts = latest.get('id', '').split('-')
-
     version = parts[0] or None
 
     if len(parts) > 1:
