@@ -37,15 +37,60 @@ secure_random = random.SystemRandom()
 
 class ApplianceManager(object):
 
-  def get_latest_service_version(self, service):
-    headers = {
-      'User-Agent': 'https://api.github.com/meta'
-    }
+  def image_exists(self, image, tag):
+    uri = 'https://index.docker.io/v1/repositories/{0}/tags/{1}'.format(image, tag)
+    r = self.http.request('GET', uri)
+    return r.status == 200
 
-    if 'GITHUB_RELEASE_TOKEN' in os.environ:
-      headers['Authorization'] = 'token {0}'.format(os.environ['GITHUB_RELEASE_TOKEN'])
+  def get_latest_service_docker_hub_version(self, service):
+    uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags/".format(service)
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    request = urllib.request.Request(method='GET', url=uri)
+    request.add_header('Accept', 'application/json')
+    response = urllib.request.urlopen(request, timeout=10, context=ctx)
+
+    if not response.status == 200:
+      return None
+
+    body = json.loads(response.read().decode('utf-8')).get('results', [])
+    tags = []
+
+    for entry in body:
+      tags.append({
+        'ts': datetime.datetime.strptime(entry['last_updated'], "%Y-%m-%dT%H:%M:%S.%fZ"),
+        'id': entry['name'],
+      })
+
+    latest = max(tags, key=lambda x: x['ts'])
+    if not latest:
+      return None
+
+    parts = latest.get('id', '').split('-')
+    version = parts[0] or None
+
+    if version and version.startswith('v'):
+      version = version[1:]
+
+    if version.startswith('v'):
+      version = version[len('v'):]
+
+    return version
+
+  def get_latest_service_github_version(self, service):
+    headers = dict()
+
+    if 'GITHUB_RELEASE_TOKEN' in os.environ and os.environ['GITHUB_RELEASE_TOKEN'].strip():
+      headers['Authorization'] = 'token {0}'.format(os.environ['GITHUB_RELEASE_TOKEN'].strip())
+      headers['User-Agent'] = 'https://api.github.com/meta'
+    else:
+      headers['User-Agent'] = 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36'
 
     uri = 'https://api.github.com/repos/jancajthaml-openbank/{0}/releases/latest'.format(service)
+
     r = self.http.request('GET', uri, headers=headers)
 
     data = r.data.decode('utf-8')
@@ -59,9 +104,23 @@ class ApplianceManager(object):
 
     return version
 
-  def fetch_versions(self):
-    self.http = urllib3.PoolManager()
+  def get_latest_service_version(self, service):
+    version = None
+    exceptions = list()
 
+    try:
+      return self.get_latest_service_github_version(service)
+    except Exception as ex:
+      exceptions.append(str(ex))
+
+    try:
+      return self.get_latest_service_docker_hub_version(service)
+    except Exception as ex:
+      exceptions.append(str(ex))
+
+    raise Exception(str(os.linesep).join(exceptions))
+
+  def fetch_versions(self):
     for service in ['lake', 'vault', 'ledger']:
       version = self.get_latest_service_version(service)
       self.versions[service] = version
@@ -75,12 +134,12 @@ class ApplianceManager(object):
 
   def __init__(self):
     self.arch = self.get_arch()
-
     self.store = dict()
     self.versions = dict()
     self.units = dict()
     self.services = list()
     self.docker = docker.from_env()
+    self.http = urllib3.PoolManager()
 
     os.makedirs('/tmp/packages', exist_ok=True)
 
@@ -90,7 +149,10 @@ class ApplianceManager(object):
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      image = 'docker.io/openbank/{}:v{}-master'.format(service, version)
+      if self.image_exists('openbank/{0}'.format(service), 'v{0}-master'.format(version)):
+        image = 'docker.io/openbank/{}:v{}-master'.format(service, version)
+      else:
+        image = 'docker.io/openbank/{}:v{}'.format(service, version)
       package = '{}_{}_{}'.format(service, version, self.arch)
 
       scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /tmp/packages/{2}.deb'.format(image, package, service))
