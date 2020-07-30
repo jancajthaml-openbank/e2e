@@ -69,6 +69,8 @@ class ApplianceHelper(object):
 
     if len(parts) > 1:
       meta = 'master'
+    else:
+      meta = None
 
     if version and version.startswith('v'):
       version = version[1:]
