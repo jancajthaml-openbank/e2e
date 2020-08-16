@@ -22,7 +22,10 @@ CREATE TABLE account
   last_syn_event    INTEGER,
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-  FOREIGN KEY (tenant) REFERENCES tenant(name),
+  FOREIGN KEY (tenant) REFERENCES tenant(name)
+                       ON DELETE RESTRICT
+                       ON UPDATE NO ACTION,
+
   PRIMARY KEY (tenant, name)
 );
 
@@ -33,6 +36,7 @@ CREATE TABLE transfer
   tenant            VARCHAR(50) NOT NULL,
   transaction       VARCHAR(100) NOT NULL,
   transfer          VARCHAR(100) NOT NULL,
+  status            SMALLINT NOT NULL,
   credit_tenant     VARCHAR(50) NOT NULL,
   credit_name       VARCHAR(50) NOT NULL,
   debit_tenant      VARCHAR(50) NOT NULL,
@@ -42,9 +46,18 @@ CREATE TABLE transfer
   value_date        TIMESTAMPTZ NOT NULL,
   updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
 
-  FOREIGN KEY (tenant) REFERENCES tenant(name),
-  FOREIGN KEY (credit_tenant, credit_name) REFERENCES account(tenant, name),
-  FOREIGN KEY (debit_tenant, debit_name) REFERENCES account(tenant, name),
+  FOREIGN KEY (tenant) REFERENCES tenant(name)
+                       ON DELETE RESTRICT
+                       ON UPDATE NO ACTION,
+
+  FOREIGN KEY (credit_tenant, credit_name) REFERENCES account(tenant, name)
+                                           ON DELETE RESTRICT
+                                           ON UPDATE NO ACTION,
+
+  FOREIGN KEY (debit_tenant, debit_name) REFERENCES account(tenant, name)
+                                         ON DELETE RESTRICT
+                                         ON UPDATE NO ACTION,
+
   PRIMARY KEY (tenant, transaction, transfer)
 );
 
@@ -52,17 +65,38 @@ GRANT ALL PRIVILEGES ON TABLE transfer TO postgres;
 
 CREATE VIEW account_balance_change AS (
   SELECT
-    account.tenant,
-    account.name,
-    date_trunc('day', transfer.value_date) as value_date,
-    SUM(transfer.amount) as amount
-  FROM account
-  INNER JOIN transfer
-  ON
+    c.tenant,
+    c.name,
+    c.value_date,
+    SUM(c.amount) as amount
+  FROM
   (
-    (account.tenant = transfer.credit_tenant AND account.name = transfer.credit_name) OR
-    (account.tenant = transfer.debit_tenant AND account.name = transfer.debit_name)
-  )
+    (
+      SELECT
+        account.tenant,
+        account.name,
+        date_trunc('day', transfer.value_date) AS value_date,
+        transfer.amount
+      FROM account
+      INNER JOIN transfer
+      ON
+        transfer.status = 1 AND
+        (account.tenant = transfer.credit_tenant AND account.name = transfer.credit_name)
+    )
+    UNION ALL
+    (
+      SELECT
+        account.tenant,
+        account.name,
+        date_trunc('day', transfer.value_date) AS value_date,
+        -transfer.amount
+      FROM account
+      INNER JOIN transfer
+      ON
+        transfer.status = 1 AND
+        (account.tenant = transfer.debit_tenant AND account.name = transfer.debit_name)
+    )
+  ) AS c
   GROUP BY
-    (account.tenant, account.name, transfer.value_date)
+    (c.tenant, c.name, c.value_date)
 );
