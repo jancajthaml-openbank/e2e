@@ -1,4 +1,4 @@
-Feature: Search API test
+Feature: Data Warehouse API test
 
   Scenario: setup
     Given appliance is running
