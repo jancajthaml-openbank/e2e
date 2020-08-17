@@ -80,7 +80,7 @@ class ApplianceHelper(object):
     os.makedirs("/etc/data-warehouse/conf.d", exist_ok=True)
     with open('/etc/data-warehouse/conf.d/init.conf', 'w') as fd:
       fd.write(str(os.linesep).join([
-        "DATA_WAREHOUSE_LOG_LEVEL=ERROR",
+        "DATA_WAREHOUSE_LOG_LEVEL=DEBUG",
         "DATA_WAREHOUSE_HTTP_PORT=8080",
         "DATA_WAREHOUSE_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank",
         "DATA_WAREHOUSE_PRIMARY_STORAGE_PATH=/data"
