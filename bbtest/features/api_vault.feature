@@ -11,9 +11,6 @@ Feature: Vault API test
     Then HTTP response is
       | key    | value |
       | status | 404   |
-      """
-      {}
-      """
 
   Scenario: Account API - account created
     When I request HTTP https://127.0.0.1:4400/account/APIACC
@@ -30,9 +27,6 @@ Feature: Vault API test
     Then HTTP response is
       | key    | value |
       | status | 200   |
-      """
-      {}
-      """
 
   Scenario: Account API - request for account of non-existant vault
     When I request HTTP https://127.0.0.1:4400/account/nothing/xxx
@@ -41,9 +35,6 @@ Feature: Vault API test
     Then HTTP response is
       | key    | value |
       | status | 504   |
-      """
-      {}
-      """
 
   Scenario: Account API - account already exists
     When I request HTTP https://127.0.0.1:4400/account/APIACC
@@ -60,9 +51,6 @@ Feature: Vault API test
     Then HTTP response is
       | key    | value |
       | status | 200   |
-      """
-      {}
-      """
 
     When I request HTTP https://127.0.0.1:4400/account/APIACC
       | key    | value |
@@ -78,9 +66,6 @@ Feature: Vault API test
     Then HTTP response is
       | key    | value |
       | status | 409   |
-      """
-      {}
-      """
 
   Scenario: Account API - get account balance
     When I request HTTP https://127.0.0.1:4400/account/APIACC/xxx

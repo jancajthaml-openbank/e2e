@@ -24,7 +24,6 @@ services:
       CI: ${CI:-false}
     tmpfs:
       - /data
-      - /tmp
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - /var/lib/docker/containers:/var/lib/docker/containers:rw
@@ -44,7 +43,6 @@ services:
       CI: ${CI:-false}
     tmpfs:
       - /data
-      - /tmp
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - /var/lib/docker/containers:/var/lib/docker/containers:rw

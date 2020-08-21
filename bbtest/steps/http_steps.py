@@ -19,11 +19,12 @@ def onboard_unit(context, service, tenant):
   }[service], tenant)
 
   response = context.http.request('POST', uri, headers={'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
-  assert response.status == 200
+  assert response.status == 200, 'expected status 200 got {}'.format(response.status)
 
   @eventually(5)
   def wait_for_appliance_up():
-    assert context.appliance.running()
+    assert context.appliance.running(), 'appliance did not start within 5 seconds'
+
   wait_for_appliance_up()
 
 
@@ -90,14 +91,19 @@ def perform_http_request(context, uri):
 
   try:
     if context.text:
-      response = context.http.request(options['method'], uri, body=context.text.encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
+      response = context.http.request(options['method'], uri, body=context.text.encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=3))
     else:
-      response = context.http.request(options['method'], uri, headers={ 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
+      response = context.http.request(options['method'], uri, headers={ 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=3))
     context.http_response['status'] = str(response.status)
     context.http_response['body'] = response.data.decode('utf-8')
-  except urllib3.exceptions.MaxRetryError:
+    try:
+      context.http_response['content-type'] = response.info()['Content-Type']
+    except KeyError:
+      context.http_response['content-type'] = 'text/plain'
+  except (urllib3.exceptions.MaxRetryError, ConnectionRefusedError):
     context.http_response['status'] = '504'
-    context.http_response['body'] = '{}'
+    context.http_response['body'] = ''
+    context.http_response['content-type'] = 'text/plain'
 
 
 @then('HTTP response is')
@@ -114,28 +120,35 @@ def check_http_response(context):
   if 'status' in options:
     assert response['status'] == options['status'], 'expected status {} actual {}'.format(options['status'], response['status'])
 
-  if not context.text:
-    return
+  if context.text:
+    def diff(path, a, b):
+      if type(a) == list:
+        assert type(b) == list, 'types differ at {} expected: {} actual: {}'.format(path, list, type(b))
+        for idx, item in enumerate(a):
+          assert item in b, 'value {} was not found at {}[{}]'.format(item, path, idx)
+          diff('{}[{}]'.format(path, idx), item, b[b.index(item)])
+      elif type(b) == dict:
+        assert type(b) == dict, 'types differ at {} expected: {} actual: {}'.format(path, dict, type(b))
+        for k, v in a.items():
+          assert k in b
+          diff('{}.{}'.format(path, k), v, b[k])
+      else:
+        assert type(a) == type(b), 'types differ at {} expected: {} actual: {}'.format(path, type(a), type(b))
+        assert a == b, 'values differ at {} expected: {} actual: {}'.format(path, a, b)
 
-  def diff(path, a, b):
-    if type(a) == list:
-      assert type(b) == list, 'types differ at {} expected: {} actual: {}'.format(path, list, type(b))
-      for idx, item in enumerate(a):
-        assert item in b, 'value {} was not found at {}[{}]'.format(item, path, idx)
-        diff('{}[{}]'.format(path, idx), item, b[b.index(item)])
-    elif type(b) == dict:
-      assert type(b) == dict, 'types differ at {} expected: {} actual: {}'.format(path, dict, type(b))
-      for k, v in a.items():
-        assert k in b, "value {} was not found in {}".format(k, b)
-        diff('{}.{}'.format(path, k), v, b[k])
-    else:
-      assert type(a) == type(b), 'types differ at {} expected: {} actual: {}'.format(path, type(a), type(b))
-      assert a == b, 'values differ at {} expected: {} actual: {}'.format(path, a, b)
+    stash = list()
 
-  expected = json.loads(context.text)
-  actual = json.loads(response['body'])
+    if response['body']:
+      for line in response['body'].split('\n'):
+        if response['content-type'].startswith('text/plain'):
+          stash.append(line)
+        else:
+          stash.append(json.loads(line))
 
-  try:
-    diff('', expected, actual)
-  except AssertionError as ex:
-    raise AssertionError('{} with response {}'.format(ex, actual))
+    try:
+      expected = json.loads(context.text)
+      if type(expected) == dict:
+        stash = stash[0] if len(stash) else dict()
+      diff('', expected, stash)
+    except AssertionError as ex:
+      raise AssertionError('{} with response {}'.format(ex, response['body']))

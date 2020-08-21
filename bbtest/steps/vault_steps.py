@@ -22,7 +22,7 @@ def create_account(context, activity, currency, tenant, account):
 
   response = context.http.request('POST', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5)
 
-  assert response.status in [200 , 409]
+  assert response.status in [200, 409], 'expected status 200 or 409 actual {}'.format(response.status)
 
 @then('{tenant}/{account} balance should be {amount} {currency}')
 def account_balance(context, tenant, account, amount, currency):
@@ -31,7 +31,7 @@ def account_balance(context, tenant, account, amount, currency):
   http = urllib3.PoolManager()
   response = http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
 
-  assert response.status == 200
+  assert response.status == 200, 'expected status 200 actual {}'.format(response.status)
 
   body = json.loads(response.data.decode('utf-8'))
 
@@ -45,7 +45,7 @@ def account_exists(context, tenant, account):
 
   response = context.http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
 
-  assert response.status == 200
+  assert response.status == 200, 'expected status 200 actual {}'.format(response.status)
 
 
 @then('{tenant}/{account} should not exist')
@@ -54,4 +54,4 @@ def account_not_exists(context, tenant, account):
 
   response = context.http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
 
-  assert response.status in [404, 504]
+  assert response.status in [404, 504], 'expected status 404 or 504 actual {}'.format(response.status)

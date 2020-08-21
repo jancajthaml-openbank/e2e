@@ -9,5 +9,5 @@ from helpers.eventually import eventually
 def appliance_running(context):
   @eventually(5)
   def wait_for_appliance_up():
-    assert context.appliance.running()
+    assert context.appliance.running(), 'appliance did not start within 5 seconds'
   wait_for_appliance_up()
