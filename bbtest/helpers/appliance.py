@@ -86,6 +86,47 @@ class ApplianceHelper(object):
         "DATA_WAREHOUSE_PRIMARY_STORAGE_PATH=/data"
       ]))
 
+    os.makedirs("/etc/lake/conf.d", exist_ok=True)
+    with open('/etc/lake/conf.d/init.conf', 'w') as fd:
+      fd.write(str(os.linesep).join([
+        "LAKE_LOG_LEVEL=DEBUG",
+        "LAKE_PORT_PULL=5562",
+        "LAKE_PORT_PUB=5561",
+        "LAKE_METRICS_REFRESHRATE=1s",
+        "LAKE_METRICS_OUTPUT=/opt/lake/metrics",
+        "LAKE_METRICS_CONTINUOUS=true"
+      ]))
+
+    os.makedirs("/etc/vault/conf.d", exist_ok=True)
+    with open('/etc/vault/conf.d/init.conf', 'w') as fd:
+      fd.write(str(os.linesep).join([
+        "VAULT_STORAGE=/data",
+        "VAULT_LOG_LEVEL=DEBUG",
+        "VAULT_SNAPSHOT_SATURATION_TRESHOLD=100",
+        "VAULT_HTTP_PORT=4400",
+        "VAULT_SECRETS=/etc/vault/secrets",
+        "VAULT_LAKE_HOSTNAME=127.0.0.1",
+        "VAULT_MEMORY_THRESHOLD=0",
+        "VAULT_STORAGE_THRESHOLD=0",
+        "VAULT_METRICS_REFRESHRATE=1s",
+        "VAULT_METRICS_OUTPUT=/opt/vault/metrics"
+      ]))
+
+    os.makedirs("/etc/ledger/conf.d", exist_ok=True)
+    with open('/etc/ledger/conf.d/init.conf', 'w') as fd:
+      fd.write(str(os.linesep).join([
+        "LEDGER_STORAGE=/data",
+        "LEDGER_LOG_LEVEL=INFO",
+        "LEDGER_HTTP_PORT=4401",
+        "LEDGER_SECRETS=/etc/ledger/secrets",
+        "LEDGER_LAKE_HOSTNAME=localhost",
+        "LEDGER_TRANSACTION_INTEGRITY_SCANINTERVAL=5m",
+        "LEDGER_MEMORY_THRESHOLD=0",
+        "LEDGER_STORAGE_THRESHOLD=0",
+        "LEDGER_METRICS_REFRESHRATE=1s",
+        "LEDGER_METRICS_OUTPUT=/opt/ledger/metrics",
+      ]))
+
   def download(self):
     failure = None
     os.makedirs('/tmp/packages', exist_ok=True)

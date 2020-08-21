@@ -32,9 +32,6 @@ Feature: Ledger API test
     Then HTTP response is
       | key    | value |
       | status | 417   |
-      """
-      {}
-      """
 
   Scenario: Transaction API - currency mismatch
     When I request HTTP https://127.0.0.1:4401/transaction/APITRN
@@ -61,9 +58,6 @@ Feature: Ledger API test
     Then HTTP response is
       | key    | value |
       | status | 417   |
-      """
-      {}
-      """
 
   Scenario: Transaction API - new transaction, valid resend, invalid resend
     When I request HTTP https://127.0.0.1:4401/transaction/APITRN/unique_transaction_id
@@ -72,8 +66,38 @@ Feature: Ledger API test
     Then HTTP response is
       | key    | value |
       | status | 404   |
+
+    When I request HTTP https://127.0.0.1:4401/transaction/APITRN
+      | key    | value |
+      | method | POST  |
       """
-      {}
+      {
+        "id": "unique_transaction_id",
+        "transfers": [
+          {
+            "id": "unique_transfer_id",
+            "valueDate": "2018-03-04T17:08:22Z",
+            "credit": {
+              "tenant": "APITRN",
+              "name": "xxx"
+            },
+            "debit": {
+              "tenant": "APITRN",
+              "name": "yyy"
+            },
+            "amount": "1",
+            "currency": "XXX"
+          }
+        ]
+      }
+      """
+    Then HTTP response is
+      | key    | value |
+      | status | 200   |
+      """
+      [
+        "unique_transaction_id"
+      ]
       """
 
     When I request HTTP https://127.0.0.1:4401/transaction/APITRN
@@ -104,74 +128,9 @@ Feature: Ledger API test
       | key    | value |
       | status | 200   |
       """
-      {
-        "id": "unique_transaction_id",
-        "transfers": [
-          {
-            "id": "unique_transfer_id",
-            "valueDate": "2018-03-04T17:08:22Z",
-            "credit": {
-              "tenant": "APITRN",
-              "name": "xxx"
-            },
-            "debit": {
-              "tenant": "APITRN",
-              "name": "yyy"
-            },
-            "amount": "1",
-            "currency": "XXX"
-          }
-        ]
-      }
-      """
-
-    When I request HTTP https://127.0.0.1:4401/transaction/APITRN
-      | key    | value |
-      | method | POST  |
-      """
-      {
-        "id": "unique_transaction_id",
-        "transfers": [
-          {
-            "id": "unique_transfer_id",
-            "valueDate": "2018-03-04T17:08:22Z",
-            "credit": {
-              "tenant": "APITRN",
-              "name": "xxx"
-            },
-            "debit": {
-              "tenant": "APITRN",
-              "name": "yyy"
-            },
-            "amount": "1",
-            "currency": "XXX"
-          }
-        ]
-      }
-      """
-    Then HTTP response is
-      | key    | value |
-      | status | 200   |
-      """
-      {
-        "id": "unique_transaction_id",
-        "transfers": [
-          {
-            "id": "unique_transfer_id",
-            "valueDate": "2018-03-04T17:08:22Z",
-            "credit": {
-              "tenant": "APITRN",
-              "name": "xxx"
-            },
-            "debit": {
-              "tenant": "APITRN",
-              "name": "yyy"
-            },
-            "amount": "1",
-            "currency": "XXX"
-          }
-        ]
-      }
+      [
+        "unique_transaction_id"
+      ]
       """
 
     When I request HTTP https://127.0.0.1:4401/transaction/APITRN/unique_transaction_id
@@ -230,6 +189,3 @@ Feature: Ledger API test
     Then HTTP response is
       | key    | value |
       | status | 409   |
-      """
-      {}
-      """
