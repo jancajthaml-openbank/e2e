@@ -104,7 +104,8 @@ class ApplianceHelper(object):
         "VAULT_LOG_LEVEL=DEBUG",
         "VAULT_SNAPSHOT_SATURATION_TRESHOLD=100",
         "VAULT_HTTP_PORT=4400",
-        "VAULT_SECRETS=/etc/vault/secrets",
+        "VAULT_SERVER_KEY=/etc/vault/secrets/domain.local.key",
+        "VAULT_SERVER_CERT=/etc/vault/secrets/domain.local.crt",
         "VAULT_LAKE_HOSTNAME=127.0.0.1",
         "VAULT_MEMORY_THRESHOLD=0",
         "VAULT_STORAGE_THRESHOLD=0",
@@ -116,9 +117,10 @@ class ApplianceHelper(object):
     with open('/etc/ledger/conf.d/init.conf', 'w') as fd:
       fd.write(str(os.linesep).join([
         "LEDGER_STORAGE=/data",
-        "LEDGER_LOG_LEVEL=INFO",
+        "LEDGER_LOG_LEVEL=DEBUG",
         "LEDGER_HTTP_PORT=4401",
-        "LEDGER_SECRETS=/etc/ledger/secrets",
+        "LEDGER_SERVER_KEY=/etc/ledger/secrets/domain.local.key",
+        "LEDGER_SERVER_CERT=/etc/ledger/secrets/domain.local.crt",
         "LEDGER_LAKE_HOSTNAME=localhost",
         "LEDGER_TRANSACTION_INTEGRITY_SCANINTERVAL=5m",
         "LEDGER_MEMORY_THRESHOLD=0",
