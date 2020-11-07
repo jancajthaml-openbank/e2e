@@ -4,4 +4,4 @@
 
 ## contract test
 
-Run contract test with `make -j 8 test`
+Run tests with `make -j 8 test`
