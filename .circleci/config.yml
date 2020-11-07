@@ -21,7 +21,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
     jobs:
       - blackbox-test-amd64
 
@@ -32,7 +32,7 @@ workflows:
           filters:
             branches:
               only:
-                - master
+                - main
     jobs:
       - performance-test
       - report:
@@ -142,9 +142,9 @@ jobs:
             git add -A
             git commit -am "auto-commit cicleCI ${CIRCLE_STAGE}"
             git push -f origin rolling
-            git branch -D master
-            git branch -m master
-            git push -f origin master
+            git branch -D main
+            git branch -m main
+            git push -f origin main
             git push origin --delete rolling
 
 # ---------------------------------------------------------------------------- #

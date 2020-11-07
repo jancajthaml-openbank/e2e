@@ -149,8 +149,8 @@ class ApplianceManager(object):
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      if self.image_exists('openbank/{0}'.format(service), 'v{0}-master'.format(version)):
-        image = 'docker.io/openbank/{}:v{}-master'.format(service, version)
+      if self.image_exists('openbank/{0}'.format(service), 'v{0}-main'.format(version)):
+        image = 'docker.io/openbank/{}:v{}-main'.format(service, version)
       else:
         image = 'docker.io/openbank/{}:v{}'.format(service, version)
       package = '{}_{}_{}'.format(service, version, self.arch)
