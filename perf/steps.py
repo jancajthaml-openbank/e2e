@@ -142,7 +142,7 @@ class Steps:
         if response.status != 200:
           return None
 
-        transaction = json.loads(response.data.decode('utf-8'))['id']
+        transaction = response.data.decode('utf-8')
         self.integration.charge_transactions(tenant_name, transaction, request['transfers'])
 
         return response
