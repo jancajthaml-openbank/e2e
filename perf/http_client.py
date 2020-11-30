@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import os
+import socket
+import http
 import signal
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -33,6 +35,8 @@ class HttpClient(object):
           pre_process(resp, url, body, tenant)
         else:
           counter.fail()
+      except (http.client.RemoteDisconnected, socket.timeout):
+        counter.fail()
       except Exception as ex:
         print('error {}'.format(ex))
         os.kill(os.getpid(), signal.SIGINT)
@@ -60,6 +64,8 @@ class HttpClient(object):
           pre_process(resp, url, body, tenant)
         else:
           counter.fail()
+      except (http.client.RemoteDisconnected, socket.timeout):
+        counter.fail()
       except Exception as ex:
         print('error {}'.format(ex))
         os.kill(os.getpid(), signal.SIGINT)
