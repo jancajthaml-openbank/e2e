@@ -142,8 +142,7 @@ class Steps:
         if response.status != 200:
           return None
 
-        transaction = response.data.decode('utf-8')
-        self.integration.charge_transactions(tenant_name, transaction, request['transfers'])
+        self.integration.charge_transactions(tenant_name, request['id'], request['transfers'])
 
         return response
 
