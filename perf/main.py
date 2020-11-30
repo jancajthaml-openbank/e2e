@@ -183,14 +183,14 @@ def main():
   except (KeyboardInterrupt, SystemExit):
     interrupt_stdout()
     warn('Interrupt')
-    code = 1
+    sys.exit(1)
   except (Exception, AssertionError) as ex:
     print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
-    code = 1
+    sys.exit(2)
   finally:
     manager.teardown()
     debug("terminated")
-    sys.exit(code)
+    sys.exit(0)
 
 
 if __name__ == "__main__":
