@@ -25,7 +25,6 @@ TTY = sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false')
 
 
 def interrupt_stdout() -> None:
-  termios.tcsetattr(fd, termios.TCSAFLUSH, old)
   if this.__progress_running:
     sys.stdout.write('\n')
     sys.stdout.flush()
