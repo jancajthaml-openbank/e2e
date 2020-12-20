@@ -29,7 +29,6 @@ if __name__ == "__main__":
   args.append('@{}/order.txt'.format(cwd))
 
   for path in [
-    'reports/blackbox-tests/metrics',
     'reports/blackbox-tests/logs',
     'reports/blackbox-tests/meta',
     'reports/blackbox-tests/data',
