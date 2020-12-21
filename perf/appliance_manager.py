@@ -141,29 +141,32 @@ class ApplianceManager(object):
     self.docker = docker.from_env()
     self.http = urllib3.PoolManager()
 
+  def setup(self):
     os.makedirs('/tmp/packages', exist_ok=True)
 
     self.fetch_versions()
 
     failure = None
-    scratch_docker_cmd = ['FROM alpine']
+    scratch_docker_cmd = ['FROM alpine:latest']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
       if self.image_exists('openbank/{0}'.format(service), 'v{0}-main'.format(version)):
-        image = 'docker.io/openbank/{}:v{}-main'.format(service, version)
+        image = 'openbank/{}:v{}-main'.format(service, version)
       else:
-        image = 'docker.io/openbank/{}:v{}'.format(service, version)
+        image = 'openbank/{}:v{}'.format(service, version)
 
       package = '{}_{}_{}'.format(service, version, self.arch)
 
       scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /tmp/packages/{2}.deb'.format(image, package, service))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
+
     try:
       with open(temp.name, 'w') as fd:
         fd.write(str(os.linesep).join(scratch_docker_cmd))
 
       image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=True, tag='perf_artifacts-scratch')
+
       if TTY:
         for chunk in stream:
           if 'stream' in chunk:

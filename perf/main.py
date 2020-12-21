@@ -75,21 +75,23 @@ def main():
     os.system('mkdir -p {}'.format(path))
     os.system('rm -rf {}/*'.format(path))
 
-  info("preparing appliance")
   manager = ApplianceManager()
 
-  info("preparing integration")
-  integration = Integration(manager)
-
-  def on_panic():
-    warn('Panic')
-    manager.teardown()
-    os.kill(os.getpid(), signal.SIGINT)
-
-  info("preparing steps")
-  steps = Steps(integration, on_panic)
-
   try:
+    info("preparing appliance")
+    manager.setup()
+
+    info("preparing integration")
+    integration = Integration(manager)
+
+    def on_panic():
+      warn('Panic')
+      manager.teardown()
+      os.kill(os.getpid(), signal.SIGINT)
+
+    info("preparing steps")
+    steps = Steps(integration, on_panic)
+
     info("reconfigure units")
     manager.bootstrap()
     manager.reconfigure({
@@ -191,7 +193,7 @@ def main():
     warn('Interrupt')
     sys.exit(1)
   except (Exception, AssertionError) as ex:
-    print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
+    warn('Runtime Error {}'.format(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__))))
     sys.exit(2)
   finally:
     manager.teardown()
