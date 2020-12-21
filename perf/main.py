@@ -3,6 +3,7 @@
 
 import os
 import sys
+import signal
 
 from functools import partial
 from utils import debug, warn, info, interrupt_stdout, timeit
@@ -80,15 +81,20 @@ def main():
   info("preparing integration")
   integration = Integration(manager)
 
+  def on_panic():
+    warn('Panic')
+    manager.teardown()
+    os.kill(os.getpid(), signal.SIGINT)
+
   info("preparing steps")
-  steps = Steps(integration)
+  steps = Steps(integration, on_panic)
 
   try:
     info("reconfigure units")
-
+    manager.bootstrap()
     manager.reconfigure({
-      'METRICS_REFRESHRATE': '1000ms',
-      'LOG_LEVEL': 'ERROR'
+      'STATSD_ENDPOINT': '127.0.0.1:8125',
+      'LOG_LEVEL': 'DEBUG'
     })
     manager.teardown()
     cleanup()
@@ -98,7 +104,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 100000
+      total = 10000
 
       debug("bootstraping appliance")
       manager.bootstrap()

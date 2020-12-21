@@ -153,6 +153,7 @@ class ApplianceManager(object):
         image = 'docker.io/openbank/{}:v{}-main'.format(service, version)
       else:
         image = 'docker.io/openbank/{}:v{}'.format(service, version)
+
       package = '{}_{}_{}'.format(service, version, self.arch)
 
       scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /tmp/packages/{2}.deb'.format(image, package, service))

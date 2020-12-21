@@ -20,6 +20,7 @@ from functools import partial
 this = sys.modules[__name__]
 
 this.__progress_running = False
+this.__last_progress = ""
 
 TTY = sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false')
 
@@ -47,6 +48,9 @@ def info(msg) -> None:
   sys.stdout.flush()
 
 def progress(msg) -> None:
+  if this.__last_progress == msg:
+    return
+  this.__last_progress = msg
   if TTY:
     this.__progress_running = True
     sys.stdout.write('\033[94m        | {0}\033[K\r'.format(msg.rstrip()))
@@ -180,36 +184,3 @@ class ProgressCounter():
   @property
   def progress(self) -> int:
     return self._progress
-
-
-class Counter():
-
-  def __init__(self, value=0) -> None:
-    self._value = value
-    self._lock = threading.Lock()
-
-  def reset(self) -> int:
-    with self._lock:
-      self._value = 0
-      return self._value
-
-  def inc(self) -> int:
-    with self._lock:
-      self._value += 1
-      return self._value
-
-  def dec(self) -> int:
-    with self._lock:
-      self._value -= 1
-      return self._value
-
-  @property
-  def value(self) -> int:
-    return self._value
-
-  @value.setter
-  def value(self, v) -> int:
-    with self._lock:
-      self._value = v
-      return self._value
-
