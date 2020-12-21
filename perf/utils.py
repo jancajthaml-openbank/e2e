@@ -151,36 +151,3 @@ class with_deadline():
 
   def __exit__(self, *args):
     signal.alarm(0)
-
-
-class ProgressCounter():
-
-  def __init__(self) -> None:
-    self._success = 0
-    self._failure = 0
-    self._progress = 0
-    self._lock = threading.Lock()
-
-  def ok(self) -> int:
-    with self._lock:
-      self._success += 1
-      self._progress += 1
-      return self._success
-
-  def fail(self) -> int:
-    with self._lock:
-      self._failure += 1
-      self._progress += 1
-      return self._progress
-
-  @property
-  def success(self) -> int:
-    return self._success
-
-  @property
-  def failure(self) -> int:
-    return self._failure
-
-  @property
-  def progress(self) -> int:
-    return self._progress

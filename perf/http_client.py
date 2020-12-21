@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-#import os
-#import errno
-#import http
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -16,14 +13,13 @@ else:
   ssl._create_default_https_context = _create_unverified_https_context
 
 import multiprocessing
+import functools
 
 
 class HttpClient(object):
 
   def post(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None, on_panic=lambda *args: None):
     total = len(reqs)
-
-    global counter
 
     pool = urllib3.PoolManager()
 
@@ -40,7 +36,7 @@ class HttpClient(object):
         else:
           return (0, 1)
       except urllib3.exceptions.ProtocolError:
-        return process_one(url, body, tenant)
+        return process_one(args)
       except Exception as e:
         print('error {}'.format(e))
         on_panic()
@@ -48,16 +44,11 @@ class HttpClient(object):
 
     results = multiprocessing.Pool(processes=4).map_async(process_one, reqs).get()
 
-    (ok, failed) = reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]), results)
-
-    return ok, failed
+    return functools.reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]), results)
 
   def get(self, reqs, pre_process=lambda *args: None, on_progress=lambda *args: None, on_panic=lambda *args: None):
     total = len(reqs)
 
-    global counter
-
-    counter = ProgressCounter()
     pool = urllib3.PoolManager()
 
     global process_one
@@ -73,7 +64,7 @@ class HttpClient(object):
         else:
           return (0, 1)
       except urllib3.exceptions.ProtocolError:
-        return process_one(url, body, tenant)
+        return process_one(args)
       except Exception as e:
         print('error {}'.format(e))
         on_panic()
@@ -81,5 +72,4 @@ class HttpClient(object):
 
     results = multiprocessing.Pool(processes=4).map_async(process_one, reqs).get()
 
-    (ok, failed) = reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]), results)
-    return ok, failed
+    return functools.reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]), results)

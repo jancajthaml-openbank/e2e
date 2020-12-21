@@ -151,9 +151,9 @@ class ApplianceManager(object):
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
       if self.image_exists('openbank/{0}'.format(service), 'v{0}-main'.format(version)):
-        image = 'openbank/{}:v{}-main'.format(service, version)
+        image = 'docker.io/openbank/{}:v{}-main'.format(service, version)
       else:
-        image = 'openbank/{}:v{}'.format(service, version)
+        image = 'docker.io/openbank/{}:v{}'.format(service, version)
 
       package = '{}_{}_{}'.format(service, version, self.arch)
 
