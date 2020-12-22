@@ -32,8 +32,6 @@ class Steps:
           'currency': request['currency']
         })
 
-        #return response
-
       tenants = self.integration.tenants
 
       if not number_of_accounts:
@@ -50,14 +48,10 @@ class Steps:
 
       info("creating {0} account for tenant {1}".format(number_of_accounts, tenant_name))
       client = HttpClient()
-      results, errors = client.post(prepared, callback, self.on_panic)
-
-      debug('processing results')
-      for result in results:
-        callback(*result)
+      success, errors = client.post(prepared, callback, self.on_panic)
 
       if len(errors):
-        warn('{0} accounts created, {1} failed                             '.format(len(results), len(errors)))
+        warn('{0} accounts created, {1} failed                             '.format(success, len(errors)))
         for error in errors:
           warn('> {}'.format(error))
       else:
@@ -106,14 +100,10 @@ class Steps:
           active = not active
 
       client = HttpClient()
-      results, errors = client.post(prepared, self.on_panic)
-
-      debug('processing results')
-      for result in results:
-        callback(*result)
+      passed, errors = client.post(prepared, callback, self.on_panic)
 
       if len(errors):
-        warn('{0} accounts created, {1} failed                             '.format(len(results), len(errors)))
+        warn('{0} accounts created, {1} failed                             '.format(passed, len(errors)))
         for error in errors:
           warn('> {}'.format(error))
       else:
@@ -156,14 +146,10 @@ class Steps:
         prepared.extend(self.integration.prepare_transaction(tenant_name, 10, credit_accounts, debit_account) for x in range(0, will_generate_transactions, 1))
 
       client = HttpClient()
-      results, errors = client.post(prepared, self.on_panic)
-
-      debug('processing results')
-      for result in results:
-        callback(*result)
+      passed, errors = client.post(prepared, callback, self.on_panic)
 
       if len(errors):
-        warn('{0} transactions created, {1} failed                             '.format(len(results), len(errors)))
+        warn('{0} transactions created, {1} failed                             '.format(passed, len(errors)))
         for error in errors:
           warn('> {}'.format(error))
       else:
@@ -186,19 +172,15 @@ class Steps:
       def callback(status, response, url, request, tenant_name):
         assert status == 200, 'expected status 200 got {}'.format(status)
 
-        content = json.loads(response)
+        content = json.loads(response.decode('utf-8'))
 
         assert content['currency'] == request['currency'] and float(content['balance']) == float(request['balance']), 'expected {} {} got {} {}'.format(request['balance'], request['currency'], content['balance'], content['currency'])
 
       client = HttpClient()
-      results, errors = client.get(prepared, self.on_panic)
-
-      debug('processing results')
-      for result in results:
-        callback(*result)
+      passed, errors = client.get(prepared, callback, self.on_panic)
 
       if len(errors):
-        warn('{0} balance validated, {1} failed                             '.format(len(results), len(errors)))
+        warn('{0} balance validated, {1} failed                             '.format(passed, len(errors)))
         for error in errors:
           warn('> {}'.format(error))
       else:

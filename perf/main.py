@@ -25,7 +25,7 @@ patch_thread_join()
 
 class measurement():
 
-  def __init__(self, label, metrics):
+  def __init__(self, metrics, label):
     self.__label = label
     self.__ready = False
     self.__metrics = metrics
@@ -41,14 +41,12 @@ class measurement():
       return self
 
     with self:
-      #self.__metrics.start()
       return self.__fn(*args, **kwargs)
 
   def __enter__(self):
     pass
 
   def __exit__(self, *args):
-    #self.__metrics.stop()
     self.__metrics.persist(self.__label)
 
 def eventually_ready(manager):
@@ -167,7 +165,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 20000
+      total = 10000
 
       debug("bootstraping appliance")
       manager.bootstrap()

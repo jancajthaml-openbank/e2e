@@ -14,60 +14,75 @@ else:
 
 import multiprocessing
 import functools
+import itertools
 
 
 class HttpClient(object):
 
-  def post(self, reqs, on_panic=lambda *args: None):
-    total = len(reqs)
+  def __do(self, reqs, on_work=lambda *args: None, on_result=lambda *args: None, on_panic=lambda *args: None):
+    total_success = 0
+    total_errors = list()
 
+    total_requests = len(reqs)
+    chunk_size = 1000
+
+    for offset in range(0, total_requests, chunk_size):
+      work = reqs[offset:offset+chunk_size]
+      if not work:
+        continue
+
+      futures = multiprocessing.Pool(processes=4).map_async(on_work, work).get()
+      (results, errors) = functools.reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]), futures)
+
+      total_success += len(results)
+      for result in results:
+        on_result(*result)
+
+    return total_success, total_errors
+
+  def post(self, reqs, on_result=lambda *args: None, on_panic=lambda *args: None):
     pool = urllib3.PoolManager()
 
-    global process_one
+    global on_post_result
 
-    def process_one(args) -> None:
+    def on_post_result(args) -> None:
       (url, body, payload, tenant) = args
       try:
         resp = pool.request('POST', url, body=payload, headers={'Content-Type': 'application/json'})
         resp.release_conn()
         if resp and resp.status in [200, 201, 202]:
-          return ([(resp.status, resp.data.decode('utf-8'), url, body, tenant)], [])
+          return ([(resp.status, resp.data, url, body, tenant)], [])
         else:
-          return ([], [(resp.status, resp.data.decode('utf-8'))])
+          return ([], [(resp.status, resp.data)])
       except urllib3.exceptions.ProtocolError:
-        return process_one(args)
+        return on_post_result(args)
       except Exception as e:
         print('error {}'.format(e))
         on_panic()
-        return ([], 1)
+        return ([], [])
 
-    results = multiprocessing.Pool(processes=4).map_async(process_one, reqs).get()
+    return self.__do(reqs, on_post_result, on_result, on_panic)
 
-    return functools.reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]), results)
-
-  def get(self, reqs, on_panic=lambda *args: None):
-    total = len(reqs)
+  def get(self, reqs, on_result=lambda *args: None, on_panic=lambda *args: None):
 
     pool = urllib3.PoolManager()
 
-    global process_one
+    global on_get_result
 
-    def process_one(args) -> None:
+    def on_get_result(args) -> None:
       (url, body, tenant) = args
       try:
         resp = pool.request('GET', url)
         resp.release_conn()
         if resp and resp.status in [200, 201, 202]:
-          return ([(resp.status, resp.data.decode('utf-8'), url, body, tenant)], [])
+          return ([(resp.status, resp.data, url, body, tenant)], [])
         else:
-          return ([], [(resp.status, resp.data.decode('utf-8'))])
+          return ([], [(resp.status, resp.data)])
       except urllib3.exceptions.ProtocolError:
-        return process_one(args)
+        return on_get_result(args)
       except Exception as e:
         print('error {}'.format(e))
         on_panic()
-        return ([], 1)
+        return ([], [])
 
-    results = multiprocessing.Pool(processes=4).map_async(process_one, reqs).get()
-
-    return functools.reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]), results)
+    return self.__do(reqs, on_get_result, on_result, on_panic)
