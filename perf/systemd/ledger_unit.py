@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from systemd.common import Unit
-from metrics.aggregator import MetricsAggregator
 from helpers.eventually import eventually
 from helpers.shell import execute
 import string
@@ -21,7 +20,6 @@ class LedgerUnit(Unit):
 
   def __init__(self, tenant):
     self._tenant = tenant
-    self.__metrics = None
 
     (code, result) = execute([
       "systemctl", "enable", 'ledger-unit@{0}'.format(self._tenant)
@@ -33,8 +31,6 @@ class LedgerUnit(Unit):
     ], silent=True)
     assert code == 0, str(result)
 
-    self.watch_metrics()
-
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
@@ -44,9 +40,6 @@ class LedgerUnit(Unit):
       assert code == 0, str(result)
 
     eventual_teardown()
-
-    if self.__metrics:
-      self.__metrics.stop()
 
   def restart(self) -> bool:
     @eventually(2)
@@ -59,26 +52,6 @@ class LedgerUnit(Unit):
     eventual_restart()
 
     return self.is_healthy
-
-  def watch_metrics(self) -> None:
-    metrics_output = None
-
-    if os.path.exists('/etc/ledger/conf.d/init.conf'):
-      with open('/etc/ledger/conf.d/init.conf', 'r') as f:
-        for line in f:
-          (key, val) = line.rstrip().split('=')
-          if key == 'LEDGER_METRICS_OUTPUT':
-            metrics_output = '{0}/metrics.{1}.json'.format(val, self._tenant)
-            break
-
-    if metrics_output:
-      self.__metrics = MetricsAggregator(metrics_output)
-      self.__metrics.start()
-
-  def get_metrics(self) -> None:
-    if self.__metrics:
-      return self.__metrics.get_metrics()
-    return dict()
 
   def reconfigure(self, params) -> None:
     d = dict()

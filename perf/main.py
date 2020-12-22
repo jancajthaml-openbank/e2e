@@ -23,12 +23,12 @@ from parallel.monkey_patch import patch_thread_join
 patch_thread_join()
 
 
-class metrics():
+class measurement():
 
-  def __init__(self, manager, label):
+  def __init__(self, label, metrics):
     self.__label = label
-    self.__metrics = MetricsManager(manager)
     self.__ready = False
+    self.__metrics = metrics
     self.__fn = lambda *args: None
 
   def __get__(self, instance, *args):
@@ -41,12 +41,14 @@ class metrics():
       return self
 
     with self:
+      #self.__metrics.start()
       return self.__fn(*args, **kwargs)
 
   def __enter__(self):
     pass
 
   def __exit__(self, *args):
+    #self.__metrics.stop()
     self.__metrics.persist(self.__label)
 
 def eventually_ready(manager):
@@ -75,9 +77,13 @@ def main():
     os.system('mkdir -p {}'.format(path))
     os.system('rm -rf {}/*'.format(path))
 
+  metrics = MetricsManager()
   manager = ApplianceManager()
 
   try:
+    info('starting statsd')
+    metrics.start()
+
     info("preparing appliance")
     manager.setup()
 
@@ -120,7 +126,7 @@ def main():
       debug("appliance ready")
 
       debug("scenario starting")
-      with metrics(manager, 's1_new_account_latencies_{0}'.format(total)):
+      with measurement(metrics, 's1_new_account_latencies_{0}'.format(total)):
         steps.random_uniform_accounts(total)
         manager.restart()
       debug("scenario finished")
@@ -149,7 +155,7 @@ def main():
       debug("scenario starting")
       while no_accounts <= total:
         steps.random_uniform_accounts(chunk)
-        with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
+        with measurement(metrics, 's2_get_account_latencies_{0}'.format(no_accounts)):
           steps.check_balances()
           manager.restart()
         no_accounts += chunk
@@ -176,7 +182,7 @@ def main():
       steps.random_uniform_accounts(100)
 
       debug("scenario starting")
-      with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
+      with measurement(metrics, 's3_new_transaction_latencies_{0}'.format(total)):
         steps.random_uniform_transactions(total)
         manager.restart()
       debug("scenario finished")
@@ -197,6 +203,7 @@ def main():
     sys.exit(2)
   finally:
     manager.teardown()
+    metrics.stop()
     debug("terminated")
     sys.exit(0)
 
