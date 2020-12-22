@@ -32,7 +32,7 @@ def check_account_snapshot(context, tenant, account, version):
 
   for row in context.table:
     assert row['key'] in actual
-    assert actual[row['key']] == row['value']
+    assert actual[row['key']] == row['value'], 'expected {} got {}'.format(row['value'], actual[row['key']])
 
 
 @then('transaction {transaction} state of {tenant} should be {status}')
@@ -44,7 +44,7 @@ def check_transaction_state(context, tenant, transaction, status):
   with open(path, 'r') as fd:
     lines = fd.readlines()
     lines = [line.strip() for line in lines]
-    assert lines[0] == status
+    assert lines[0] == status, 'expected {} but got {}'.format(status, lines[0])
 
 
 @then('transaction {transaction} of {tenant} should be')

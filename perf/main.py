@@ -3,6 +3,7 @@
 
 import os
 import sys
+import signal
 
 from functools import partial
 from utils import debug, warn, info, interrupt_stdout, timeit
@@ -22,12 +23,12 @@ from parallel.monkey_patch import patch_thread_join
 patch_thread_join()
 
 
-class metrics():
+class measurement():
 
-  def __init__(self, manager, label):
+  def __init__(self, metrics, label):
     self.__label = label
-    self.__metrics = MetricsManager(manager)
     self.__ready = False
+    self.__metrics = metrics
     self.__fn = lambda *args: None
 
   def __get__(self, instance, *args):
@@ -74,21 +75,32 @@ def main():
     os.system('mkdir -p {}'.format(path))
     os.system('rm -rf {}/*'.format(path))
 
-  info("preparing appliance")
+  metrics = MetricsManager()
   manager = ApplianceManager()
 
-  info("preparing integration")
-  integration = Integration(manager)
-
-  info("preparing steps")
-  steps = Steps(integration)
-
   try:
-    info("reconfigure units")
+    info('starting statsd')
+    metrics.start()
 
+    info("preparing appliance")
+    manager.setup()
+
+    info("preparing integration")
+    integration = Integration(manager)
+
+    def on_panic():
+      warn('Panic')
+      manager.teardown()
+      os.kill(os.getpid(), signal.SIGINT)
+
+    info("preparing steps")
+    steps = Steps(integration, on_panic)
+
+    info("reconfigure units")
+    manager.bootstrap()
     manager.reconfigure({
-      'METRICS_REFRESHRATE': '1000ms',
-      'LOG_LEVEL': 'ERROR'
+      'STATSD_ENDPOINT': '127.0.0.1:8125',
+      'LOG_LEVEL': 'DEBUG'
     })
     manager.teardown()
     cleanup()
@@ -98,7 +110,7 @@ def main():
     ############################################################################
 
     with timeit('new accounts scenario'):
-      total = 100000
+      total = 10000
 
       debug("bootstraping appliance")
       manager.bootstrap()
@@ -112,7 +124,7 @@ def main():
       debug("appliance ready")
 
       debug("scenario starting")
-      with metrics(manager, 's1_new_account_latencies_{0}'.format(total)):
+      with measurement(metrics, 's1_new_account_latencies_{0}'.format(total)):
         steps.random_uniform_accounts(total)
         manager.restart()
       debug("scenario finished")
@@ -141,7 +153,7 @@ def main():
       debug("scenario starting")
       while no_accounts <= total:
         steps.random_uniform_accounts(chunk)
-        with metrics(manager, 's2_get_account_latencies_{0}'.format(no_accounts)):
+        with measurement(metrics, 's2_get_account_latencies_{0}'.format(no_accounts)):
           steps.check_balances()
           manager.restart()
         no_accounts += chunk
@@ -153,7 +165,7 @@ def main():
     ############################################################################
 
     with timeit('new transaction scenario'):
-      total = 20000
+      total = 10000
 
       debug("bootstraping appliance")
       manager.bootstrap()
@@ -168,7 +180,7 @@ def main():
       steps.random_uniform_accounts(100)
 
       debug("scenario starting")
-      with metrics(manager, 's3_new_transaction_latencies_{0}'.format(total)):
+      with measurement(metrics, 's3_new_transaction_latencies_{0}'.format(total)):
         steps.random_uniform_transactions(total)
         manager.restart()
       debug("scenario finished")
@@ -185,10 +197,11 @@ def main():
     warn('Interrupt')
     sys.exit(1)
   except (Exception, AssertionError) as ex:
-    print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
+    warn('Runtime Error {}'.format(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__))))
     sys.exit(2)
   finally:
     manager.teardown()
+    metrics.stop()
     debug("terminated")
     sys.exit(0)
 

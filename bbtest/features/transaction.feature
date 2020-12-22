@@ -13,18 +13,18 @@ Feature: Transaction workflow
 
   Scenario: Trivial transfer
     When  pasive EUR account NORDEA/mine is created
-    Then  NORDEA/mine balance should be 0 EUR
+    Then  NORDEA/mine balance should be 0.0 EUR
 
     When  active EUR account NORDEA/theirs is created
-    Then  NORDEA/theirs balance should be 0 EUR
+    Then  NORDEA/theirs balance should be 0.0 EUR
 
     When  0.00000000001 EUR is transferred from NORDEA/mine to NORDEA/theirs
     Then  NORDEA/mine balance should be -0.00000000001 EUR
     And   NORDEA/theirs balance should be 0.00000000001 EUR
 
     When  0.00000000001 EUR is transferred from NORDEA/theirs to NORDEA/mine
-    Then  NORDEA/mine balance should be 0.00000000000 EUR
-    And   NORDEA/theirs balance should be 0.00000000000 EUR
+    Then  NORDEA/mine balance should be 0.0 EUR
+    And   NORDEA/theirs balance should be 0.0 EUR
 
   Scenario: Tenant isolation
     When  pasive CZK account FIO/Nostro is created
@@ -42,5 +42,5 @@ Feature: Transaction workflow
     When  1 CZK is transferred from FIO/Nostro to FIO/Credit
     Then  FIO/Nostro balance should be -1 CZK
     Then  FIO/Credit balance should be 1 CZK
-    Then  RAIFFEISEN/Nostro balance should be 0 CZK
-    Then  RAIFFEISEN/Nostro balance should be 0 CZK
+    Then  RAIFFEISEN/Nostro balance should be 0.0 CZK
+    Then  RAIFFEISEN/Nostro balance should be 0.0 CZK

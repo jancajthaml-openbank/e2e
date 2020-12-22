@@ -3,24 +3,16 @@
 
 from behave import *
 from helpers.eventually import eventually
-import os
-import json
 
 
 @then('metrics for tenant {tenant} should report {numberOfAccounts} created accounts')
 def step_impl(context, tenant, numberOfAccounts):
-  path = '/opt/vault/metrics/metrics.{}.json'.format(tenant)
+  key = 'openbank.vault.account.created.count#tenant:{}'.format(tenant)
 
-  @eventually(2)
-  def wait_for_file_existence():
-    assert os.path.isfile(path)
-
-  @eventually(5)
+  @eventually(10)
   def wait_for_metrics_update():
-    actual = dict()
-    with open(path, 'r') as fd:
-      actual.update(json.loads(fd.read()))
-    assert str(actual["createdAccounts"]) == str(numberOfAccounts), 'expected createdAccounts to equal {} but got {}'.format(numberOfAccounts, actual['createdAccounts'])
+    actual = context.statsd.get()
+    assert key in actual, 'key {} not found in metrics'.format(key)
+    assert str(actual[key]) == str(numberOfAccounts), 'expected createdAccounts to equal {} but got {}'.format(numberOfAccounts, actual[key])
 
-  wait_for_file_existence()
   wait_for_metrics_update()

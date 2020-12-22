@@ -67,7 +67,7 @@ class ApplianceHelper(object):
     version = parts[0] or None
 
     if len(parts) > 1:
-      meta = 'master'
+      meta = 'main'
     else:
       meta = None
 
@@ -92,9 +92,7 @@ class ApplianceHelper(object):
         "LAKE_LOG_LEVEL=DEBUG",
         "LAKE_PORT_PULL=5562",
         "LAKE_PORT_PUB=5561",
-        "LAKE_METRICS_REFRESHRATE=1s",
-        "LAKE_METRICS_OUTPUT=/opt/lake/metrics",
-        "LAKE_METRICS_CONTINUOUS=true"
+        "LAKE_STATSD_ENDPOINT=127.0.0.1:8125"
       ]))
 
     os.makedirs("/etc/vault/conf.d", exist_ok=True)
@@ -109,8 +107,7 @@ class ApplianceHelper(object):
         "VAULT_LAKE_HOSTNAME=127.0.0.1",
         "VAULT_MEMORY_THRESHOLD=0",
         "VAULT_STORAGE_THRESHOLD=0",
-        "VAULT_METRICS_REFRESHRATE=1s",
-        "VAULT_METRICS_OUTPUT=/opt/vault/metrics"
+        "VAULT_STATSD_ENDPOINT=127.0.0.1:8125"
       ]))
 
     os.makedirs("/etc/ledger/conf.d", exist_ok=True)
@@ -121,12 +118,11 @@ class ApplianceHelper(object):
         "LEDGER_HTTP_PORT=4401",
         "LEDGER_SERVER_KEY=/etc/ledger/secrets/domain.local.key",
         "LEDGER_SERVER_CERT=/etc/ledger/secrets/domain.local.crt",
-        "LEDGER_LAKE_HOSTNAME=localhost",
+        "LEDGER_LAKE_HOSTNAME=127.0.0.1",
         "LEDGER_TRANSACTION_INTEGRITY_SCANINTERVAL=5m",
         "LEDGER_MEMORY_THRESHOLD=0",
         "LEDGER_STORAGE_THRESHOLD=0",
-        "LEDGER_METRICS_REFRESHRATE=1s",
-        "LEDGER_METRICS_OUTPUT=/opt/ledger/metrics",
+        "LEDGER_STATSD_ENDPOINT=127.0.0.1:8125"
       ]))
 
   def download(self):

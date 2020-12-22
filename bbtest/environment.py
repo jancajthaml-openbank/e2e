@@ -3,6 +3,8 @@
 
 import sys
 from helpers.appliance import ApplianceHelper
+from helpers.statsd import StatsdHelper
+
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -20,6 +22,8 @@ def after_feature(context, feature):
 
 
 def before_all(context):
+  context.statsd = StatsdHelper()
+  context.statsd.start()
   context.appliance = ApplianceHelper(context)
   context.http = urllib3.PoolManager()
   try:
@@ -34,3 +38,4 @@ def before_all(context):
 
 def after_all(context):
   context.appliance.teardown()
+  context.statsd.stop()

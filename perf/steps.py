@@ -3,26 +3,26 @@
 
 import json
 import random
+import itertools
 secure_random = random.SystemRandom()
 
 import time
-from utils import info, progress, warn, success, Counter, timeit, TTY
+from utils import info, progress, debug, warn, success, timeit, TTY
 from http_client import HttpClient
 
 
 class Steps:
 
-  def __init__(self, integration):
+  def __init__(self, integration, on_panic):
     self.integration = integration
-    self.__acc_counter = Counter()
+    self.on_panic = on_panic
+    self.__acc_counter = itertools.count()
 
   def random_targeted_accounts(self, tenant_name, number_of_accounts=None):
     with timeit('random_targeted_accounts(_, {0}, {1})'.format(tenant_name, num_of_accounts)):
 
-      last_progress = 0
-      def callback(response, url, request, tenant):
-        if response.status != 200:
-          return None
+      def callback(status, response, url, request, tenant):
+        assert status == 200, 'expected status 200 got {}'.format(status)
 
         self.integration.update_account(tenant, request['name'], {
           'name': request['name'],
@@ -31,15 +31,6 @@ class Steps:
           'transactions': [],
           'currency': request['currency']
         })
-
-        return response
-
-      def on_progress(processed, total):
-        next_progress = 100 * (processed/total)
-        next_progress = next_progress if TTY else int(next_progress)
-        if last_progress != next_progress:
-          last_progress = next_progress
-          progress('{1:.2f}% of {0}'.format(total, next_progress))
 
       tenants = self.integration.tenants
 
@@ -52,14 +43,17 @@ class Steps:
       active = True
       info("preparing creation of {0} account for tenant {1}".format(number_of_accounts, tenant_name))
       for _ in range(number_of_accounts):
-        prepared.append(self.integration.prepare_create_account(tenant_name, "s_" + str(self.__acc_counter.inc()), active))
+        prepared.append(self.integration.prepare_create_account(tenant_name, "s_" + str(next(self.__acc_counter)), active))
         active = not active
 
+      info("creating {0} account for tenant {1}".format(number_of_accounts, tenant_name))
       client = HttpClient()
-      passed, failed = client.post(prepared, callback, on_progress)
+      success, errors = client.post(prepared, callback, self.on_panic)
 
-      if failed:
-        warn('{0} accounts created, {1} failed                             '.format(passed, failed))
+      if len(errors):
+        warn('{0} accounts created, {1} failed                             '.format(success, len(errors)))
+        for error in errors:
+          warn('> {}'.format(error))
       else:
         success('all passed                                                      ')
 
@@ -68,11 +62,8 @@ class Steps:
   def random_uniform_accounts(self, number_of_accounts=None):
     with timeit('random_uniform_accounts(_, {0})'.format(number_of_accounts)):
 
-      last_progress = 0
-
-      def callback(response, url, request, tenant):
-        if response.status != 200:
-          return None
+      def callback(status, response, url, request, tenant):
+        assert status == 200, 'expected status 200 got {}'.format(status)
 
         self.integration.update_account(tenant, request['name'], {
           'name': request['name'],
@@ -81,15 +72,6 @@ class Steps:
           'transactions': [],
           'currency': request['currency']
         })
-
-        return response
-
-      def on_progress(processed, total):
-        next_progress = 100 * (processed/total)
-        next_progress = next_progress if TTY else int(next_progress)
-        if last_progress != next_progress:
-          last_progress = next_progress
-          progress('{1:.2f}% of {0}'.format(total, next_progress))
 
       tenants = self.integration.tenants
 
@@ -114,14 +96,16 @@ class Steps:
         will_generate_accounts = partitions.pop()
         info("preparing creation of {0} account for tenant {1}".format(will_generate_accounts, tenant_name))
         for _ in range(will_generate_accounts):
-          prepared.append(self.integration.prepare_create_account(tenant_name, "s_" + str(self.__acc_counter.inc()), active))
+          prepared.append(self.integration.prepare_create_account(tenant_name, "s_" + str(next(self.__acc_counter)), active))
           active = not active
 
       client = HttpClient()
-      passed, failed = client.post(prepared, callback, on_progress)
+      passed, errors = client.post(prepared, callback, self.on_panic)
 
-      if failed:
-        warn('{0} accounts created, {1} failed                             '.format(passed, failed))
+      if len(errors):
+        warn('{0} accounts created, {1} failed                             '.format(passed, len(errors)))
+        for error in errors:
+          warn('> {}'.format(error))
       else:
         success('all passed                                                      ')
 
@@ -136,22 +120,10 @@ class Steps:
         max_transactions = min_transactions * 10
         number_of_transactions = secure_random.randrange(min_transactions, max_transactions)
 
-      last_progress = 0
-
-      def callback(response, url, request, tenant_name):
-        if response.status != 200:
-          return None
+      def callback(status, response, url, request, tenant_name):
+        assert status == 200, 'expected status 200 got {}'.format(status)
 
         self.integration.charge_transactions(tenant_name, request['id'], request['transfers'])
-
-        return response
-
-      def on_progress(processed, total):
-        next_progress = 100 * (processed/total)
-        next_progress = next_progress if TTY else int(next_progress)
-        if last_progress != next_progress:
-          last_progress = next_progress
-          progress('{1:.2f}% of {0}'.format(total, next_progress))
 
       partitions = []
       chunks = len(tenants)
@@ -174,10 +146,12 @@ class Steps:
         prepared.extend(self.integration.prepare_transaction(tenant_name, 10, credit_accounts, debit_account) for x in range(0, will_generate_transactions, 1))
 
       client = HttpClient()
-      passed, failed = client.post(prepared, callback, on_progress)
+      passed, errors = client.post(prepared, callback, self.on_panic)
 
-      if failed:
-        warn('{0} transactions created, {1} failed                             '.format(passed, failed))
+      if len(errors):
+        warn('{0} transactions created, {1} failed                             '.format(passed, len(errors)))
+        for error in errors:
+          warn('> {}'.format(error))
       else:
         success('all passed                                                      ')
 
@@ -195,29 +169,20 @@ class Steps:
 
       info("prepared checking balance of {0} accounts".format(num_of_accounts))
 
-      last_progress = 0
-      def callback(response, url, request, tenant_name):
-        if response.status != 200:
-          return None
+      def callback(status, response, url, request, tenant_name):
+        assert status == 200, 'expected status 200 got {}'.format(status)
 
-        content = json.loads(response.data.decode('utf-8'))
-        if content['currency'] == request['currency'] and content['balance'] == request['balance']:
-          return response
-        else:
-          return None
+        content = json.loads(response.decode('utf-8'))
 
-      def on_progress(processed, total):
-        next_progress = 100 * (processed/total)
-        next_progress = next_progress if TTY else int(next_progress)
-        if last_progress != next_progress:
-          last_progress = next_progress
-          progress('{1:.2f}% of {0}'.format(total, next_progress))
+        assert content['currency'] == request['currency'] and float(content['balance']) == float(request['balance']), 'expected {} {} got {} {}'.format(request['balance'], request['currency'], content['balance'], content['currency'])
 
       client = HttpClient()
-      passed, failed = client.get(prepared, callback, on_progress)
+      passed, errors = client.get(prepared, callback, self.on_panic)
 
-      if failed:
-        warn('{0} balance validated, {1} failed                             '.format(passed, failed))
+      if len(errors):
+        warn('{0} balance validated, {1} failed                             '.format(passed, len(errors)))
+        for error in errors:
+          warn('> {}'.format(error))
       else:
         success('all passed                                                      ')
 
