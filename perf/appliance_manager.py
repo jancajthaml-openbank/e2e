@@ -147,7 +147,7 @@ class ApplianceManager(object):
     self.fetch_versions()
 
     failure = None
-    scratch_docker_cmd = ['FROM alpine:latest']
+    scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
       if self.image_exists('openbank/{0}'.format(service), 'v{0}-main'.format(version)):

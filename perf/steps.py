@@ -7,7 +7,7 @@ import itertools
 secure_random = random.SystemRandom()
 
 import time
-from utils import info, progress, warn, success, timeit, TTY
+from utils import info, progress, debug, warn, success, timeit, TTY
 from http_client import HttpClient
 
 
@@ -21,9 +21,8 @@ class Steps:
   def random_targeted_accounts(self, tenant_name, number_of_accounts=None):
     with timeit('random_targeted_accounts(_, {0}, {1})'.format(tenant_name, num_of_accounts)):
 
-      def callback(response, url, request, tenant):
-        if response.status != 200:
-          return None
+      def callback(status, response, url, request, tenant):
+        assert status == 200, 'expected status 200 got {}'.format(status)
 
         self.integration.update_account(tenant, request['name'], {
           'name': request['name'],
@@ -33,11 +32,7 @@ class Steps:
           'currency': request['currency']
         })
 
-        return response
-
-      def on_progress(processed, total):
-        if TTY:
-          progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
+        #return response
 
       tenants = self.integration.tenants
 
@@ -55,10 +50,16 @@ class Steps:
 
       info("creating {0} account for tenant {1}".format(number_of_accounts, tenant_name))
       client = HttpClient()
-      passed, failed = client.post(prepared, callback, on_progress, self.on_panic)
+      results, errors = client.post(prepared, callback, self.on_panic)
 
-      if failed:
-        warn('{0} accounts created, {1} failed                             '.format(passed, failed))
+      debug('processing results')
+      for result in results:
+        callback(*result)
+
+      if len(errors):
+        warn('{0} accounts created, {1} failed                             '.format(len(results), len(errors)))
+        for error in errors:
+          warn('> {}'.format(error))
       else:
         success('all passed                                                      ')
 
@@ -67,9 +68,8 @@ class Steps:
   def random_uniform_accounts(self, number_of_accounts=None):
     with timeit('random_uniform_accounts(_, {0})'.format(number_of_accounts)):
 
-      def callback(response, url, request, tenant):
-        if response.status != 200:
-          return None
+      def callback(status, response, url, request, tenant):
+        assert status == 200, 'expected status 200 got {}'.format(status)
 
         self.integration.update_account(tenant, request['name'], {
           'name': request['name'],
@@ -78,12 +78,6 @@ class Steps:
           'transactions': [],
           'currency': request['currency']
         })
-
-        return response
-
-      def on_progress(processed, total):
-        if TTY:
-          progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
 
       tenants = self.integration.tenants
 
@@ -112,10 +106,16 @@ class Steps:
           active = not active
 
       client = HttpClient()
-      passed, failed = client.post(prepared, callback, on_progress, self.on_panic)
+      results, errors = client.post(prepared, self.on_panic)
 
-      if failed:
-        warn('{0} accounts created, {1} failed                             '.format(passed, failed))
+      debug('processing results')
+      for result in results:
+        callback(*result)
+
+      if len(errors):
+        warn('{0} accounts created, {1} failed                             '.format(len(results), len(errors)))
+        for error in errors:
+          warn('> {}'.format(error))
       else:
         success('all passed                                                      ')
 
@@ -131,16 +131,9 @@ class Steps:
         number_of_transactions = secure_random.randrange(min_transactions, max_transactions)
 
       def callback(response, url, request, tenant_name):
-        if response.status != 200:
-          return None
+        assert status == 200, 'expected status 200 got {}'.format(status)
 
         self.integration.charge_transactions(tenant_name, request['id'], request['transfers'])
-
-        return response
-
-      def on_progress(processed, total):
-        if TTY:
-          progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
 
       partitions = []
       chunks = len(tenants)
@@ -163,10 +156,16 @@ class Steps:
         prepared.extend(self.integration.prepare_transaction(tenant_name, 10, credit_accounts, debit_account) for x in range(0, will_generate_transactions, 1))
 
       client = HttpClient()
-      passed, failed = client.post(prepared, callback, on_progress, self.on_panic)
+      results, errors = client.post(prepared, self.on_panic)
 
-      if failed:
-        warn('{0} transactions created, {1} failed                             '.format(passed, failed))
+      debug('processing results')
+      for result in results:
+        callback(*result)
+
+      if len(errors):
+        warn('{0} transactions created, {1} failed                             '.format(len(results), len(errors)))
+        for error in errors:
+          warn('> {}'.format(error))
       else:
         success('all passed                                                      ')
 
@@ -184,25 +183,24 @@ class Steps:
 
       info("prepared checking balance of {0} accounts".format(num_of_accounts))
 
-      def callback(response, url, request, tenant_name):
-        if response.status != 200:
-          return None
+      def callback(status, response, url, request, tenant_name):
+        assert status == 200, 'expected status 200 got {}'.format(status)
 
-        content = json.loads(response.data.decode('utf-8'))
-        if content['currency'] == request['currency'] and content['balance'] == request['balance']:
-          return response
-        else:
-          return None
+        content = json.loads(response)
 
-      def on_progress(processed, total):
-        if TTY:
-          progress('{1:.2f}% of {0}'.format(total, 100 * (processed/total)))
+        assert content['currency'] == request['currency'] and float(content['balance']) == float(request['balance']), 'expected {} {} got {} {}'.format(request['balance'], request['currency'], content['balance'], content['currency'])
 
       client = HttpClient()
-      passed, failed = client.get(prepared, callback, on_progress, self.on_panic)
+      results, errors = client.get(prepared, self.on_panic)
 
-      if failed:
-        warn('{0} balance validated, {1} failed                             '.format(passed, failed))
+      debug('processing results')
+      for result in results:
+        callback(*result)
+
+      if len(errors):
+        warn('{0} balance validated, {1} failed                             '.format(len(results), len(errors)))
+        for error in errors:
+          warn('> {}'.format(error))
       else:
         success('all passed                                                      ')
 
