@@ -120,7 +120,7 @@ class Steps:
         max_transactions = min_transactions * 10
         number_of_transactions = secure_random.randrange(min_transactions, max_transactions)
 
-      def callback(response, url, request, tenant_name):
+      def callback(status, response, url, request, tenant_name):
         assert status == 200, 'expected status 200 got {}'.format(status)
 
         self.integration.charge_transactions(tenant_name, request['id'], request['transfers'])
