@@ -243,6 +243,7 @@ class ApplianceHelper(object):
 
   def teardown(self):
     self.collect_logs()
-    for unit in self.__get_systemd_units():
-      execute(['systemctl', 'kill', '-s', 'SIGKILL', unit], silent=True)
+    # INFO patch
+    for unit in reversed(sorted(self.__get_systemd_units(), key=len)):
+      execute(['systemctl', 'stop', unit], silent=True)
     self.collect_logs()
