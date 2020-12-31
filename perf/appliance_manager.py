@@ -290,7 +290,6 @@ class ApplianceManager(object):
 
   def teardown(self) -> None:
     for name in reversed(sorted(list(self.units), key=len)):
-      print('teardown {}'.format(name))
       del self[name]
 
     self.collect_logs()
