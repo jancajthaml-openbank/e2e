@@ -202,7 +202,7 @@ class ApplianceHelper(object):
       assert code == 0, str(code) + ' ' + result
 
   def running(self):
-    (code, result) = execute(["systemctl", "list-units", "--no-legend"], silent=True)
+    (code, result) = execute(["systemctl", "list-units", "--no-legend", "--state=active"], silent=True)
     if code != 0:
       return False
 
@@ -235,7 +235,7 @@ class ApplianceHelper(object):
         fd.write(result)
 
   def __get_systemd_units(self):
-    (code, result) = execute(['systemctl', 'list-units', '--no-legend'], silent=True)
+    (code, result) = execute(['systemctl', 'list-units', '--no-legend', '--state=active'], silent=True)
     result = [item.split(' ')[0].strip() for item in result.split(os.linesep)]
     result = [item for item in result if not item.endswith('unit.slice')]
     result = [item for item in result if self.__is_openbank_unit(item)]
@@ -244,5 +244,5 @@ class ApplianceHelper(object):
   def teardown(self):
     self.collect_logs()
     for unit in self.__get_systemd_units():
-      execute(['systemctl', 'stop', unit], silent=True)
+      execute(['systemctl', 'kill', '-s', 'SIGKILL', unit], silent=True)
     self.collect_logs()
