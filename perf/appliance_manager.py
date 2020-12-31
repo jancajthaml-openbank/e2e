@@ -288,12 +288,9 @@ class ApplianceManager(object):
     if 'ledger' in self.services and not self['ledger-rest']:
       self['ledger-rest'] = LedgerRest()
 
-  def teardown(self, key=None) -> None:
-    if key:
-      del self[key]
-    else:
-      for name in list(self.units):
-        del self[name]
+  def teardown(self) -> None:
+    for name in reversed(sorted(list(self.units), key=len)):
+      del self[name]
 
     self.collect_logs()
 

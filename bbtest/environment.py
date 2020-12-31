@@ -24,15 +24,17 @@ def after_feature(context, feature):
 def before_all(context):
   context.statsd = StatsdHelper()
   context.statsd.start()
+
   context.appliance = ApplianceHelper(context)
   context.http = urllib3.PoolManager()
+
   try:
     context.appliance.setup()
     context.appliance.download()
     context.appliance.install()
   except Exception as ex:
-    context.appliance.teardown()
     print(ex)
+    after_all(context)
     sys.exit(1)
 
 
