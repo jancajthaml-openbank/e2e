@@ -11,6 +11,7 @@
 | [fio-bco](https://github.com/jancajthaml-openbank/fio-bco) | [![CircleCI](https://circleci.com/gh/jancajthaml-openbank/fio-bco/tree/main.svg?style=shield)](https://circleci.com/gh/jancajthaml-openbank/fio-bco/tree/main) |
 | [bondster-bco](https://github.com/jancajthaml-openbank/bondster-bco) | [![CircleCI](https://circleci.com/gh/jancajthaml-openbank/bondster-bco/tree/main.svg?style=shield)](https://circleci.com/gh/jancajthaml-openbank/bondster-bco/tree/main) |
 | [cnb-rates](https://github.com/jancajthaml-openbank/cnb-rates) | [![CircleCI](https://circleci.com/gh/jancajthaml-openbank/cnb-rates/tree/main.svg?style=shield)](https://circleci.com/gh/jancajthaml-openbank/cnb-rates/tree/main) |
+| [metrics](https://github.com/jancajthaml-openbank/metrics) | [![CircleCI](https://circleci.com/gh/jancajthaml-openbank/metrics/tree/main.svg?style=shield)](https://circleci.com/gh/jancajthaml-openbank/metrics/tree/main) |
 
 ## contract test
 
