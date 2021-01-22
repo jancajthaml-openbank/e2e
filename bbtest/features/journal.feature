@@ -15,7 +15,7 @@ Feature: Journal integrity test
       | promiseBuffer  |         |
       | accountName    |    Euro |
       | isBalanceCheck |   false |
-      | format         |  BBTEST |
+      | format         |  bbtest |
       | currency       |     EUR |
 
     When  active XRP account JOURNAL/Ripple is created
@@ -27,7 +27,7 @@ Feature: Journal integrity test
       | promiseBuffer  |         |
       | accountName    |  Ripple |
       | isBalanceCheck |    true |
-      | format         |  BBTEST |
+      | format         |  bbtest |
       | currency       |     XRP |
 
   Scenario: Creating of transaction comitted
