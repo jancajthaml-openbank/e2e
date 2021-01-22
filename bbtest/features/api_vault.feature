@@ -77,7 +77,7 @@ Feature: Vault API test
       """
       {
         "currency": "XXX",
-        "format": "BBTEST",
+        "format": "bbtest",
         "balance": "0.0",
         "blocking": "0.0",
         "isBalanceCheck": false
@@ -93,7 +93,7 @@ Feature: Vault API test
       """
       {
         "currency": "XXX",
-        "format": "BBTEST",
+        "format": "bbtest",
         "balance": "0.0",
         "blocking": "0.0",
         "isBalanceCheck": false
