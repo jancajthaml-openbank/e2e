@@ -1,6 +1,6 @@
 Feature: Ledger API test
 
-  Scenario: setup
+  Scenario: ledger setup
     Given appliance is running
     And   vault APITRN is onboarded
     And   ledger APITRN is onboarded
