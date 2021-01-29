@@ -100,7 +100,7 @@ def main():
     manager.bootstrap()
     manager.reconfigure({
       'STATSD_ENDPOINT': '127.0.0.1:8125',
-      'LOG_LEVEL': 'DEBUG'
+      'LOG_LEVEL': 'ERROR'
     })
     manager.teardown()
     cleanup()
