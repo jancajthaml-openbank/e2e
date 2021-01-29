@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from systemd.common import Unit
+from unit.common import Unit
 from helpers.eventually import eventually
 from helpers.shell import execute
 import string
@@ -9,22 +9,22 @@ import time
 import os
 
 
-class Lake(Unit):
+class VaultRest(Unit):
 
   def __init__(self):
     (code, result) = execute([
-      'systemctl', 'start', 'lake-relay'
-    ])
+      "systemctl", "start", 'vault-rest'
+    ], silent=True)
     assert code == 0, str(result)
 
   def __repr__(self):
-    return 'Lake()'
+    return 'VaultRest()'
 
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
       (code, result) = execute([
-        'systemctl', 'stop', 'lake-relay'
+        'systemctl', 'stop', 'vault-rest'
       ], silent=True)
       assert code == 0, str(result)
 
@@ -34,7 +34,7 @@ class Lake(Unit):
     @eventually(2)
     def eventual_restart():
       (code, result) = execute([
-        'systemctl', 'restart', 'lake-relay'
+        "systemctl", "restart", 'vault-rest'
       ], silent=True)
       assert code == 0, str(result)
 
@@ -45,23 +45,22 @@ class Lake(Unit):
   def reconfigure(self, params) -> None:
     d = dict()
 
-    if os.path.exists('/etc/lake/conf.d/init.conf'):
-      with open('/etc/lake/conf.d/init.conf', 'r') as f:
+    if os.path.exists('/etc/vault/conf.d/init.conf'):
+      with open('/etc/vault/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           d[key] = val
 
     for k, v in params.items():
-      key = 'LAKE_{0}'.format(k)
+      key = 'VAULT_{0}'.format(k)
       if key in d:
         d[key] = v
 
-    os.makedirs('/etc/lake/conf.d', exist_ok=True)
-    with open('/etc/lake/conf.d/init.conf', 'w') as f:
+    os.makedirs('/etc/vault/conf.d', exist_ok=True)
+    with open('/etc/vault/conf.d/init.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
-    if not self.restart():
-      raise RuntimeError("lake failed to restart")
+    self.is_healthy
 
   @property
   def is_healthy(self) -> bool:
@@ -69,7 +68,7 @@ class Lake(Unit):
       @eventually(10)
       def eventual_check():
         (code, result) = execute([
-          "systemctl", "show", "-p", "SubState", "lake-relay"
+          "systemctl", "show", "-p", "SubState", "vault-rest"
         ], silent=True)
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()

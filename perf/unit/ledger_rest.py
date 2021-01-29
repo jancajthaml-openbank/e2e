@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from systemd.common import Unit
+from unit.common import Unit
 from helpers.eventually import eventually
 from helpers.shell import execute
 import string
@@ -9,33 +9,22 @@ import time
 import os
 
 
-class LedgerUnit(Unit):
+class LedgerRest(Unit):
 
-  @property
-  def tenant(self) -> str:
-    return self._tenant
+  def __init__(self):
+    (code, result) = execute([
+      "systemctl", "start", 'ledger-rest'
+    ], silent=True)
+    assert code == 0, str(result)
 
   def __repr__(self):
-    return 'LedgerUnit({0})'.format(self._tenant)
-
-  def __init__(self, tenant):
-    self._tenant = tenant
-
-    (code, result) = execute([
-      "systemctl", "enable", 'ledger-unit@{0}'.format(self._tenant)
-    ], silent=True)
-    assert code == 0, str(result)
-
-    (code, result) = execute([
-      "systemctl", "start", 'ledger-unit@{0}'.format(self._tenant)
-    ], silent=True)
-    assert code == 0, str(result)
+    return 'LedgerRest()'
 
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
       (code, result) = execute([
-        'systemctl', 'stop', 'ledger-unit@{0}'.format(self._tenant)
+        'systemctl', 'stop', 'ledger-rest'
       ], silent=True)
       assert code == 0, str(result)
 
@@ -45,7 +34,7 @@ class LedgerUnit(Unit):
     @eventually(2)
     def eventual_restart():
       (code, result) = execute([
-        "systemctl", "restart", 'ledger-unit@{0}'.format(self._tenant)
+        "systemctl", "restart", 'ledger-rest'
       ], silent=True)
       assert code == 0, str(result)
 
@@ -71,8 +60,7 @@ class LedgerUnit(Unit):
     with open('/etc/ledger/conf.d/init.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
-    if not self.restart():
-      raise RuntimeError("ledger failed to restart")
+    self.is_healthy
 
   @property
   def is_healthy(self) -> bool:
@@ -80,7 +68,7 @@ class LedgerUnit(Unit):
       @eventually(10)
       def eventual_check():
         (code, result) = execute([
-          "systemctl", "show", "-p", "SubState", 'ledger-unit@{0}'.format(self._tenant)
+          "systemctl", "show", "-p", "SubState", "ledger-rest"
         ], silent=True)
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from systemd.common import Unit
+from unit.common import Unit
 from helpers.eventually import eventually
 from helpers.shell import execute
 import string
@@ -9,24 +9,35 @@ import time
 import os
 
 
-class LedgerRest(Unit):
+class VaultUnit(Unit):
 
-  def __init__(self):
+  @property
+  def tenant(self) -> str:
+    return self._tenant
+
+  def __repr__(self):
+    return 'VaultUnit({0})'.format(self._tenant)
+
+  def __init__(self, tenant):
+    self._tenant = tenant
+
     (code, result) = execute([
-      "systemctl", "start", 'ledger-rest'
+      "systemctl", "enable", 'vault-unit@{0}'.format(self._tenant)
     ], silent=True)
     assert code == 0, str(result)
 
-  def __repr__(self):
-    return 'LedgerRest()'
+    (code, result) = execute([
+      "systemctl", "start", 'vault-unit@{0}'.format(self._tenant)
+    ], silent=True)
+    assert code == 0, str(result)
 
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
       (code, result) = execute([
-        'systemctl', 'stop', 'ledger-rest'
+        'systemctl', 'stop', 'vault-unit@{0}'.format(self._tenant)
       ], silent=True)
-      assert code == 0, str(result)
+      assert code == 0, str(code) + ' ' + str(result)
 
     eventual_teardown()
 
@@ -34,9 +45,9 @@ class LedgerRest(Unit):
     @eventually(2)
     def eventual_restart():
       (code, result) = execute([
-        "systemctl", "restart", 'ledger-rest'
+        "systemctl", "restart", 'vault-unit@{0}'.format(self._tenant)
       ], silent=True)
-      assert code == 0, str(result)
+      assert code == 0, str(code) + ' ' + str(result)
 
     eventual_restart()
 
@@ -45,31 +56,30 @@ class LedgerRest(Unit):
   def reconfigure(self, params) -> None:
     d = dict()
 
-    if os.path.exists('/etc/ledger/conf.d/init.conf'):
-      with open('/etc/ledger/conf.d/init.conf', 'r') as f:
+    if os.path.exists('/etc/vault/conf.d/init.conf'):
+      with open('/etc/vault/conf.d/init.conf', 'r') as f:
         for line in f:
           (key, val) = line.rstrip().split('=')
           d[key] = val
 
     for k, v in params.items():
-      key = 'LEDGER_{0}'.format(k)
+      key = 'VAULT_{0}'.format(k)
       if key in d:
         d[key] = v
 
-    os.makedirs('/etc/ledger/conf.d', exist_ok=True)
-    with open('/etc/ledger/conf.d/init.conf', 'w') as f:
+    os.makedirs("/etc/vault/conf.d", exist_ok=True)
+    with open('/etc/vault/conf.d/init.conf', 'w') as f:
       f.write('\n'.join("{!s}={!s}".format(key,val) for (key,val) in d.items()))
 
-    if not self.restart():
-      raise RuntimeError("ledger-rest failed to restart")
-
+    self.is_healthy
+    
   @property
   def is_healthy(self) -> bool:
     try:
       @eventually(10)
       def eventual_check():
         (code, result) = execute([
-          "systemctl", "show", "-p", "SubState", "ledger-rest"
+          "systemctl", "show", "-p", "SubState", 'vault-unit@{0}'.format(self._tenant)
         ], silent=True)
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()
