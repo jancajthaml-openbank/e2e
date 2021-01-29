@@ -1,6 +1,6 @@
 Feature: Journal integrity test
 
-  Scenario: setup
+  Scenario: vault & ledger setup
     Given appliance is running
     And   vault JOURNAL is onboarded
     And   ledger JOURNAL is onboarded

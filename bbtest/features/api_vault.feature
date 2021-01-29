@@ -1,6 +1,6 @@
 Feature: Vault API test
 
-  Scenario: setup
+  Scenario: vault setup
     Given appliance is running
     And   vault APIACC is onboarded
 

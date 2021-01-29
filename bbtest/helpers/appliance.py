@@ -210,8 +210,13 @@ class ApplianceHelper(object):
     for unit in self.units:
       if not unit.endswith('.service'):
         continue
+
       (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
-      all_running &= ('SubState=running' in result or 'SubState=exited' in result)
+
+      if unit.endswith('-watcher.service'):
+        all_running &= 'SubState=dead' in result
+      else:
+        all_running &= ('SubState=running' in result or 'SubState=exited' in result)
 
     return all_running
 

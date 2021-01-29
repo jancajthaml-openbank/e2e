@@ -1,6 +1,6 @@
 Feature: Data Warehouse API test
 
-  Scenario: setup
+  Scenario: data-warehouse setup
     Given appliance is running
     And   vault SEARCH is onboarded
     And   ledger SEARCH is onboarded

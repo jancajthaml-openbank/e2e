@@ -1,6 +1,6 @@
 Feature: Transaction workflow
 
-  Scenario: Setup
+  Scenario: vault & ledger setup
     Given appliance is running
     And   vault NORDEA is onboarded
     And   ledger NORDEA is onboarded
