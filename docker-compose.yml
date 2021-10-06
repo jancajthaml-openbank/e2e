@@ -1,4 +1,4 @@
-version: '3.9'
+version: '2.1'
 
 # ---------------------------------------------------------------------------- #
 
@@ -38,7 +38,8 @@ services:
   bbtest-amd64:
     image: docker.io/jancajthaml/bbtest:amd64
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       UNIT_ARCH: amd64
       GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
@@ -57,7 +58,8 @@ services:
   bbtest-arm64:
     image: docker.io/jancajthaml/bbtest:arm64
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       UNIT_ARCH: arm64
       GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
@@ -77,7 +79,8 @@ services:
   bbtest-armhf:
     image: docker.io/jancajthaml/bbtest:armhf
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
       UNIT_ARCH: armhf
       GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
