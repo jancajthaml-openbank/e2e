@@ -41,7 +41,6 @@ class MetricsAggregator(threading.Thread):
     for metric in data.split('\n'):
       match = re.match('\A([^:]+):([^|]+)\|(.+)', metric)
       if match == None:
-        print('no match for {}'.format(data))
         continue
 
       key   = match.group(1)
