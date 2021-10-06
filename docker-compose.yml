@@ -13,8 +13,6 @@ services:
     build:
       dockerfile: Dockerfile
       context: bbtest/postgres
-    restart_policy:
-      condition: on-failure
 
   # -------------------------------------------------------------------------- #
 
