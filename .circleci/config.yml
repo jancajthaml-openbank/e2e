@@ -37,8 +37,8 @@ workflows:
 
 executors:
 
-  machine:
-    testbed:
+  testbed:
+    machine:
       image: ubuntu-2004:202010-01
       docker_layer_caching: false
 
