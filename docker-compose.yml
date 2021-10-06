@@ -17,7 +17,7 @@ services:
       test: pg_isready -U postgres -d openbank
       interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 10
 
   # -------------------------------------------------------------------------- #
 
