@@ -1,5 +1,3 @@
-# integration and performance testing
-
 | Service | Health |
 | --------- | -------------- |
 | [data-warehouse](https://github.com/jancajthaml-openbank/data-warehouse)| [![CircleCI](https://circleci.com/gh/jancajthaml-openbank/data-warehouse/tree/main.svg?style=shield)](https://circleci.com/gh/jancajthaml-openbank/data-warehouse/tree/main) |
