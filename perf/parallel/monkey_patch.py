@@ -10,7 +10,7 @@ def patch_thread_join():
   join_orig = threading.Thread.join
   def patch(threadObj, timeout=None):
     if timeout is None and threading.get_ident() == mainThreadId:
-      while threadObj.isAlive():
+      while threadObj.is_alive():
         join_orig(threadObj, timeout=None)
     else:
       join_orig(threadObj, timeout=timeout)
