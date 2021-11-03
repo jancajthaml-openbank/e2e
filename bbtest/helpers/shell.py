@@ -62,6 +62,13 @@ def execute(command, timeout=120, silent=False) -> None:
     deadline.cancel()
     p.wait()
 
-    return (p.returncode, result)
+    if p.returncode == 0:
+      code = 'OK'
+    elif p.returncode < 0:
+      code = signal.Signals(-p.returncode).name
+    else:
+      code = signal.Signals(p.returncode).name
+
+    return (code, result)
   except subprocess.CalledProcessError:
-    return (-1, '')
+    return ('SIGQUIT', '')

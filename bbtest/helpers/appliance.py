@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import docker
-import ssl
 import urllib.request
 import platform
 import tarfile
@@ -13,6 +12,7 @@ import json
 import datetime
 import subprocess
 from .shell import execute
+from .http import Request
 
 
 class ApplianceHelper(object):
@@ -39,13 +39,9 @@ class ApplianceHelper(object):
   def get_latest_version(self, service):
     uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags/".format(service)
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-
-    request = urllib.request.Request(method='GET', url=uri)
+    request = Request(method='GET', url=uri)
     request.add_header('Accept', 'application/json')
-    response = urllib.request.urlopen(request, timeout=10, context=ctx)
+    response = request.do()
 
     if not response.status == 200:
       return None
@@ -170,7 +166,7 @@ class ApplianceHelper(object):
         archive.extract('{}.deb'.format(service), '/tmp/packages')
 
         (code, result) = execute(['dpkg', '-c', '/tmp/packages/{}.deb'.format(service)], silent=True)
-        assert code == 0, str(code) + ' ' + result
+        assert code == 'OK', str(code) + ' ' + result
 
         with open('reports/blackbox-tests/meta/debian.{}.txt'.format(service), 'w') as fd:
           fd.write(result)
@@ -199,11 +195,11 @@ class ApplianceHelper(object):
       (code, result) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
       ], silent=True)
-      assert code == 0, str(code) + ' ' + result
+      assert code == 'OK', str(code) + ' ' + result
 
   def running(self):
     (code, result) = execute(["systemctl", "list-units", "--no-legend", "--state=active"], silent=True)
-    if code != 0:
+    if code != 'OK':
       return False
 
     all_running = True
@@ -229,13 +225,13 @@ class ApplianceHelper(object):
   def collect_logs(self):
     for unit in set(self.__get_systemd_units() + self.units):
       (code, result) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'], silent=True)
-      if code != 0 or not result:
+      if code != 'OK' or not result:
         continue
       with open('reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
         fd.write(result)
 
     (code, result) = execute(['journalctl', '-o', 'cat', '--no-pager'], silent=True)
-    if code == 0:
+    if code == 'OK':
       with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
 

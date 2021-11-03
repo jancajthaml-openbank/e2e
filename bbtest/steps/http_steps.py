@@ -2,23 +2,25 @@
 # -*- coding: utf-8 -*-
 
 from behave import *
-import urllib3
 import json
-import socket
 import time
 from helpers.eventually import eventually
+from helpers.http import Request
 
 
 @given('{service} {tenant} is onboarded')
 def onboard_unit(context, service, tenant):
-  assert service in ['vault', 'ledger']
+  assert service in ['vault', 'ledger'], 'unknown service "{}" to onboard'.format(service)
 
   uri = "https://127.0.0.1:{}/tenant/{}".format({
     'ledger': 4401,
     'vault': 4400,
   }[service], tenant)
 
-  response = context.http.request('POST', uri, headers={'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=0))
+  request = Request(method='POST', url=uri)
+  request.add_header('Accept', 'application/json')
+
+  response = request.do()
   assert response.status == 200, 'expected status 200 got {}'.format(response.status)
 
   @eventually(5)
@@ -37,11 +39,12 @@ def prepare_graphql_request(context):
 def check_graphql_response(context):
   @eventually(120)
   def wait_for_warehouse_to_be_healthy():
-    response = context.http.request('GET', 'http://127.0.0.1:8080/health')
-    assert response.status == 200
-    status = json.loads(response.data.decode('utf-8'))
-    assert status['healthy'] is True, 'service is not healthy'
-    assert status['graphql'] is True, 'graphql is not healthy'
+    request = Request(method='GET', url='http://127.0.0.1:8080/health')
+    response = request.do()
+    assert response.status == 200, str(response.status)
+    status = json.loads(response.read().decode('utf-8'))
+    assert status['healthy'], 'service is not healthy'
+    assert status['graphql'], 'graphql is not healthy'
 
   uri = "http://127.0.0.1:8080/graphql"
   payload = {
@@ -67,10 +70,15 @@ def check_graphql_response(context):
 
   @eventually(120)
   def wait_for_graphql_to_respond():
-    response = context.http.request('POST', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=20, retries=urllib3.Retry(total=0))
+    request = Request(method='POST', url=uri)
+    request.data = json.dumps(payload)
+    request.add_header('Content-Type', 'application/json')
+    request.add_header('Accept', 'application/json')
+    response = request.do()
+
     assert response.status == 200, 'expected status {} actual {} with body {}'.format(200, response.status, response.data.decode('utf-8'))
     expected = json.loads(context.text)
-    actual = json.loads(response.data.decode('utf-8'))
+    actual = json.loads(response.read().decode('utf-8'))
     try:
       diff('', expected, actual)
     except AssertionError as ex:
@@ -89,21 +97,17 @@ def perform_http_request(context, uri):
 
   context.http_response = dict()
 
-  try:
-    if context.text:
-      response = context.http.request(options['method'], uri, body=context.text.encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=3))
-    else:
-      response = context.http.request(options['method'], uri, headers={ 'Accept': 'application/json'}, timeout=5, retries=urllib3.Retry(total=3))
-    context.http_response['status'] = str(response.status)
-    context.http_response['body'] = response.data.decode('utf-8')
-    try:
-      context.http_response['content-type'] = response.info()['Content-Type']
-    except KeyError:
-      context.http_response['content-type'] = 'text/plain'
-  except (urllib3.exceptions.MaxRetryError, ConnectionRefusedError):
-    context.http_response['status'] = '504'
-    context.http_response['body'] = ''
-    context.http_response['content-type'] = 'text/plain'
+  request = Request(method=options['method'], url=uri)
+  request.add_header('Accept', 'application/json')
+
+  if context.text:
+    request.add_header('Content-Type', 'application/json')
+    request.data = context.text
+
+  response = request.do()
+  context.http_response['status'] = str(response.status)
+  context.http_response['body'] = response.read().decode('utf-8')
+  context.http_response['content-type'] = response.info().get_content_type()
 
 
 @then('HTTP response is')

@@ -31,3 +31,5 @@ class eventually():
 
     if self.__last_exception:
       raise self.__last_exception
+    else:
+      raise AssertionError('timeout')

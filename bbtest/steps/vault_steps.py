@@ -3,7 +3,7 @@
 
 from behave import *
 from helpers.eventually import eventually
-import urllib3
+from helpers.http import Request
 import json
 import time
 
@@ -20,7 +20,11 @@ def create_account(context, activity, currency, tenant, account):
     'isBalanceCheck': activity == "active",
   }
 
-  response = context.http.request('POST', uri, body=json.dumps(payload).encode('utf-8'), headers={'Content-Type': 'application/json', 'Accept': 'application/json'}, timeout=5)
+  request = Request(method='POST', url=uri)
+  request.data = json.dumps(payload)
+  request.add_header('Content-Type', 'application/json')
+  request.add_header('Accept', 'application/json')
+  response = request.do()
 
   assert response.status in [200, 409], 'expected status 200 or 409 actual {}'.format(response.status)
 
@@ -28,12 +32,14 @@ def create_account(context, activity, currency, tenant, account):
 def account_balance(context, tenant, account, amount, currency):
   uri = "https://127.0.0.1:4400/account/{}/{}".format(tenant, account)
 
-  http = urllib3.PoolManager()
-  response = http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
+  request = Request(method='GET', url=uri)
+  request.add_header('Accept', 'application/json')
+
+  response = request.do()
 
   assert response.status == 200, 'expected status 200 actual {}'.format(response.status)
 
-  body = json.loads(response.data.decode('utf-8'))
+  body = json.loads(response.read().decode('utf-8'))
 
   assert amount == body['balance'], "expected balance {} got {}".format(amount, body['balance'])
   assert currency == body['currency'], "expected currency {} got {}".format(currency, body['currency'])
@@ -43,7 +49,10 @@ def account_balance(context, tenant, account, amount, currency):
 def account_exists(context, tenant, account):
   uri = "https://127.0.0.1:4400/account/{}/{}".format(tenant, account)
 
-  response = context.http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
+  request = Request(method='GET', url=uri)
+  request.add_header('Accept', 'application/json')
+
+  response = request.do()
 
   assert response.status == 200, 'expected status 200 actual {}'.format(response.status)
 
@@ -52,6 +61,9 @@ def account_exists(context, tenant, account):
 def account_not_exists(context, tenant, account):
   uri = "https://127.0.0.1:4400/account/{}/{}".format(tenant, account)
 
-  response = context.http.request('GET', uri, headers={'Accept': 'application/json'}, timeout=5)
+  request = Request(method='GET', url=uri)
+  request.add_header('Accept', 'application/json')
+
+  response = request.do()
 
   assert response.status in [404, 504], 'expected status 404 or 504 actual {}'.format(response.status)
