@@ -6,17 +6,6 @@ from helpers.appliance import ApplianceHelper
 from helpers.statsd import StatsdHelper
 from helpers.logger import logger
 
-#import urllib3
-#urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-#import ssl
-#try:
- # _create_unverified_https_context = ssl._create_unverified_context
-#except AttributeError:
- # pass
-#else:
- # ssl._create_default_https_context = _create_unverified_https_context
-
 
 def before_feature(context, feature):
   context.statsd.clear()
@@ -41,7 +30,6 @@ def before_all(context):
   context.statsd.start()
 
   context.appliance = ApplianceHelper(context)
-  #context.http = urllib3.PoolManager()
 
   try:
     context.log.info('')

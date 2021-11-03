@@ -165,7 +165,7 @@ class ApplianceHelper(object):
         archive = tarfile.TarFile(tar_name.name)
         archive.extract('{}.deb'.format(service), '/tmp/packages')
 
-        (code, result) = execute(['dpkg', '-c', '/tmp/packages/{}.deb'.format(service)], silent=True)
+        (code, result, error) = execute(['dpkg', '-c', '/tmp/packages/{}.deb'.format(service)])
         assert code == 'OK', str(code) + ' ' + result
 
         with open('reports/blackbox-tests/meta/debian.{}.txt'.format(service), 'w') as fd:
@@ -192,13 +192,13 @@ class ApplianceHelper(object):
 
   def install(self):
     for service in self.services:
-      (code, result) = execute([
+      (code, result, error) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
-      ], silent=True)
+      ])
       assert code == 'OK', str(code) + ' ' + result
 
   def running(self):
-    (code, result) = execute(["systemctl", "list-units", "--no-legend", "--state=active"], silent=True)
+    (code, result, error) = execute(["systemctl", "list-units", "--no-legend", "--state=active"])
     if code != 'OK':
       return False
 
@@ -207,7 +207,7 @@ class ApplianceHelper(object):
       if not unit.endswith('.service'):
         continue
 
-      (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
+      (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
 
       if unit.endswith('-watcher.service'):
         all_running &= 'SubState=dead' in result
@@ -224,19 +224,19 @@ class ApplianceHelper(object):
 
   def collect_logs(self):
     for unit in set(self.__get_systemd_units() + self.units):
-      (code, result) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'], silent=True)
+      (code, result, error) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'])
       if code != 'OK' or not result:
         continue
       with open('reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
         fd.write(result)
 
-    (code, result) = execute(['journalctl', '-o', 'cat', '--no-pager'], silent=True)
+    (code, result, error) = execute(['journalctl', '-o', 'cat', '--no-pager'])
     if code == 'OK':
       with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
 
   def __get_systemd_units(self):
-    (code, result) = execute(['systemctl', 'list-units', '--no-legend', '--state=active'], silent=True)
+    (code, result, error) = execute(['systemctl', 'list-units', '--no-legend', '--state=active'])
     result = [item.split(' ')[0].strip() for item in result.split(os.linesep)]
     result = [item for item in result if not item.endswith('unit.slice')]
     result = [item for item in result if self.__is_openbank_unit(item)]
@@ -246,5 +246,5 @@ class ApplianceHelper(object):
     self.collect_logs()
     # INFO patch
     for unit in reversed(sorted(self.__get_systemd_units(), key=len)):
-      execute(['systemctl', 'stop', unit], silent=True)
+      execute(['systemctl', 'stop', unit])
     self.collect_logs()

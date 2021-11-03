@@ -6,6 +6,7 @@ import threading
 import signal
 import time
 import os
+import re
 
 
 class Deadline(threading.Thread):
@@ -27,14 +28,15 @@ class Deadline(threading.Thread):
     self.join()
 
 
-def execute(command, timeout=120, silent=False) -> None:
+def execute(command, timeout=60) -> None:
+  ansi_escape = re.compile(r'(\x9B|\x1B\[)[0-?]*[ -/]*[@-~]', flags=re.IGNORECASE)
   try:
     p = subprocess.Popen(
       command,
       shell=False,
       stdin=None,
       stdout=subprocess.PIPE,
-      stderr=subprocess.STDOUT,
+      stderr=subprocess.PIPE,
       close_fds=True
     )
 
@@ -42,25 +44,21 @@ def execute(command, timeout=120, silent=False) -> None:
       for sig in [signal.SIGTERM, signal.SIGQUIT, signal.SIGKILL, signal.SIGKILL]:
         if p.poll():
           break
+
         try:
           os.kill(p.pid, sig)
         except OSError:
           break
 
-    result = ''
-
     deadline = Deadline(timeout, callback=kill)
     deadline.start()
-
-    for line in p.stdout:
-      line = line.decode('utf-8')
-      if len(line):
-        result += line
-        if not silent:
-          print(line.strip('\r\n'))
-
+    (result, error) = p.communicate()
     deadline.cancel()
-    p.wait()
+
+    result = result.decode('utf-8').strip() if result else ''
+    result = ansi_escape.sub('', result)
+    error = error.decode('utf-8').strip() if error else ''
+    error = ansi_escape.sub('', error)
 
     if p.returncode == 0:
       code = 'OK'
@@ -69,6 +67,8 @@ def execute(command, timeout=120, silent=False) -> None:
     else:
       code = signal.Signals(p.returncode).name
 
-    return (code, result)
+    del p
+
+    return (code, result, error)
   except subprocess.CalledProcessError:
-    return ('SIGQUIT', '')
+    return ('SIGQUIT', None, None)
