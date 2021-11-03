@@ -54,6 +54,10 @@ class Request(object):
     
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.check_hostname = False
+    ctx.options |= ssl.OP_NO_SSLv3
+    ctx.options |= ssl.OP_NO_SSLv2      
+    ctx.options |= ssl.OP_NO_TLSv1
+    ctx.options |= ssl.OP_NO_TLSv1_1
     ctx.verify_mode = ssl.CERT_NONE
 
     self.add_header('Connection', "keep-alive")
