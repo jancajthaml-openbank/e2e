@@ -7,7 +7,7 @@ import urllib.response
 import socket
 import time
 import http
-from io import StringIO
+from io import BytesIO
 
 
 class StubHeaders(object):
@@ -54,30 +54,27 @@ class Request(object):
     
     ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
     ctx.check_hostname = False
-    ctx.options |= ssl.OP_NO_SSLv3
-    ctx.options |= ssl.OP_NO_SSLv2      
-    ctx.options |= ssl.OP_NO_TLSv1
-    ctx.options |= ssl.OP_NO_TLSv1_1
+    ctx.options |= (
+      ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+    )
+    ctx.set_ciphers("ECDHE+AESGCM:ECDHE+CHACHA20:DHE+AESGCM:DHE+CHACHA20")
     ctx.verify_mode = ssl.CERT_NONE
-
-    self.add_header('Connection', "keep-alive")
 
     deadline = time.monotonic() + (2 * timeout)
     while deadline > time.monotonic():
       try:
         return urllib.request.urlopen(self.__underlying, timeout=timeout, context=ctx)
       except (http.client.RemoteDisconnected, socket.timeout):
-        return StubResponse(504, StringIO(''))
+        return StubResponse(504, BytesIO())
       except urllib.error.HTTPError as err:
         return StubResponse(err.code, err)
+      except ssl.SSLError:
+        return StubResponse(504, BytesIO())
       except urllib.error.URLError as err:
-        last_exception = err
-        time.sleep(0.5)
-      except ssl.SSLError as err:
         last_exception = err
         time.sleep(0.5)
 
     if last_exception:
       raise last_exception
     else:
-      raise AssertionError('timeout')
+      raise AssertionError('timeout after {} seconds'.format(timeout))
