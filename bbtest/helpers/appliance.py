@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import docker
-import ssl
 import urllib.request
 import platform
 import tarfile
@@ -13,6 +12,7 @@ import json
 import datetime
 import subprocess
 from .shell import execute
+from .http import Request
 
 
 class ApplianceHelper(object):
@@ -39,13 +39,9 @@ class ApplianceHelper(object):
   def get_latest_version(self, service):
     uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags/".format(service)
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-
-    request = urllib.request.Request(method='GET', url=uri)
+    request = Request(method='GET', url=uri)
     request.add_header('Accept', 'application/json')
-    response = urllib.request.urlopen(request, timeout=10, context=ctx)
+    response = request.do()
 
     if not response.status == 200:
       return None
@@ -169,8 +165,8 @@ class ApplianceHelper(object):
         archive = tarfile.TarFile(tar_name.name)
         archive.extract('{}.deb'.format(service), '/tmp/packages')
 
-        (code, result) = execute(['dpkg', '-c', '/tmp/packages/{}.deb'.format(service)], silent=True)
-        assert code == 0, str(code) + ' ' + result
+        (code, result, error) = execute(['dpkg', '-c', '/tmp/packages/{}.deb'.format(service)])
+        assert code == 'OK', str(code) + ' ' + result
 
         with open('reports/blackbox-tests/meta/debian.{}.txt'.format(service), 'w') as fd:
           fd.write(result)
@@ -196,14 +192,14 @@ class ApplianceHelper(object):
 
   def install(self):
     for service in self.services:
-      (code, result) = execute([
+      (code, result, error) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
-      ], silent=True)
-      assert code == 0, str(code) + ' ' + result
+      ])
+      assert code == 'OK', str(code) + ' ' + result
 
   def running(self):
-    (code, result) = execute(["systemctl", "list-units", "--no-legend", "--state=active"], silent=True)
-    if code != 0:
+    (code, result, error) = execute(["systemctl", "list-units", "--no-legend", "--state=active"])
+    if code != 'OK':
       return False
 
     all_running = True
@@ -211,7 +207,7 @@ class ApplianceHelper(object):
       if not unit.endswith('.service'):
         continue
 
-      (code, result) = execute(["systemctl", "show", "-p", "SubState", unit], silent=True)
+      (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
 
       if unit.endswith('-watcher.service'):
         all_running &= 'SubState=dead' in result
@@ -228,19 +224,19 @@ class ApplianceHelper(object):
 
   def collect_logs(self):
     for unit in set(self.__get_systemd_units() + self.units):
-      (code, result) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'], silent=True)
-      if code != 0 or not result:
+      (code, result, error) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'])
+      if code != 'OK' or not result:
         continue
       with open('reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
         fd.write(result)
 
-    (code, result) = execute(['journalctl', '-o', 'cat', '--no-pager'], silent=True)
-    if code == 0:
+    (code, result, error) = execute(['journalctl', '-o', 'cat', '--no-pager'])
+    if code == 'OK':
       with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
 
   def __get_systemd_units(self):
-    (code, result) = execute(['systemctl', 'list-units', '--no-legend', '--state=active'], silent=True)
+    (code, result, error) = execute(['systemctl', 'list-units', '--no-legend', '--state=active'])
     result = [item.split(' ')[0].strip() for item in result.split(os.linesep)]
     result = [item for item in result if not item.endswith('unit.slice')]
     result = [item for item in result if self.__is_openbank_unit(item)]
@@ -250,5 +246,5 @@ class ApplianceHelper(object):
     self.collect_logs()
     # INFO patch
     for unit in reversed(sorted(self.__get_systemd_units(), key=len)):
-      execute(['systemctl', 'stop', unit], silent=True)
+      execute(['systemctl', 'stop', unit])
     self.collect_logs()

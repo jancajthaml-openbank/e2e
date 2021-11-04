@@ -12,7 +12,7 @@ from datetime import datetime
 @then('snapshot {tenant}/{account} version {version} should be')
 def check_account_snapshot(context, tenant, account, version):
   path = '/data/t_{}/account/{}/snapshot/{}'.format(tenant, account, version.zfill(10))
-  assert os.path.isfile(path)
+  assert os.path.isfile(path), 'file {} does not exists'.format(path)
 
   actual = dict()
   with open(path, 'r') as fd:
@@ -31,14 +31,14 @@ def check_account_snapshot(context, tenant, account, version):
     })
 
   for row in context.table:
-    assert row['key'] in actual
+    assert row['key'] in actual, 'key {} is missing in {}'.format(row['key'], actual)
     assert actual[row['key']] == row['value'], 'expected {} got {}'.format(row['value'], actual[row['key']])
 
 
 @then('transaction {transaction} state of {tenant} should be {status}')
 def check_transaction_state(context, tenant, transaction, status):
   path = '/data/t_{}/transaction/{}'.format(tenant, transaction)
-  assert os.path.isfile(path)
+  assert os.path.isfile(path), 'file {} does not exists'.format(path)
 
   actual = dict()
   with open(path, 'r') as fd:
@@ -49,9 +49,8 @@ def check_transaction_state(context, tenant, transaction, status):
 
 @then('transaction {transaction} of {tenant} should be')
 def check_transaction_state(context, tenant, transaction):
-
   path = '/data/t_{}/transaction/{}'.format(tenant, transaction)
-  assert os.path.isfile(path)
+  assert os.path.isfile(path), 'file {} does not exists'.format(path)
 
   actual = []
   with open(path, 'r') as fd:
