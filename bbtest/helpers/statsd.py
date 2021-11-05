@@ -61,8 +61,6 @@ class StatsdHelper(threading.Thread):
           self.__backlog[key] = 0
         self.__backlog[key] += int(value)
 
-      #print(self.__backlog)
-
   def stop(self):
     if self.__cancel.is_set():
       return

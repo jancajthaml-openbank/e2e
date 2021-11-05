@@ -12,10 +12,10 @@ import os
 class VaultRest(Unit):
 
   def __init__(self):
-    (code, result) = execute([
+    (code, result, error) = execute([
       "systemctl", "start", 'vault-rest'
-    ], silent=True)
-    assert code == 0, str(result)
+    ])
+    assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
   def __repr__(self):
     return 'VaultRest()'
@@ -23,20 +23,20 @@ class VaultRest(Unit):
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
-      (code, result) = execute([
+      (code, result, error) = execute([
         'systemctl', 'stop', 'vault-rest'
-      ], silent=True)
-      assert code == 0, str(result)
+      ])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_teardown()
 
   def restart(self) -> bool:
     @eventually(2)
     def eventual_restart():
-      (code, result) = execute([
+      (code, result, error) = execute([
         "systemctl", "restart", 'vault-rest'
-      ], silent=True)
-      assert code == 0, str(result)
+      ])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_restart()
 
@@ -67,10 +67,10 @@ class VaultRest(Unit):
     try:
       @eventually(10)
       def eventual_check():
-        (code, result) = execute([
+        (code, result, error) = execute([
           "systemctl", "show", "-p", "SubState", "vault-rest"
-        ], silent=True)
-        assert "SubState=running" == str(result).strip(), str(result)
+        ])
+        assert "SubState=running" == str(result).strip(), code + ' ' + str(result) + ' ' + str(error)
       eventual_check()
     except:
       return False

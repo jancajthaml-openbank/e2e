@@ -15,12 +15,13 @@ import signal
 import time
 import fcntl
 from functools import partial
-
+from helpers.logger import logger
 
 this = sys.modules[__name__]
 
 this.__progress_running = False
 this.__last_progress = ""
+this.__logger = logger()
 
 TTY = sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false')
 
@@ -32,6 +33,7 @@ def interrupt_stdout() -> None:
   this.__progress_running = False
 
 def debug(msg) -> None:
+  this.__logger.debug('(PERF) DEBUG {}'.format(msg))
   this.__progress_running = False
   if isinstance(msg, str):
     sys.stdout.write('\033[97m  debug | \033[0m{0}\033[K\n'.format(msg))
@@ -43,6 +45,7 @@ def debug(msg) -> None:
     sys.stdout.flush()
 
 def info(msg) -> None:
+  this.__logger.info('(PERF) INFO {}'.format(msg))
   this.__progress_running = False
   sys.stdout.write('\033[95m   info | \033[0m{0}\033[K\n'.format(msg))
   sys.stdout.flush()
@@ -60,16 +63,19 @@ def progress(msg) -> None:
     sys.stdout.flush()
 
 def error(msg) -> None:
+  this.__logger.error('(PERF) ERROR {}'.format(msg))
   this.__progress_running = False
   sys.stdout.write('\033[91m! error | {0}\033[0m[K\n'.format(msg))
   sys.stdout.flush()
 
 def success(msg) -> None:
+  this.__logger.info('(PERF) SUCCESS {}'.format(msg))
   this.__progress_running = False
   sys.stdout.write('\033[92m   pass | {0}\033[0m\033[K\n'.format(msg))
   sys.stdout.flush()
 
 def warn(msg) -> None:
+  this.__logger.warning('(PERF) WARNING {}'.format(msg))
   this.__progress_running = False
   sys.stdout.write('\033[93m   warn | {0}\033[0m\033[K\n'.format(msg))
   sys.stdout.flush()

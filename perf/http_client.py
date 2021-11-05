@@ -1,21 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-import ssl
-try:
-  _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-  pass
-else:
-  ssl._create_default_https_context = _create_unverified_https_context
+from helpers.http import Request
+from utils import progress
 
 import multiprocessing
 import functools
 import itertools
-from utils import progress
 
 
 class HttpClient(object):
@@ -42,6 +33,8 @@ class HttpClient(object):
       progress('{1:.2f}% of {0}'.format(total_work, 100 * (total_progress/total_work)))
 
       total_success += len(results)
+      total_errors += errors
+
       for result in results:
         on_result(*result)
 
@@ -50,21 +43,22 @@ class HttpClient(object):
     return total_success, total_errors
 
   def post(self, reqs, on_result=lambda *args: None, on_panic=lambda *args: None):
-    pool = urllib3.PoolManager()
-
     global on_post_result
 
     def on_post_result(args) -> None:
       (url, body, payload, tenant) = args
+
+      request = Request(method='POST', url=url)
+      request.data = payload
+      request.add_header('Content-Type', 'application/json')
+
       try:
-        resp = pool.request('POST', url, body=payload, headers={'Content-Type': 'application/json'})
-        resp.release_conn()
+        resp = request.do()
         if resp and resp.status in [200, 201, 202]:
-          return ([(resp.status, resp.data, url, body, tenant)], [])
+          return ([(resp.status, resp.read().decode('utf-8'), url, body, tenant)], [])
         else:
-          return ([], [(resp.status, resp.data)])
-      except urllib3.exceptions.ProtocolError:
-        return on_post_result(args)
+          return ([], [(resp.status, resp.read().decode('utf-8'))])
+
       except Exception as e:
         print('error {}'.format(e))
         on_panic()
@@ -74,21 +68,19 @@ class HttpClient(object):
 
   def get(self, reqs, on_result=lambda *args: None, on_panic=lambda *args: None):
 
-    pool = urllib3.PoolManager()
-
     global on_get_result
 
     def on_get_result(args) -> None:
       (url, body, tenant) = args
+      request = Request(method='GET', url=url)
+
       try:
-        resp = pool.request('GET', url)
-        resp.release_conn()
+        resp = request.do()
         if resp and resp.status in [200, 201, 202]:
-          return ([(resp.status, resp.data, url, body, tenant)], [])
+          return ([(resp.status, resp.read().decode('utf-8'), url, body, tenant)], [])
         else:
-          return ([], [(resp.status, resp.data)])
-      except urllib3.exceptions.ProtocolError:
-        return on_get_result(args)
+          return ([], [(resp.status, resp.read().decode('utf-8'))])
+
       except Exception as e:
         print('error {}'.format(e))
         on_panic()

@@ -1,18 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import urllib3
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
-
-import ssl
-try:
-  _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-  pass
-else:
-  ssl._create_default_https_context = _create_unverified_https_context
-
-import docker
 
 from utils import progress, success, debug, TTY
 
@@ -23,7 +11,10 @@ from unit.ledger_rest import LedgerRest
 from unit.lake import Lake
 from helpers.shell import execute
 from helpers.eventually import eventually
+from helpers.http import Request
 
+import datetime
+import docker
 import platform
 import tarfile
 import tempfile
@@ -32,6 +23,7 @@ import os
 import json
 import string
 import random
+
 secure_random = random.SystemRandom()
 
 
@@ -39,19 +31,15 @@ class ApplianceManager(object):
 
   def image_exists(self, image, tag):
     uri = 'https://index.docker.io/v1/repositories/{0}/tags/{1}'.format(image, tag)
-    r = self.http.request('GET', uri)
-    return r.status == 200
+    r = Request(method='GET', url=uri)
+    return r.do().status == 200
 
   def get_latest_service_docker_hub_version(self, service):
     uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags/".format(service)
 
-    ctx = ssl.create_default_context()
-    ctx.check_hostname = False
-    ctx.verify_mode = ssl.CERT_NONE
-
-    request = urllib.request.Request(method='GET', url=uri)
+    request = Request(method='GET', url=uri)
     request.add_header('Accept', 'application/json')
-    response = urllib.request.urlopen(request, timeout=10, context=ctx)
+    response = request.do()
 
     if not response.status == 200:
       return None
@@ -81,19 +69,17 @@ class ApplianceManager(object):
     return version
 
   def get_latest_service_github_version(self, service):
-    headers = dict()
-
-    if 'GITHUB_RELEASE_TOKEN' in os.environ and os.environ['GITHUB_RELEASE_TOKEN'].strip():
-      headers['Authorization'] = 'token {0}'.format(os.environ['GITHUB_RELEASE_TOKEN'].strip())
-      headers['User-Agent'] = 'https://api.github.com/meta'
-    else:
-      headers['User-Agent'] = 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36'
-
     uri = 'https://api.github.com/repos/jancajthaml-openbank/{0}/releases/latest'.format(service)
 
-    r = self.http.request('GET', uri, headers=headers)
+    r = Request(method='GET', url=uri)
 
-    data = r.data.decode('utf-8')
+    if 'GITHUB_RELEASE_TOKEN' in os.environ and os.environ['GITHUB_RELEASE_TOKEN'].strip():
+      r.add_header('Authorization', 'token {0}'.format(os.environ['GITHUB_RELEASE_TOKEN'].strip()))
+      r.add_header('User-Agent', 'https://api.github.com/meta')
+    else:
+      r.add_header('User-Agent', 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36')
+
+    data = r.read().decode('utf-8')
 
     if r.status != 200:
       raise Exception('GitHUB version fetch failure {0}'.format(data))
@@ -139,7 +125,6 @@ class ApplianceManager(object):
     self.units = dict()
     self.services = list()
     self.docker = docker.from_env()
-    self.http = urllib3.PoolManager()
 
   def setup(self):
     os.makedirs('/tmp/packages', exist_ok=True)
@@ -150,7 +135,7 @@ class ApplianceManager(object):
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
-      if self.image_exists('openbank/{0}'.format(service), 'v{0}-main'.format(version)):
+      if self.image_exists('openbank/{}'.format(service), 'v{}-main'.format(version)):
         image = 'docker.io/openbank/{}:v{}-main'.format(service, version)
       else:
         image = 'docker.io/openbank/{}:v{}'.format(service, version)
@@ -177,7 +162,7 @@ class ApplianceManager(object):
       scratch = self.docker.containers.run('perf_artifacts-scratch', ['/bin/true'], detach=True)
 
       for service in ['lake', 'vault', 'ledger']:
-        tar_name = '/tmp/packages/{0}.tar'.format(service)
+        tar_name = '/tmp/packages/{}.tar'.format(service)
         bits, stat = scratch.get_archive('/tmp/packages/{}.deb'.format(service))
 
         if TTY:
@@ -188,16 +173,16 @@ class ApplianceManager(object):
               progress('extracting {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
               fd.write(chunk)
         else:
-          progress('extracting {0}'.format(stat['name']))
+          progress('extracting {}'.format(stat['name']))
           with open(tar_name, 'wb') as fd:
             for chunk in bits:
               fd.write(chunk)
 
         archive = tarfile.TarFile(tar_name)
-        archive.extract('{0}.deb'.format(service), '/tmp/packages')
+        archive.extract('{}.deb'.format(service), '/tmp/packages')
         os.remove(tar_name)
 
-        debug('downloaded {0}'.format(stat['name']))
+        debug('downloaded {}'.format(stat['name']))
 
       scratch.remove()
     except Exception as ex:
@@ -215,14 +200,14 @@ class ApplianceManager(object):
     for service in ['lake', 'vault', 'ledger']:
       version = self.versions[service]
       progress('installing {} {}'.format(service, version))
-      (code, result) = execute([
+      (code, result, error) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
-      ], silent=True)
-      assert code == 0, str(result)
+      ])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
       success('installed {} {}'.format(service, version))
 
-    (code, result) = execute(["systemctl", "list-units", "--no-legend"], silent=True)
-    assert code == 0, str(result)
+    (code, result, error) = execute(["systemctl", "list-units", "--no-legend"])
+    assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in result.splitlines()])
 
@@ -295,25 +280,29 @@ class ApplianceManager(object):
     self.collect_logs()
 
   def collect_logs(self):
-    (code, result) = execute(['journalctl', '-o', 'cat', '--no-pager'], silent=True)
-    if code == 0:
+    (code, result, error) = execute(['journalctl', '-o', 'cat', '--no-pager'])
+    if code == 'OK':
       with open('reports/perf-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
 
   @property
   def is_healthy(self) -> bool:
     try:
+      vault_requert = Request(method='GET', url='https://127.0.0.1:4400/health')
+      ledger_requert = Request(method='GET', url='https://127.0.0.1:4401/health')
+
       @eventually(10)
       def vault_rest_healthy():
-        assert self.http.request('GET', 'https://127.0.0.1:4400/health').status == 200
+        assert vault_requert.do().status == 200
 
       @eventually(10)
       def ledger_rest_healthy():
-        assert self.http.request('GET', 'https://127.0.0.1:4401/health').status == 200
+        assert ledger_requert.do().status == 200
 
       vault_rest_healthy()
       ledger_rest_healthy()
-    except:
+    except Exception as ex:
+      print('error {}'.format(ex))
       return False
     return True
 

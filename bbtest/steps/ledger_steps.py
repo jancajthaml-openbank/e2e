@@ -36,7 +36,7 @@ def create_transaction(context, amount, currency, tenantFrom, accountFrom, tenan
   while response.status == 202:
     response = request.do()
 
-  assert response.status in [200, 201], str(response.status)
+  assert response.status in [200, 201], 'expected status 200 or 201 actual {}'.format(response.status)
 
 
 @given('following transaction is created {times} times from tenant {tenant}')
@@ -56,7 +56,7 @@ def create_transaction_literal_times(context, times, tenant):
     while response.status == 202:
       response = request.do()
 
-    assert response.status in [200, 201], str(response.status)
+    assert response.status in [200, 201], 'expected status 200 or 201 actual {}'.format(response.status)
 
 
 @given('following transaction is created from tenant {tenant}')

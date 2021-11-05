@@ -53,7 +53,7 @@ def eventually_ready(manager):
   with timeit('waiting until everyone is ready'):
     for units in manager.values():
       for unit in units:
-        assert unit.is_healthy, '{} is not healthy {}'.format(unit)
+        assert unit.is_healthy, '{} is not healthy'.format(unit)
     assert manager.is_healthy, 'manager is not healthy'
 
 def cleanup():
