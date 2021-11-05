@@ -21,33 +21,33 @@ class LedgerUnit(Unit):
   def __init__(self, tenant):
     self._tenant = tenant
 
-    (code, result) = execute([
+    (code, result, error) = execute([
       "systemctl", "enable", 'ledger-unit@{0}'.format(self._tenant)
-    ], silent=True)
-    assert code == 0, str(result)
+    ])
+    assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
-    (code, result) = execute([
+    (code, result, error) = execute([
       "systemctl", "start", 'ledger-unit@{0}'.format(self._tenant)
-    ], silent=True)
-    assert code == 0, str(result)
+    ])
+    assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
-      (code, result) = execute([
+      (code, result, error) = execute([
         'systemctl', 'stop', 'ledger-unit@{0}'.format(self._tenant)
-      ], silent=True)
-      assert code == 0, str(result)
+      ])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_teardown()
 
   def restart(self) -> bool:
     @eventually(2)
     def eventual_restart():
-      (code, result) = execute([
+      (code, result, error) = execute([
         "systemctl", "restart", 'ledger-unit@{0}'.format(self._tenant)
-      ], silent=True)
-      assert code == 0, str(result)
+      ])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_restart()
 
@@ -79,10 +79,10 @@ class LedgerUnit(Unit):
     try:
       @eventually(10)
       def eventual_check():
-        (code, result) = execute([
+        (code, result, error) = execute([
           "systemctl", "show", "-p", "SubState", 'ledger-unit@{0}'.format(self._tenant)
-        ], silent=True)
-        assert "SubState=running" == str(result).strip(), str(result)
+        ])
+        assert "SubState=running" == str(result).strip(), code + ' ' + str(result) + ' ' + str(error)
       eventual_check()
     except:
       return False

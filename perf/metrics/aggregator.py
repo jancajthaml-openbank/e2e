@@ -67,34 +67,36 @@ class MetricsAggregator(threading.Thread):
             'openbank.vault.promise.committed': 0
           }
 
+        value = int(value)
+
         if key == 'openbank.lake.message.ingress':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.lake.message.egress':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.lake.memory.bytes':
-          self.__store[ts][key] = int(value)
+          self.__store[ts][key] = value
         elif key == 'openbank.vault.account.created':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.vault.account.updated':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.vault.promise.accepted':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.vault.promise.rollbacked':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.vault.promise.committed':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.ledger.transaction.promised':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.ledger.transaction.rollbacked':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.ledger.transaction.committed':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.ledger.transfer.promised':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.ledger.transfer.rollbacked':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         elif key == 'openbank.ledger.transfer.committed':
-          self.__store[ts][key] += int(value)
+          self.__store[ts][key] += value
         else:
           print('unknown {}'.format(key))
 

@@ -171,9 +171,7 @@ class Steps:
 
       def callback(status, response, url, request, tenant_name):
         assert status == 200, 'expected status 200 got {}'.format(status)
-
-        content = json.loads(response.decode('utf-8'))
-
+        content = json.loads(response)
         assert content['currency'] == request['currency'] and float(content['balance']) == float(request['balance']), 'expected {} {} got {} {}'.format(request['balance'], request['currency'], content['balance'], content['currency'])
 
       client = HttpClient()

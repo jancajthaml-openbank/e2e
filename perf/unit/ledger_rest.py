@@ -12,10 +12,8 @@ import os
 class LedgerRest(Unit):
 
   def __init__(self):
-    (code, result) = execute([
-      "systemctl", "start", 'ledger-rest'
-    ], silent=True)
-    assert code == 0, str(result)
+    (code, result, error) = execute(["systemctl", "start", 'ledger-rest'])
+    assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
   def __repr__(self):
     return 'LedgerRest()'
@@ -23,20 +21,16 @@ class LedgerRest(Unit):
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
-      (code, result) = execute([
-        'systemctl', 'stop', 'ledger-rest'
-      ], silent=True)
-      assert code == 0, str(result)
+      (code, result, error) = execute(['systemctl', 'stop', 'ledger-rest'])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_teardown()
 
   def restart(self) -> bool:
     @eventually(2)
     def eventual_restart():
-      (code, result) = execute([
-        "systemctl", "restart", 'ledger-rest'
-      ], silent=True)
-      assert code == 0, str(result)
+      (code, result, error) = execute(["systemctl", "restart", 'ledger-rest'])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_restart()
 
@@ -67,10 +61,10 @@ class LedgerRest(Unit):
     try:
       @eventually(10)
       def eventual_check():
-        (code, result) = execute([
+        (code, result, error) = execute([
           "systemctl", "show", "-p", "SubState", "ledger-rest"
-        ], silent=True)
-        assert "SubState=running" == str(result).strip(), str(result)
+        ])
+        assert "SubState=running" == str(result).strip(), code + ' ' + str(result) + ' ' + str(error)
       eventual_check()
     except:
       return False

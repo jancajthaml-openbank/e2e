@@ -6,7 +6,7 @@ from systemd import journal
 
 
 def logger():
-  log = logging.getLogger('bbtest')
+  log = logging.getLogger('perf')
   log.propagate = False
   log.addHandler(journal.JournalHandler())
   log.setLevel(logging.DEBUG)

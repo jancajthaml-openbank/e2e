@@ -12,10 +12,8 @@ import os
 class Lake(Unit):
 
   def __init__(self):
-    (code, result) = execute([
-      'systemctl', 'start', 'lake-relay'
-    ])
-    assert code == 0, str(result)
+    (code, result, error) = execute(['systemctl', 'start', 'lake-relay'])
+    assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
   def __repr__(self):
     return 'Lake()'
@@ -23,20 +21,16 @@ class Lake(Unit):
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
-      (code, result) = execute([
-        'systemctl', 'stop', 'lake-relay'
-      ], silent=True)
-      assert code == 0, str(result)
+      (code, result, error) = execute(['systemctl', 'stop', 'lake-relay'])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_teardown()
 
   def restart(self) -> bool:
     @eventually(2)
     def eventual_restart():
-      (code, result) = execute([
-        'systemctl', 'restart', 'lake-relay'
-      ], silent=True)
-      assert code == 0, str(result)
+      (code, result, error) = execute(['systemctl', 'restart', 'lake-relay'])
+      assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_restart()
 
@@ -69,7 +63,7 @@ class Lake(Unit):
       def eventual_check():
         (code, result) = execute([
           "systemctl", "show", "-p", "SubState", "lake-relay"
-        ], silent=True)
+        ])
         assert "SubState=running" == str(result).strip(), str(result)
       eventual_check()
     except:

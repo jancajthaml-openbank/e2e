@@ -41,7 +41,7 @@ def check_graphql_response(context):
   def wait_for_warehouse_to_be_healthy():
     request = Request(method='GET', url='http://127.0.0.1:8080/health')
     response = request.do()
-    assert response.status == 200, str(response.status)
+    assert response.status == 200, 'expected status 200 actual {}'.format(response.status)
     status = json.loads(response.read().decode('utf-8'))
     assert status['healthy'], 'service is not healthy'
     assert status['graphql'], 'graphql is not healthy'
@@ -76,7 +76,7 @@ def check_graphql_response(context):
     request.add_header('Accept', 'application/json')
     response = request.do()
 
-    assert response.status == 200, 'expected status {} actual {} with body {}'.format(200, response.status, response.data.decode('utf-8'))
+    assert response.status == 200, 'expected status 200 actual {}'.format(response.status)
     expected = json.loads(context.text)
     actual = json.loads(response.read().decode('utf-8'))
     try:
@@ -107,7 +107,7 @@ def perform_http_request(context, uri):
   response = request.do()
   context.http_response['status'] = str(response.status)
   context.http_response['body'] = response.read().decode('utf-8')
-  context.http_response['content-type'] = response.info().get_content_type()
+  context.http_response['content-type'] = response.content_type
 
 
 @then('HTTP response is')
