@@ -4,7 +4,7 @@
 from behave import *
 import json
 import time
-from helpers.http import Request
+from helpers.http import Request, StubResponse
 
 
 @given('{amount} {currency} is transferred from {tenantFrom}/{accountFrom} to {tenantTo}/{accountTo}')
@@ -31,7 +31,10 @@ def create_transaction(context, amount, currency, tenantFrom, accountFrom, tenan
   request.add_header('Accept', 'application/json')
   request.data = json.dumps(payload)
 
-  response = request.do()
+  response = StubResponse(202, '')
+
+  while response.status == 202:
+    response = request.do()
 
   assert response.status in [200, 201], str(response.status)
 
@@ -47,7 +50,11 @@ def create_transaction_literal_times(context, times, tenant):
   request.add_header('Accept', 'application/json')
 
   for _ in range(int(times)):
-    response = request.do()
+    
+    response = StubResponse(202, '')
+
+    while response.status == 202:
+      response = request.do()
 
     assert response.status in [200, 201], str(response.status)
 
