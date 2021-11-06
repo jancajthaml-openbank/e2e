@@ -13,9 +13,8 @@ from http_client import HttpClient
 
 class Steps:
 
-  def __init__(self, integration, on_panic):
+  def __init__(self, integration):
     self.integration = integration
-    self.on_panic = on_panic
     self.__acc_counter = itertools.count()
 
   def random_targeted_accounts(self, tenant_name, number_of_accounts=None):
@@ -48,7 +47,7 @@ class Steps:
 
       info("creating {0} account for tenant {1}".format(number_of_accounts, tenant_name))
       client = HttpClient()
-      success, errors = client.post(prepared, callback, self.on_panic)
+      success, errors = client.post(prepared, callback)
 
       if len(errors):
         warn('{0} accounts created, {1} failed                             '.format(success, len(errors)))
@@ -100,7 +99,7 @@ class Steps:
           active = not active
 
       client = HttpClient()
-      passed, errors = client.post(prepared, callback, self.on_panic)
+      passed, errors = client.post(prepared, callback)
 
       if len(errors):
         warn('{0} accounts created, {1} failed                             '.format(passed, len(errors)))
@@ -146,7 +145,7 @@ class Steps:
         prepared.extend(self.integration.prepare_transaction(tenant_name, 10, credit_accounts, debit_account) for x in range(0, will_generate_transactions, 1))
 
       client = HttpClient()
-      passed, errors = client.post(prepared, callback, self.on_panic)
+      passed, errors = client.post(prepared, callback)
 
       if len(errors):
         warn('{0} transactions created, {1} failed                             '.format(passed, len(errors)))
@@ -175,7 +174,7 @@ class Steps:
         assert content['currency'] == request['currency'] and float(content['balance']) == float(request['balance']), 'expected {} {} got {} {}'.format(request['balance'], request['currency'], content['balance'], content['currency'])
 
       client = HttpClient()
-      passed, errors = client.get(prepared, callback, self.on_panic)
+      passed, errors = client.get(prepared, callback)
 
       if len(errors):
         warn('{0} balance validated, {1} failed                             '.format(passed, len(errors)))

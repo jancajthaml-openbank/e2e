@@ -11,7 +11,7 @@ import itertools
 
 class HttpClient(object):
 
-  def __do(self, reqs, on_work=lambda *args: None, on_result=lambda *args: None, on_panic=lambda *args: None):
+  def __do(self, reqs, on_work=lambda *args: None, on_result=lambda *args: None):
     total_success = 0
     total_errors = list()
     total_progress = 0
@@ -26,6 +26,7 @@ class HttpClient(object):
         continue
 
       futures = multiprocessing.Pool(processes=10).map_async(on_work, work).get()
+
       (results, errors) = functools.reduce(lambda x, y: (x[0] + y[0], x[1] + y[1]), futures)
 
       total_progress += len(work)
@@ -42,7 +43,7 @@ class HttpClient(object):
 
     return total_success, total_errors
 
-  def post(self, reqs, on_result=lambda *args: None, on_panic=lambda *args: None):
+  def post(self, reqs, on_result=lambda *args: None):
     global on_post_result
 
     def on_post_result(args) -> None:
@@ -53,20 +54,23 @@ class HttpClient(object):
       request.add_header('Content-Type', 'application/json')
 
       try:
-        resp = request.do()
-        if resp and resp.status in [200, 201, 202]:
-          return ([(resp.status, resp.read().decode('utf-8'), url, body, tenant)], [])
-        else:
-          return ([], [(resp.status, resp.read().decode('utf-8'))])
+        tries = 0
+        while tries < 10:
+          resp = request.do()
+          if resp.status == 202:
+            tries += 1
+          elif resp and resp.status in [200, 201]:
+            return ([(resp.status, resp.read().decode('utf-8'), url, body, tenant)], [])
+          else:
+            return ([], [(resp.status, resp.read().decode('utf-8'))])
+        return ([], [(resp.status, resp.read().decode('utf-8'))])
+      except Exception as err:
+        print('error {}'.format(err))
+        return ([], [(500, str(err))])
 
-      except Exception as e:
-        print('error {}'.format(e))
-        on_panic()
-        return ([], [])
+    return self.__do(reqs, on_post_result, on_result)
 
-    return self.__do(reqs, on_post_result, on_result, on_panic)
-
-  def get(self, reqs, on_result=lambda *args: None, on_panic=lambda *args: None):
+  def get(self, reqs, on_result=lambda *args: None):
 
     global on_get_result
 
@@ -75,15 +79,17 @@ class HttpClient(object):
       request = Request(method='GET', url=url)
 
       try:
-        resp = request.do()
-        if resp and resp.status in [200, 201, 202]:
-          return ([(resp.status, resp.read().decode('utf-8'), url, body, tenant)], [])
-        else:
-          return ([], [(resp.status, resp.read().decode('utf-8'))])
+        tries = 0
+        while tries < 10:
+          resp = request.do()
+          if resp.status == 202:
+            tries += 1
+          elif resp.status in [200, 201]:
+            return ([(resp.status, resp.read().decode('utf-8'), url, body, tenant)], [])
+          else:
+            return ([], [(resp.status, resp.read().decode('utf-8'))])
+        return ([], [(resp.status, resp.read().decode('utf-8'))])
+      except Exception as err:
+        return ([], [(500, str(err))])
 
-      except Exception as e:
-        print('error {}'.format(e))
-        on_panic()
-        return ([], [])
-
-    return self.__do(reqs, on_get_result, on_result, on_panic)
+    return self.__do(reqs, on_get_result, on_result)
