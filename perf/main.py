@@ -88,13 +88,8 @@ def main():
     info("preparing integration")
     integration = Integration(manager)
 
-    def on_panic():
-      warn('Panic')
-      manager.teardown()
-      os.kill(os.getpid(), signal.SIGINT)
-
     info("preparing steps")
-    steps = Steps(integration, on_panic)
+    steps = Steps(integration)
 
     info("reconfigure units")
     manager.bootstrap()
