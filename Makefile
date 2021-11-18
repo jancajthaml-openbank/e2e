@@ -7,7 +7,6 @@ export COMPOSE_PROJECT_NAME = e2e
 .ONESHELL:
 .PHONY: arm64
 .PHONY: amd64
-.PHONY: armhf
 
 .PHONY: all
 all: bootstrap bbtest perf
