@@ -1,3 +1,4 @@
+ARCH := $(shell uname -m | sed 's/x86_64/amd64/')
 
 export COMPOSE_DOCKER_CLI_BUILD = 1
 export DOCKER_BUILDKIT = 1
@@ -17,16 +18,20 @@ bootstrap:
 
 .PHONY: bbtest
 bbtest:
-	@$(MAKE) bbtest-amd64
-
-.PHONY: bbtest-%
-bbtest-%: %
-	@docker-compose up -d bbtest-$^
-	@docker exec -t $$(docker-compose ps -q bbtest-$^) python3 /opt/app/bbtest/main.py
-	@docker-compose down -v
+	@$(MAKE) bbtest-$(ARCH)
 
 .PHONY: perf
 perf:
-	@docker-compose up -d perf
-	@docker exec -t $$(docker-compose ps -q perf) python3 /opt/app/perf/main.py
-	@docker-compose down -v
+	@$(MAKE) perf-$(ARCH)
+
+.PHONY: bbtest-%
+bbtest-%: %
+	@ARCH=$^ docker-compose up -d bbtest
+	@docker exec -t $$(ARCH=$^ docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
+	@ARCH=$^ docker-compose down -v
+
+.PHONY: perf-%
+perf-%: %
+	@ARCH=$^ docker-compose up -d perf
+	@docker exec -t $$(ARCH=$^ docker-compose ps -q perf) python3 /opt/app/perf/main.py
+	@ARCH=$^ docker-compose down -v

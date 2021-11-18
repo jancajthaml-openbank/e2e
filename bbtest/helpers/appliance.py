@@ -21,7 +21,8 @@ class ApplianceHelper(object):
     return {
       'x86_64': 'amd64',
       'armv7l': 'armhf',
-      'armv8': 'arm64'
+      'armv8': 'arm64',
+      'aarch64': 'arm64'
     }.get(platform.uname().machine, 'amd64')
 
   def __init__(self, context):

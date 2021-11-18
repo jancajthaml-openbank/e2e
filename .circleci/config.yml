@@ -8,8 +8,10 @@ workflows:
 
   commit:
     jobs:
-      - performance-test
+      - performance-test-amd64
+      - performance-test-arm64
       - blackbox-test-amd64
+      - blackbox-test-arm64
 
   rolling_contract:
     triggers:
@@ -21,6 +23,7 @@ workflows:
                 - main
     jobs:
       - blackbox-test-amd64
+      - blackbox-test-arm64
 
   rolling_performance:
     triggers:
@@ -31,7 +34,8 @@ workflows:
               only:
                 - main
     jobs:
-      - performance-test
+      - performance-test-amd64
+      - performance-test-arm64
 
 # ---------------------------------------------------------------------------- #
 
@@ -59,8 +63,9 @@ jobs:
       - run:
           name: Run blackbox tests
           command: |
-            docker-compose up -d bbtest-amd64
-            docker exec -t $(docker-compose ps -q bbtest-amd64) python3 /opt/app/bbtest/main.py
+            export ARCH=amd64
+            docker-compose up -d bbtest
+            docker exec -t $(docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
             docker-compose down -v
           no_output_timeout: 5m
       - store_test_results:
@@ -71,7 +76,31 @@ jobs:
 
   # -------------------------------------------------------------------------- #
 
-  performance-test:
+  blackbox-test-arm64:
+    executor: testbed
+    working_directory: /home/circleci/project
+    steps:
+      - checkout
+      - run: docker system prune -f
+      - run: docker pull docker.io/jancajthaml/bbtest:arm64
+      - run: docker-compose build postgres
+      - run:
+          name: Run blackbox tests
+          command: |
+            export ARCH=arm64
+            docker-compose up -d bbtest
+            docker exec -t $(docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
+            docker-compose down -v
+          no_output_timeout: 5m
+      - store_test_results:
+          path: /home/circleci/project/reports/blackbox-tests/junit
+      - store_artifacts:
+          path: /home/circleci/project/reports/blackbox-tests
+          destination: reports
+
+  # -------------------------------------------------------------------------- #
+
+  performance-test-amd64:
     executor: testbed
     working_directory: /home/circleci/project
     steps:
@@ -81,6 +110,32 @@ jobs:
       - run:
           name: Run performance tests
           command: |
+            export ARCH=amd64
+            docker-compose up -d perf
+            docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
+            docker-compose down -v
+          no_output_timeout: 2h
+      - store_artifacts:
+          path: /home/circleci/project/reports/perf-tests
+          destination: reports
+      - persist_to_workspace:
+          root: /home/circleci/project/reports/perf-tests
+          paths:
+            - metrics
+
+  # -------------------------------------------------------------------------- #
+
+  performance-test-arm64:
+    executor: testbed
+    working_directory: /home/circleci/project
+    steps:
+      - checkout
+      - run: docker system prune -f
+      - run: docker pull docker.io/jancajthaml/bbtest:arm64
+      - run:
+          name: Run performance tests
+          command: |
+            export ARCH=arm64
             docker-compose up -d perf
             docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
             docker-compose down -v

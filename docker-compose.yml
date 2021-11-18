@@ -22,9 +22,8 @@ services:
   # -------------------------------------------------------------------------- #
 
   perf:
-    image: docker.io/jancajthaml/bbtest:amd64
+    image: docker.io/jancajthaml/bbtest:${ARCH}
     environment:
-      UNIT_ARCH: amd64
       GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
       CI: ${CI:-false}
     tmpfs:
@@ -33,18 +32,17 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - /var/lib/docker/containers:/var/lib/docker/containers:rw
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - .:/opt/app
+      - .:/opt/app:delegated
     working_dir: /opt/app
 
   # -------------------------------------------------------------------------- #
 
-  bbtest-amd64:
-    image: docker.io/jancajthaml/bbtest:amd64
+  bbtest:
+    image: docker.io/jancajthaml/bbtest:${ARCH}
     depends_on:
       postgres:
         condition: service_healthy
     environment:
-      UNIT_ARCH: amd64
       GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
       CI: ${CI:-false}
     tmpfs:
@@ -53,49 +51,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - /var/lib/docker/containers:/var/lib/docker/containers:rw
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - .:/opt/app
-    working_dir: /opt/app
-
-  # -------------------------------------------------------------------------- #
-
-  bbtest-arm64:
-    image: docker.io/jancajthaml/bbtest:arm64
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      UNIT_ARCH: arm64
-      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
-      CI: ${CI:-false}
-    tmpfs:
-      - /data
-      - /tmp
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-      - /var/lib/docker/containers:/var/lib/docker/containers:rw
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - .:/opt/app
-    working_dir: /opt/app
-
-  # -------------------------------------------------------------------------- #
-
-  bbtest-armhf:
-    image: docker.io/jancajthaml/bbtest:armhf
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      UNIT_ARCH: armhf
-      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
-      CI: ${CI:-false}
-    tmpfs:
-      - /data
-      - /tmp
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:rw
-      - /var/lib/docker/containers:/var/lib/docker/containers:rw
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-      - .:/opt/app
+      - .:/opt/app:delegated
     working_dir: /opt/app
 
 # ---------------------------------------------------------------------------- #
