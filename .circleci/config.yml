@@ -41,11 +41,17 @@ workflows:
 
 executors:
 
-  testbed:
+  arm64-testbed:
     machine:
       image: ubuntu-2004:202101-01
       docker_layer_caching: false
       resource_class: arm.medium
+
+  amd64-testbed:
+    machine:
+      image: ubuntu-2004:202101-01
+      docker_layer_caching: false
+      resource_class: medium
 
 # ---------------------------------------------------------------------------- #
 
@@ -54,7 +60,7 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   blackbox-test-amd64:
-    executor: testbed
+    executor: amd64-testbed
     working_directory: /home/circleci/project
     steps:
       - checkout
@@ -66,7 +72,6 @@ jobs:
           command: |
             export ARCH=amd64
             docker-compose up -d bbtest
-            docker ps -aq | xargs -L 1 docker logs
             docker exec -t $(docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
             docker-compose down -v
           no_output_timeout: 5m
@@ -79,7 +84,7 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   blackbox-test-arm64:
-    executor: testbed
+    executor: arm64-testbed
     working_directory: /home/circleci/project
     steps:
       - checkout
@@ -91,7 +96,6 @@ jobs:
           command: |
             export ARCH=arm64
             docker-compose up -d bbtest
-            docker ps -aq | xargs -L 1 docker logs
             docker exec -t $(docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
             docker-compose down -v
           no_output_timeout: 5m
@@ -104,7 +108,7 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   performance-test-amd64:
-    executor: testbed
+    executor: amd64-testbed
     working_directory: /home/circleci/project
     steps:
       - checkout
@@ -115,7 +119,6 @@ jobs:
           command: |
             export ARCH=amd64
             docker-compose up -d perf
-            docker ps -aq | xargs -L 1 docker logs
             docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
             docker-compose down -v
           no_output_timeout: 2h
@@ -130,7 +133,7 @@ jobs:
   # -------------------------------------------------------------------------- #
 
   performance-test-arm64:
-    executor: testbed
+    executor: arm64-testbed
     working_directory: /home/circleci/project
     steps:
       - checkout
@@ -141,7 +144,6 @@ jobs:
           command: |
             export ARCH=arm64
             docker-compose up -d perf
-            docker ps -aq | xargs -L 1 docker logs
             docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
             docker-compose down -v
           no_output_timeout: 2h
