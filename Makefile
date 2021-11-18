@@ -13,7 +13,7 @@ all: bootstrap bbtest perf
 
 .PHONY: bootstrap
 bootstrap:
-	@docker-compose build
+	@ARCH=$(ARCH) docker-compose build
 
 .PHONY: bbtest
 bbtest:
