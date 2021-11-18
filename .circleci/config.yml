@@ -45,6 +45,7 @@ executors:
     machine:
       image: ubuntu-2004:202010-01
       docker_layer_caching: false
+      resource_class: arm.medium
 
 # ---------------------------------------------------------------------------- #
 
@@ -65,7 +66,7 @@ jobs:
           command: |
             export ARCH=amd64
             docker-compose up -d bbtest
-            docker logs $(docker-compose ps -q bbtest)
+            docker ps -aq | xargs -L 1 docker logs
             docker exec -t $(docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
             docker-compose down -v
           no_output_timeout: 5m
@@ -90,7 +91,7 @@ jobs:
           command: |
             export ARCH=arm64
             docker-compose up -d bbtest
-            docker logs $(docker-compose ps -q bbtest)
+            docker ps -aq | xargs -L 1 docker logs
             docker exec -t $(docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
             docker-compose down -v
           no_output_timeout: 5m
@@ -114,7 +115,7 @@ jobs:
           command: |
             export ARCH=amd64
             docker-compose up -d perf
-            docker logs $(docker-compose ps -q bbtest)
+            docker ps -aq | xargs -L 1 docker logs
             docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
             docker-compose down -v
           no_output_timeout: 2h
@@ -140,7 +141,7 @@ jobs:
           command: |
             export ARCH=arm64
             docker-compose up -d perf
-            docker logs $(docker-compose ps -q bbtest)
+            docker ps -aq | xargs -L 1 docker logs
             docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
             docker-compose down -v
           no_output_timeout: 2h
