@@ -65,6 +65,7 @@ jobs:
           command: |
             export ARCH=amd64
             docker-compose up -d bbtest
+            docker-compose logs
             docker exec -t $(docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
             docker-compose down -v
           no_output_timeout: 5m
@@ -89,6 +90,7 @@ jobs:
           command: |
             export ARCH=arm64
             docker-compose up -d bbtest
+            docker-compose logs
             docker exec -t $(docker-compose ps -q bbtest) python3 /opt/app/bbtest/main.py
             docker-compose down -v
           no_output_timeout: 5m
@@ -112,6 +114,7 @@ jobs:
           command: |
             export ARCH=amd64
             docker-compose up -d perf
+            docker-compose logs
             docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
             docker-compose down -v
           no_output_timeout: 2h
@@ -137,6 +140,7 @@ jobs:
           command: |
             export ARCH=arm64
             docker-compose up -d perf
+            docker-compose logs
             docker exec -t $(docker-compose ps -q perf) python3 /opt/app/perf/main.py
             docker-compose down -v
           no_output_timeout: 2h
