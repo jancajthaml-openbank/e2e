@@ -78,129 +78,133 @@ def main():
   metrics = MetricsManager()
   manager = ApplianceManager()
 
-  try:
-    info('starting statsd')
-    metrics.start()
+  info('starting statsd')
+  metrics.start()
 
-    info("preparing appliance")
-    manager.setup()
+  info("preparing appliance")
+  manager.setup()
 
-    info("preparing integration")
-    integration = Integration(manager)
+  info("preparing integration")
+  integration = Integration(manager)
 
-    info("preparing steps")
-    steps = Steps(integration)
+  info("preparing steps")
+  steps = Steps(integration)
 
-    info("reconfigure units")
+  info("reconfigure units")
+  manager.bootstrap()
+  manager.reconfigure({
+    'STATSD_ENDPOINT': '127.0.0.1:8125',
+    'LOG_LEVEL': 'ERROR'
+  })
+  manager.teardown()
+  cleanup()
+
+  info("start tests")
+
+  ############################################################################
+
+  with timeit('new accounts scenario'):
+    total = 10000
+
+    debug("bootstraping appliance")
     manager.bootstrap()
-    manager.reconfigure({
-      'STATSD_ENDPOINT': '127.0.0.1:8125',
-      'LOG_LEVEL': 'ERROR'
-    })
+
+    debug("onboarding services")
+    for _ in range(10):
+      manager.onboard()
+
+    integration.clear()
+    eventually_ready(manager)
+    debug("appliance ready")
+
+    debug("scenario starting")
+    with measurement(metrics, 's1_new_account_latencies_{0}'.format(total)):
+      steps.random_uniform_accounts(total)
+      manager.restart()
+    debug("scenario finished")
+
     manager.teardown()
     cleanup()
 
-    info("start tests")
+  with timeit('get accounts scenario'):
+    total = 2000
 
-    ############################################################################
+    debug("bootstraping appliance")
+    manager.bootstrap()
 
-    with timeit('new accounts scenario'):
-      total = 10000
+    debug("onboarding services")
+    manager.onboard()
 
-      debug("bootstraping appliance")
-      manager.bootstrap()
+    integration.clear()
+    eventually_ready(manager)
+    debug("appliance ready")
 
-      debug("onboarding services")
-      for _ in range(10):
-        manager.onboard()
+    splits = 5
+    chunk = int(total/splits)
+    total = splits*chunk
+    no_accounts = chunk
 
-      integration.clear()
-      eventually_ready(manager)
-      debug("appliance ready")
-
-      debug("scenario starting")
-      with measurement(metrics, 's1_new_account_latencies_{0}'.format(total)):
-        steps.random_uniform_accounts(total)
+    debug("scenario starting")
+    while no_accounts <= total:
+      steps.random_uniform_accounts(chunk)
+      with measurement(metrics, 's2_get_account_latencies_{0}'.format(no_accounts)):
+        steps.check_balances()
         manager.restart()
-      debug("scenario finished")
+      no_accounts += chunk
+    debug("scenario finished")
 
-      manager.teardown()
-      cleanup()
-
-    with timeit('get accounts scenario'):
-      total = 2000
-
-      debug("bootstraping appliance")
-      manager.bootstrap()
-
-      debug("onboarding services")
-      manager.onboard()
-
-      integration.clear()
-      eventually_ready(manager)
-      debug("appliance ready")
-
-      splits = 5
-      chunk = int(total/splits)
-      total = splits*chunk
-      no_accounts = chunk
-
-      debug("scenario starting")
-      while no_accounts <= total:
-        steps.random_uniform_accounts(chunk)
-        with measurement(metrics, 's2_get_account_latencies_{0}'.format(no_accounts)):
-          steps.check_balances()
-          manager.restart()
-        no_accounts += chunk
-      debug("scenario finished")
-
-      manager.teardown()
-      cleanup()
-
-    ############################################################################
-
-    with timeit('new transaction scenario'):
-      total = 10000
-
-      debug("bootstraping appliance")
-      manager.bootstrap()
-
-      debug("onboarding services")
-      manager.onboard()
-
-      integration.clear()
-      eventually_ready(manager)
-      debug("appliance ready")
-
-      steps.random_uniform_accounts(100)
-
-      debug("scenario starting")
-      with measurement(metrics, 's3_new_transaction_latencies_{0}'.format(total)):
-        steps.random_uniform_transactions(total)
-        manager.restart()
-      debug("scenario finished")
-
-      manager.teardown()
-      cleanup()
-
-    ############################################################################
-
-    debug("end tests")
-
-  except (KeyboardInterrupt, SystemExit):
-    interrupt_stdout()
-    warn('Interrupt')
-    sys.exit(1)
-  except (Exception, AssertionError) as ex:
-    warn('Runtime Error {}'.format(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__))))
-    sys.exit(2)
-  finally:
     manager.teardown()
-    metrics.stop()
-    debug("terminated")
-    sys.exit(0)
+    cleanup()
+
+  ############################################################################
+
+  with timeit('new transaction scenario'):
+    total = 10000
+
+    debug("bootstraping appliance")
+    manager.bootstrap()
+
+    debug("onboarding services")
+    manager.onboard()
+
+    integration.clear()
+    eventually_ready(manager)
+    debug("appliance ready")
+
+    steps.random_uniform_accounts(100)
+
+    debug("scenario starting")
+    with measurement(metrics, 's3_new_transaction_latencies_{0}'.format(total)):
+      steps.random_uniform_transactions(total)
+      manager.restart()
+    debug("scenario finished")
+
+    manager.teardown()
+    cleanup()
+
+  ############################################################################
+
+  debug("end tests")
+
+  manager.teardown()
+  metrics.stop()
+
+  sys.exit(0)
 
 
 if __name__ == "__main__":
+  failed = False
   with timeit('test run'):
-    main()
+    try:
+      main()
+    except KeyboardInterrupt:
+      interrupt_stdout()
+      warn('Interrupt')
+    except Exception as ex:
+      failed = True
+      print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
+    finally:
+      if failed:
+        sys.exit(1)
+      else:
+        sys.exit(0)
