@@ -237,7 +237,7 @@ class ApplianceHelper(object):
 
   def __get_systemd_units(self):
     (code, result, error) = execute(['systemctl', 'list-units', '--no-legend', '--state=active'])
-    result = [item.split(' ')[0].strip() for item in result.split(os.linesep)]
+    result = [item.strip().split(' ')[0].strip() for item in result.split(os.linesep)]
     result = [item for item in result if not item.endswith('unit.slice')]
     result = [item for item in result if self.__is_openbank_unit(item)]
     return result
