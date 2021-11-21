@@ -21,7 +21,10 @@ class MetricsAggregator(threading.Thread):
     threading.Thread.start(self)
 
   def run(self):
+    #try:
     self._sock.bind(('127.0.0.1', 8125))
+    #except OSError:
+      #print('statsd already bound')
 
     while not self.__cancel.is_set():
       data, addr = self._sock.recvfrom(1024)
