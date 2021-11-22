@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import docker
-import urllib.request
+import functools
 import platform
 import tarfile
 import tempfile
@@ -11,6 +11,7 @@ import os
 import json
 import datetime
 import subprocess
+from distutils.version import StrictVersion
 from .shell import execute
 from .http import Request
 
@@ -37,7 +38,7 @@ class ApplianceHelper(object):
     self.context = context
 
   def get_latest_version(self, service):
-    uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags/".format(service)
+    uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags?page=1".format(service)
 
     request = Request(method='GET', url=uri)
     request.add_header('Accept', 'application/json')
@@ -50,27 +51,30 @@ class ApplianceHelper(object):
     tags = []
 
     for entry in body:
+      version = entry['name']
+      parts = version.split('-')
+      version = parts[0] or version
+      meta = parts[1] if len(parts) > 1 else None
+      if version and version.startswith('v'):
+        version = version[1:]
+
       tags.append({
-        'ts': datetime.datetime.strptime(entry['last_updated'], "%Y-%m-%dT%H:%M:%S.%fZ"),
-        'id': entry['name'],
+        'semver': StrictVersion(version),
+        'version': version,
+        'meta': meta,
+        'name': entry['name'],
+        'images': entry['images'],
+        'ts': entry['tag_last_pushed']
       })
 
-    latest = max(tags, key=lambda x: x['ts'])
+    compare = lambda x, y: x['ts'] > y['ts'] if x['semver'] == y['semver'] else x['semver'] > y['semver']
+
+    latest = max(tags, key=functools.cmp_to_key(compare))
+
     if not latest:
-      return (None, None)
+      return None, None
 
-    parts = latest.get('id', '').split('-')
-    version = parts[0] or None
-
-    if len(parts) > 1:
-      meta = 'main'
-    else:
-      meta = None
-
-    if version and version.startswith('v'):
-      version = version[1:]
-
-    return (version, meta)
+    return latest['version'], latest['meta']
 
   def setup(self):
     os.makedirs("/etc/data-warehouse/conf.d", exist_ok=True)

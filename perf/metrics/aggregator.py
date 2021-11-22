@@ -54,9 +54,8 @@ class MetricsAggregator(threading.Thread):
       with self.__lock:
         if not ts in self.__store:
           self.__store[ts] = {
-            'openbank.lake.message.ingress': 0,
-            'openbank.lake.message.egress': 0,
-            'openbank.lake.message.bytes': 0,
+            'openbank.lake.message.relayed': 0,
+            'openbank.lake.memory.bytes': 0,
             'openbank.ledger.transaction.promised': 0,
             'openbank.ledger.transaction.rollbacked': 0,
             'openbank.ledger.transaction.committed': 0,
@@ -72,9 +71,7 @@ class MetricsAggregator(threading.Thread):
 
         value = int(value)
 
-        if key == 'openbank.lake.message.ingress':
-          self.__store[ts][key] += value
-        elif key == 'openbank.lake.message.egress':
+        if key == 'openbank.lake.message.relayed':
           self.__store[ts][key] += value
         elif key == 'openbank.lake.memory.bytes':
           self.__store[ts][key] = value

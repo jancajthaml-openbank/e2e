@@ -12,7 +12,9 @@ from unit.lake import Lake
 from helpers.shell import execute
 from helpers.eventually import eventually
 from helpers.http import Request
+from distutils.version import StrictVersion
 
+import functools
 import datetime
 import docker
 import platform
@@ -35,7 +37,7 @@ class ApplianceManager(object):
     return r.do().status == 200
 
   def get_latest_service_docker_hub_version(self, service):
-    uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags/".format(service)
+    uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags?page=1".format(service)
 
     request = Request(method='GET', url=uri)
     request.add_header('Accept', 'application/json')
@@ -48,25 +50,30 @@ class ApplianceManager(object):
     tags = []
 
     for entry in body:
+      version = entry['name']
+      parts = version.split('-')
+      version = parts[0] or version
+      meta = parts[1] if len(parts) > 1 else None
+      if version and version.startswith('v'):
+        version = version[1:]
+
       tags.append({
-        'ts': datetime.datetime.strptime(entry['last_updated'], "%Y-%m-%dT%H:%M:%S.%fZ"),
-        'id': entry['name'],
+        'semver': StrictVersion(version),
+        'version': version,
+        'meta': meta,
+        'name': entry['name'],
+        'images': entry['images'],
+        'ts': entry['tag_last_pushed']
       })
 
-    latest = max(tags, key=lambda x: x['ts'])
+    compare = lambda x, y: x['ts'] > y['ts'] if x['semver'] == y['semver'] else x['semver'] > y['semver']
+
+    latest = max(tags, key=functools.cmp_to_key(compare))
+
     if not latest:
       return None
 
-    parts = latest.get('id', '').split('-')
-    version = parts[0] or None
-
-    if version and version.startswith('v'):
-      version = version[1:]
-
-    if version.startswith('v'):
-      version = version[len('v'):]
-
-    return version
+    return latest['version']
 
   def get_latest_service_github_version(self, service):
     uri = 'https://api.github.com/repos/jancajthaml-openbank/{0}/releases/latest'.format(service)
