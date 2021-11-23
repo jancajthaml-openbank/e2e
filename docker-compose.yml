@@ -7,12 +7,10 @@ services:
   # -------------------------------------------------------------------------- #
 
   postgres:
+    image: docker.io/openbank/postgres:${ARCH}-0.0.0.main
     hostname: postgres
     tmpfs:
       - /tmp
-    build:
-      dockerfile: Dockerfile
-      context: bbtest/postgres
     healthcheck:
       test: pg_isready -U postgres -d openbank
       interval: 10s
