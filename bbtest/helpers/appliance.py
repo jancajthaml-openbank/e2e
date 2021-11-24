@@ -53,17 +53,19 @@ class ApplianceHelper(object):
     for entry in body:
       version = entry['name']
       parts = version.split('-')
-      version = parts[0] or version
-      meta = parts[1] if len(parts) > 1 else None
-      if version and version.startswith('v'):
-        version = version[1:]
+      if parts[0] != self.arch:
+        continue
+
+      if len(parts) < 2:
+        continue
+
+      if not parts[1].endswith('.main'):
+        continue
 
       tags.append({
-        'semver': StrictVersion(version),
-        'version': version,
-        'meta': meta,
-        'name': entry['name'],
-        'images': entry['images'],
+        'semver': StrictVersion(parts[1][:-5]),
+        'version': parts[1][:-5],
+        'tag': entry['name'],
         'ts': entry['tag_last_pushed']
       })
 
@@ -74,7 +76,7 @@ class ApplianceHelper(object):
     if not latest:
       return None, None
 
-    return latest['version'], latest['meta']
+    return latest['tag'], latest['version']
 
   def setup(self):
     os.makedirs("/etc/data-warehouse/conf.d", exist_ok=True)
@@ -132,10 +134,11 @@ class ApplianceHelper(object):
     scratch_docker_cmd = ['FROM alpine']
 
     for service in self.services:
-      version, meta = self.get_latest_version(service)
-      assert version, 'missing version for {}'.format(service)
+      tag, version = self.get_latest_version(service)
 
-      image = 'docker.io/openbank/{}:v{}'.format(service, (version+'-'+meta) if meta else version)
+      assert tag and version, 'missing version for {}'.format(service)
+
+      image = 'docker.io/openbank/{}:{}'.format(service, tag)
       package = '/opt/artifacts/{}_{}_{}.deb'.format(service, version, self.arch)
       target = '/tmp/packages/{}.deb'.format(service)
 
