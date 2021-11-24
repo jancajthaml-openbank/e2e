@@ -31,12 +31,7 @@ secure_random = random.SystemRandom()
 
 class ApplianceManager(object):
 
-  def image_exists(self, image, tag):
-    uri = 'https://index.docker.io/v1/repositories/{0}/tags/{1}'.format(image, tag)
-    r = Request(method='GET', url=uri)
-    return r.do().status == 200
-
-  def get_latest_service_docker_hub_version(self, service):
+  def get_latest_version(self, service):
     uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags?page=1".format(service)
 
     request = Request(method='GET', url=uri)
@@ -52,17 +47,19 @@ class ApplianceManager(object):
     for entry in body:
       version = entry['name']
       parts = version.split('-')
-      version = parts[0] or version
-      meta = parts[1] if len(parts) > 1 else None
-      if version and version.startswith('v'):
-        version = version[1:]
+      if parts[0] != self.arch:
+        continue
+
+      if len(parts) < 2:
+        continue
+
+      if not parts[1].endswith('.main'):
+        continue
 
       tags.append({
-        'semver': StrictVersion(version),
-        'version': version,
-        'meta': meta,
-        'name': entry['name'],
-        'images': entry['images'],
+        'semver': StrictVersion(parts[1][:-5]),
+        'version': parts[1][:-5],
+        'tag': entry['name'],
         'ts': entry['tag_last_pushed']
       })
 
@@ -71,52 +68,13 @@ class ApplianceManager(object):
     latest = max(tags, key=functools.cmp_to_key(compare))
 
     if not latest:
-      return None
+      return None, None
 
-    return latest['version']
-
-  def get_latest_service_github_version(self, service):
-    uri = 'https://api.github.com/repos/jancajthaml-openbank/{0}/releases/latest'.format(service)
-
-    r = Request(method='GET', url=uri)
-
-    if 'GITHUB_RELEASE_TOKEN' in os.environ and os.environ['GITHUB_RELEASE_TOKEN'].strip():
-      r.add_header('Authorization', 'token {0}'.format(os.environ['GITHUB_RELEASE_TOKEN'].strip()))
-      r.add_header('User-Agent', 'https://api.github.com/meta')
-    else:
-      r.add_header('User-Agent', 'User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.89 Safari/537.36')
-
-    data = r.read().decode('utf-8')
-
-    if r.status != 200:
-      raise Exception('GitHUB version fetch failure {0}'.format(data))
-
-    version = json.loads(data)['tag_name']
-    if version.startswith('v'):
-      version = version[len('v'):]
-
-    return version
-
-  def get_latest_service_version(self, service):
-    version = None
-    exceptions = list()
-
-    try:
-      return self.get_latest_service_github_version(service)
-    except Exception as ex:
-      exceptions.append(str(ex))
-
-    try:
-      return self.get_latest_service_docker_hub_version(service)
-    except Exception as ex:
-      exceptions.append(str(ex))
-
-    raise Exception(str(os.linesep).join(exceptions))
+    return latest['tag'], latest['version']
 
   def fetch_versions(self):
     for service in ['lake', 'vault', 'ledger']:
-      version = self.get_latest_service_version(service)
-      self.versions[service] = version
+      self.versions[service] = self.get_latest_version(service)
 
   def get_arch(self):
     return {
@@ -141,15 +99,13 @@ class ApplianceManager(object):
     failure = None
     scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
-      version = self.versions[service]
-      if self.image_exists('openbank/{}'.format(service), 'v{}-main'.format(version)):
-        image = 'docker.io/openbank/{}:v{}-main'.format(service, version)
-      else:
-        image = 'docker.io/openbank/{}:v{}'.format(service, version)
+      tag, version = self.versions[service]
+      
+      image = 'docker.io/openbank/{}:{}'.format(service, tag)
+      package = '/opt/artifacts/{}_{}_{}.deb'.format(service, version, self.arch)
+      target = '/tmp/packages/{}.deb'.format(service)
 
-      package = '{}_{}_{}'.format(service, version, self.arch)
-
-      scratch_docker_cmd.append('COPY --from={0} /opt/artifacts/{1}.deb /tmp/packages/{2}.deb'.format(image, package, service))
+      scratch_docker_cmd.append('COPY --from={} {} {}'.format(image, package, target))
 
     temp = tempfile.NamedTemporaryFile(delete=True)
 
@@ -205,7 +161,7 @@ class ApplianceManager(object):
       raise failure
 
     for service in ['lake', 'vault', 'ledger']:
-      version = self.versions[service]
+      tag, version = self.versions[service]
       progress('installing {} {}'.format(service, version))
       (code, result, error) = execute([
         "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)

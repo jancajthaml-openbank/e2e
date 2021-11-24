@@ -75,7 +75,6 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run: docker system prune -f
       - run: docker pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
       - run: docker-compose build postgres
       - run:
@@ -102,7 +101,6 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run: docker system prune -f
       - run: docker pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
       - run:
           name: Run performance tests << parameters.arch >>
