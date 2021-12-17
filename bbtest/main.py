@@ -17,24 +17,24 @@ if __name__ == "__main__":
     '--no-capture',
     '--no-junit',
     '-f json',
-    '-o reports/blackbox-tests/behave/results.json',
-  ]
+    '-o {}/../reports/blackbox-tests/behave/results.json'.format(cwd),
+  ] + sys.argv[1:]
 
-  if sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false'):
+  if str(os.environ.get('CI', 'false')) == 'false':
     args.append('-f pretty')
   else:
-    args.append('-f progress3')
+    args.append('-f behave_plain_color_formatter:PlainColorFormatter')
     args.append('--quiet')
 
   args.append('@{}/order.txt'.format(cwd))
 
   for path in [
-    'reports/blackbox-tests/logs',
-    'reports/blackbox-tests/meta',
-    'reports/blackbox-tests/data',
-    'reports/blackbox-tests/behave',
-    'reports/blackbox-tests/cucumber',
-    'reports/blackbox-tests/junit'
+    '{}/../reports/blackbox-tests/logs'.format(cwd),
+    '{}/../reports/blackbox-tests/meta'.format(cwd),
+    '{}/../reports/blackbox-tests/data'.format(cwd),
+    '{}/../reports/blackbox-tests/behave'.format(cwd),
+    '{}/../reports/blackbox-tests/cucumber'.format(cwd),
+    '{}/../reports/blackbox-tests/junit'.format(cwd)
   ]:
     os.system('mkdir -p {}'.format(path))
     os.system('rm -rf {}/*'.format(path))
@@ -52,8 +52,8 @@ if __name__ == "__main__":
 
   execute([
     'json_to_junit',
-    'reports/blackbox-tests/cucumber/results.json',
-    'reports/blackbox-tests/junit/results.xml'
+    '{}/../reports/blackbox-tests/cucumber/results.json'.format(cwd),
+    '{}/../reports/blackbox-tests/junit/results.xml'.format(cwd)
   ])
 
   sys.exit(exit_code)
