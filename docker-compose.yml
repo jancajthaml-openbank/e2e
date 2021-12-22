@@ -1,4 +1,4 @@
-version: '2.1'
+version: '3.7'
 
 # ---------------------------------------------------------------------------- #
 
@@ -21,6 +21,7 @@ services:
 
   perf:
     image: docker.io/jancajthaml/bbtest:${ARCH}
+    tty: true
     environment:
       GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
       CI: ${CI:-false}
@@ -29,7 +30,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - /var/lib/docker/containers:/var/lib/docker/containers:rw
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
       - .:/opt/app:delegated
     working_dir: /opt/app
 
@@ -37,6 +38,7 @@ services:
 
   bbtest:
     image: docker.io/jancajthaml/bbtest:${ARCH}
+    tty: true
     depends_on:
       postgres:
         condition: service_healthy
@@ -48,7 +50,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:rw
       - /var/lib/docker/containers:/var/lib/docker/containers:rw
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
       - .:/opt/app:delegated
     working_dir: /opt/app
 
