@@ -26,7 +26,7 @@ def create_account(context, activity, currency, tenant, account):
   request.add_header('Accept', 'application/json')
   response = request.do()
 
-  assert response.status in [200, 409], 'expected status 200 or 409 actual {}'.format(response.status)
+  assert response.status == 200, 'expected status 200 actual {}'.format(response.status)
 
 @then('{tenant}/{account} balance should be {amount} {currency}')
 def account_balance(context, tenant, account, amount, currency):

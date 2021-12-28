@@ -59,7 +59,7 @@ Feature: Ledger API test
       | key    | value |
       | status | 417   |
 
-  Scenario: Transaction API - new transaction, valid resend, invalid resend
+  Scenario: Transaction API - new transaction, valid replay, invalid replay
     When I request HTTP https://127.0.0.1:4401/transaction/APITRN/unique_transaction_id
       | key    | value |
       | method | GET   |
