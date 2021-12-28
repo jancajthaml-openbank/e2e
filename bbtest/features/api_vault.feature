@@ -36,7 +36,8 @@ Feature: Vault API test
       | key    | value |
       | status | 504   |
 
-  Scenario: Account API - account already exists
+
+  Scenario: Account API  - valid replay, invalid replay
     When I request HTTP https://127.0.0.1:4400/account/APIACC
       | key    | value |
       | method | POST  |
@@ -60,12 +61,27 @@ Feature: Vault API test
         "name": "yyy",
         "format": "bbtest",
         "currency": "XXX",
-        "isBalanceCheck": false
+        "isBalanceCheck": true
       }
       """
     Then HTTP response is
       | key    | value |
       | status | 409   |
+
+    When I request HTTP https://127.0.0.1:4400/account/APIACC
+      | key    | value |
+      | method | POST  |
+      """
+      {
+        "name": "yyy",
+        "format": "bbtest",
+        "currency": "XXX",
+        "isBalanceCheck": false
+      }
+      """
+    Then HTTP response is
+      | key    | value |
+      | status | 200   |
 
   Scenario: Account API - get account balance
     When I request HTTP https://127.0.0.1:4400/account/APIACC/xxx
