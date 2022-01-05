@@ -30,7 +30,7 @@ this.__logger = logger()
 
 termios.tcsetattr(fd, termios.TCSANOW, new)
 
-TTY = sys.stdout.isatty() and (str(os.environ.get('CI', 'false')) == 'false')
+TTY = (str(os.environ.get('CI', 'false')) == 'false')
 
 if not TTY:
   print()
