@@ -78,8 +78,9 @@ jobs:
       - run:
           name: patch dns
           command: |
-            ls -la /etc
-            cat /etc/resolve.conf
+            #ls -la /etc
+            #cat /etc/resolve.conf
+            cat run/systemd/resolve/stub-resolv.conf
             exit 1
       - run: docker pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
       - run: docker-compose build postgres
