@@ -78,6 +78,7 @@ jobs:
       - run:
           name: patch dns
           command: |
+            ls -la /etc
             cat /etc/resolve.conf
             exit 1
       - run: docker pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
