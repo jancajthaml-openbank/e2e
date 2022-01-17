@@ -75,7 +75,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run: docker --dns=208.67.222.222 pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
+      - run: docker pull --dns=208.67.222.222 docker.io/jancajthaml/bbtest:<< parameters.arch >>
       - run: docker-compose build postgres
       - run:
           name: Run blackbox tests << parameters.arch >>
