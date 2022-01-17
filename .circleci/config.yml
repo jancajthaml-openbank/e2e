@@ -75,6 +75,11 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
+      - run:
+          name: patch dns
+          command: |
+            cat /etc/resolve.conf
+            exit 1
       - run: docker pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
       - run: docker-compose build postgres
       - run:
