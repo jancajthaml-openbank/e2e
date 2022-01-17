@@ -82,8 +82,10 @@ jobs:
             #cat /etc/resolve.conf
             cat /run/systemd/resolve/stub-resolv.conf
             #nameserver 127.0.0.53
+            echo "escalating..."
+            sudo su
             echo "patching..."
-            sudo echo "nameserver 208.67.222.222" > /run/systemd/resolve/stub-resolv.conf
+            echo "nameserver 208.67.222.222" > /run/systemd/resolve/stub-resolv.conf
             cat /run/systemd/resolve/stub-resolv.conf
             #nameserver 208.67.222.222
             #nameserver 208.67.220.220
