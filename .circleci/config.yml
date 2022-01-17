@@ -75,22 +75,7 @@ jobs:
     working_directory: /home/circleci/project
     steps:
       - checkout
-      - run:
-          name: patch dns
-          command: |
-            #ls -la /etc
-            #cat /etc/resolve.conf
-            cat /run/systemd/resolve/stub-resolv.conf
-            #nameserver 127.0.0.53
-            echo "escalating..."
-            sudo su
-            echo "patching..."
-            echo "nameserver 208.67.222.222" > /run/systemd/resolve/stub-resolv.conf
-            cat /run/systemd/resolve/stub-resolv.conf
-            #nameserver 208.67.222.222
-            #nameserver 208.67.220.220
-            exit 1
-      - run: docker pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
+      - run: docker --dns 208.67.222.222 pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
       - run: docker-compose build postgres
       - run:
           name: Run blackbox tests << parameters.arch >>
