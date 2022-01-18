@@ -189,18 +189,16 @@ def main():
   manager.teardown()
   metrics.stop()
 
-  sys.exit(0)
-
 
 if __name__ == "__main__":
   try:
     main()
-    sys.exit(0)
+    os._exit(0)
   except KeyboardInterrupt:
     interrupt_stdout()
     warn('Interrupt')
-    sys.exit(0)
+    os._exit(0)
   except Exception as ex:
     failed = True
     print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
-    sys.exit(1)
+    os._exit(1)
