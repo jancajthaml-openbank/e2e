@@ -3,7 +3,7 @@
 
 from unit.common import Unit
 from helpers.eventually import eventually
-from helpers.shell import execute
+from openbank_testkit import Shell
 import string
 import time
 import os
@@ -12,7 +12,7 @@ import os
 class VaultRest(Unit):
 
   def __init__(self):
-    (code, result, error) = execute([
+    (code, result, error) = Shell.run([
       "systemctl", "start", 'vault-rest'
     ])
     assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
@@ -23,7 +23,7 @@ class VaultRest(Unit):
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
-      (code, result, error) = execute([
+      (code, result, error) = Shell.run([
         'systemctl', 'stop', 'vault-rest'
       ])
       assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
@@ -33,7 +33,7 @@ class VaultRest(Unit):
   def restart(self) -> bool:
     @eventually(2)
     def eventual_restart():
-      (code, result, error) = execute([
+      (code, result, error) = Shell.run([
         "systemctl", "restart", 'vault-rest'
       ])
       assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
@@ -67,7 +67,7 @@ class VaultRest(Unit):
     try:
       @eventually(10)
       def eventual_check():
-        (code, result, error) = execute([
+        (code, result, error) = Shell.run([
           "systemctl", "show", "-p", "SubState", "vault-rest"
         ])
         assert "SubState=running" == str(result).strip(), code + ' ' + str(result) + ' ' + str(error)

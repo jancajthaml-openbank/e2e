@@ -35,6 +35,7 @@ TTY = (str(os.environ.get('CI', 'false')) == 'false')
 if not TTY:
   print()
 
+
 def interrupt_stdout() -> None:
   termios.tcsetattr(fd, termios.TCSAFLUSH, old)
   if this.__progress_running and __TTY:
@@ -55,11 +56,13 @@ def debug(msg) -> None:
       sys.stdout.write('\033[97m        │ \033[0m{0}\033[K\n'.format(chunk))
     sys.stdout.flush()
 
+
 def info(msg) -> None:
   this.__logger.info('(PERF) INFO {}'.format(msg))
   this.__progress_running = False
   sys.stdout.write('\033[95m   info ║ \033[0m{0}\033[K\n'.format(msg))
   sys.stdout.flush()
+
 
 def progress(msg) -> None:
   if this.__last_progress == msg:
@@ -73,11 +76,13 @@ def progress(msg) -> None:
     sys.stdout.write('\033[94m        │ {0}\033[K\n'.format(msg.rstrip()))
     sys.stdout.flush()
 
+
 def error(msg) -> None:
   this.__logger.error('(PERF) ERROR {}'.format(msg))
   this.__progress_running = False
   sys.stdout.write('\033[91m! error ║ {0}\033[0m[K\n'.format(msg))
   sys.stdout.flush()
+
 
 def success(msg) -> None:
   this.__logger.info('(PERF) SUCCESS {}'.format(msg))
@@ -85,43 +90,12 @@ def success(msg) -> None:
   sys.stdout.write('\033[92m   pass ║ {0}\033[0m\033[K\n'.format(msg))
   sys.stdout.flush()
 
+
 def warn(msg) -> None:
   this.__logger.warning('(PERF) WARNING {}'.format(msg))
   this.__progress_running = False
   sys.stdout.write('\033[93m   warn ║ {0}\033[0m\033[K\n'.format(msg))
   sys.stdout.flush()
-
-
-
-#def info(msg) -> None:
-#  this.__progress_running = False
-#  sys.stdout.write('\033[32m  ╠─ {0}\033[0m  \n'.format(msg))
-#  sys.stdout.flush()
-#
-#def progress(msg) -> None:
-#  this.__progress_running = False
-#  sys.stdout.write('\033[0m  │  {0}  \n'.format(msg))
-#  sys.stdout.flush()
-#
-#def error(msg) -> None:
-#  this.__progress_running = False
-#  sys.stdout.write('\033[31m  ╠─ {0}\033[0m  \n'.format(msg))
-#  sys.stdout.flush()
-#
-#def warn(msg) -> None:
-#  this.__progress_running = False
-#  sys.stdout.write('\033[33m  ╠─ {0}\033[0m  \n'.format(msg))
-#  sys.stdout.flush()
-#
-#def debug(msg) -> None:
-#  this.__progress_running = False
-#  sys.stdout.write('\033[33m  ╠─ {0}\033[0m  \n'.format(msg))
-#  sys.stdout.flush()
-#
-#def success(msg) -> None:
-#  this.__progress_running = False
-#  sys.stdout.write('\033[33m  ╠─ {0}\033[0m  \n'.format(msg))
-#  sys.stdout.flush()
 
 
 class timeit():

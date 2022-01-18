@@ -3,7 +3,7 @@
 
 from behave import *
 from helpers.eventually import eventually
-from helpers.http import Request
+from openbank_testkit import Request
 import json
 import time
 

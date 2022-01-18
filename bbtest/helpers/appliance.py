@@ -1,82 +1,28 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import docker
 import functools
-import platform
 import tarfile
 import tempfile
 import errno
 import os
-import json
 import datetime
 import subprocess
-from distutils.version import StrictVersion
-from .shell import execute
-from .http import Request
+from helpers.eventually import eventually
+from openbank_testkit import Package, Platform, Shell
 
 
 class ApplianceHelper(object):
 
-  def get_arch(self):
-    return {
-      'x86_64': 'amd64',
-      'armv8': 'arm64',
-      'aarch64': 'arm64'
-    }.get(platform.uname().machine, 'amd64')
-
   def __init__(self, context):
-    self.arch = self.get_arch()
     self.units = list()
-    self.services = [
-      "lake",
-      "vault",
-      "ledger",
-      "data-warehouse",
-    ]
-    self.docker = docker.from_env()
+    self.services = {
+      "lake": None,
+      "vault": None,
+      "ledger": None,
+      "data-warehouse": None,
+    }
     self.context = context
-
-  def get_latest_version(self, service):
-    uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags?page=1".format(service)
-
-    request = Request(method='GET', url=uri)
-    request.add_header('Accept', 'application/json')
-    response = request.do()
-
-    if not response.status == 200:
-      return None
-
-    body = json.loads(response.read().decode('utf-8')).get('results', [])
-    tags = []
-
-    for entry in body:
-      version = entry['name']
-      parts = version.split('-')
-      if parts[0] != self.arch:
-        continue
-
-      if len(parts) < 2:
-        continue
-
-      if not parts[1].endswith('.main'):
-        continue
-
-      tags.append({
-        'semver': StrictVersion(parts[1][:-5]),
-        'version': parts[1][:-5],
-        'tag': entry['name'],
-        'ts': entry['tag_last_pushed']
-      })
-
-    compare = lambda x, y: x['ts'] > y['ts'] if x['semver'] == y['semver'] else x['semver'] > y['semver']
-
-    latest = max(tags, key=functools.cmp_to_key(compare))
-
-    if not latest:
-      return None, None
-
-    return latest['tag'], latest['version']
 
   def setup(self):
     os.makedirs("/etc/data-warehouse/conf.d", exist_ok=True)
@@ -128,84 +74,23 @@ class ApplianceHelper(object):
       ]))
 
   def download(self):
-    failure = None
-    os.makedirs('/tmp/packages', exist_ok=True)
-
-    scratch_docker_cmd = ['FROM alpine']
-
-    for service in self.services:
-      tag, version = self.get_latest_version(service)
-
-      assert tag and version, 'missing version for {}'.format(service)
-
-      image = 'docker.io/openbank/{}:{}'.format(service, tag)
-      package = '/opt/artifacts/{}_{}_{}.deb'.format(service, version, self.arch)
-      target = '/tmp/packages/{}.deb'.format(service)
-
-      scratch_docker_cmd.append('COPY --from={} {} {}'.format(image, package, target))
-
-    temp = tempfile.NamedTemporaryFile(delete=True)
-    try:
-      with open(temp.name, 'w') as fd:
-        fd.write(str(os.linesep).join(scratch_docker_cmd))
-
-      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=True, tag='bbtest_artifacts-scratch')
-      for chunk in stream:
-        if not 'stream' in chunk:
-          continue
-        for line in chunk['stream'].splitlines():
-          l = line.strip(os.linesep)
-          if not len(l):
-            continue
-          print(l)
-
-      scratch = self.docker.containers.run('bbtest_artifacts-scratch', ['/bin/true'], detach=True)
-
-      tar_name = tempfile.NamedTemporaryFile(delete=True)
-
-      for service in self.services:
-        bits, stat = scratch.get_archive('/tmp/packages/{}.deb'.format(service))
-        with open(tar_name.name, 'wb') as fd:
-          for chunk in bits:
-            fd.write(chunk)
-
-        archive = tarfile.TarFile(tar_name.name)
-        archive.extract('{}.deb'.format(service), '/tmp/packages')
-
-        (code, result, error) = execute(['dpkg', '-c', '/tmp/packages/{}.deb'.format(service)])
-        assert code == 'OK', str(code) + ' ' + result
-
-        with open('reports/blackbox-tests/meta/debian.{}.txt'.format(service), 'w') as fd:
-          fd.write(result)
-
-        result = [item for item in result.split(os.linesep)]
-        result = [item.rsplit('/', 1)[-1].strip() for item in result if "/lib/systemd/system/{}".format(service) in item]
-        result = [item for item in result if not item.endswith('@.service')]
-
-        self.units += result
-
-      scratch.remove()
-    except Exception as ex:
-      failure = ex
-    finally:
-      temp.close()
-      try:
-        self.docker.images.remove('bbtest_artifacts-scratch', force=True)
-      except:
-        pass
-
-    if failure:
-      raise failure
+    for service in self.services.keys():
+      package = Package(service)
+      version = package.latest_version
+      assert version, 'no version known for {}'.format(service)
+      self.services[service] = version
+      assert package.download(version, 'main', '/tmp/packages'), 'unable to download package {}'.format(service)
 
   def install(self):
     for service in self.services:
-      (code, result, error) = execute([
-        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
+      version = self.services[service]
+      (code, result, error) = Shell.run([
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}_{}_{}.deb'.format(service, version, Platform.arch)
       ])
       assert code == 'OK', str(code) + ' ' + result
 
   def running(self):
-    (code, result, error) = execute(["systemctl", "list-units", "--no-legend", "--state=active"])
+    (code, result, error) = Shell.run(["systemctl", "list-units", "--no-legend", "--state=active"])
     if code != 'OK':
       return False
 
@@ -214,7 +99,7 @@ class ApplianceHelper(object):
       if not unit.endswith('.service'):
         continue
 
-      (code, result, error) = execute(["systemctl", "show", "-p", "SubState", unit])
+      (code, result, error) = Shell.run(["systemctl", "show", "-p", "SubState", unit])
 
       if unit.endswith('-watcher.service'):
         all_running &= 'SubState=dead' in result
@@ -231,19 +116,19 @@ class ApplianceHelper(object):
 
   def collect_logs(self):
     for unit in set(self.__get_systemd_units() + self.units):
-      (code, result, error) = execute(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'])
+      (code, result, error) = Shell.run(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'])
       if code != 'OK' or not result:
         continue
       with open('reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
         fd.write(result)
 
-    (code, result, error) = execute(['journalctl', '-o', 'cat', '--no-pager'])
+    (code, result, error) = Shell.run(['journalctl', '-o', 'cat', '--no-pager'])
     if code == 'OK':
       with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
         fd.write(result)
 
   def __get_systemd_units(self):
-    (code, result, error) = execute(['systemctl', 'list-units', '--no-legend', '--state=active'])
+    (code, result, error) = Shell.run(['systemctl', 'list-units', '--no-legend', '--state=active'])
     result = [item.strip().split(' ')[0].strip() for item in result.split(os.linesep)]
     result = [item for item in result if not item.endswith('unit.slice')]
     result = [item for item in result if self.__is_openbank_unit(item)]
@@ -253,5 +138,5 @@ class ApplianceHelper(object):
     self.collect_logs()
     # INFO patch
     for unit in reversed(sorted(self.__get_systemd_units(), key=len)):
-      execute(['systemctl', 'stop', unit])
+      Shell.run(['systemctl', 'stop', unit])
     self.collect_logs()

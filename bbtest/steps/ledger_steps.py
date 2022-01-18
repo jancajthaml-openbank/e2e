@@ -4,7 +4,7 @@
 from behave import *
 import json
 import time
-from helpers.http import Request, StubResponse
+from openbank_testkit import Request, StubResponse
 
 
 @given('{amount} {currency} is transferred from {tenantFrom}/{accountFrom} to {tenantTo}/{accountTo}')

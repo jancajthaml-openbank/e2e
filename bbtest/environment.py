@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sys
+from openbank_testkit import StatsdMock
 from helpers.appliance import ApplianceHelper
-from helpers.statsd import StatsdHelper
 from helpers.logger import logger
 
 
@@ -26,7 +26,7 @@ def after_scenario(context, scenario):
 def before_all(context):
   context.log = logger()
 
-  context.statsd = StatsdHelper()
+  context.statsd = StatsdMock()
   context.statsd.start()
 
   context.appliance = ApplianceHelper(context)

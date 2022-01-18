@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from behave import *
+from helpers.eventually import eventually
+from openbank_testkit import Request
 import json
 import time
-from helpers.eventually import eventually
-from helpers.http import Request
 
 
 @given('{service} {tenant} is onboarded')
