@@ -3,7 +3,7 @@
 
 from unit.common import Unit
 from helpers.eventually import eventually
-from helpers.shell import execute
+from openbank_testkit import Shell
 import string
 import time
 import os
@@ -21,12 +21,12 @@ class LedgerUnit(Unit):
   def __init__(self, tenant):
     self._tenant = tenant
 
-    (code, result, error) = execute([
+    (code, result, error) = Shell.run([
       "systemctl", "enable", 'ledger-unit@{0}'.format(self._tenant)
     ])
     assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
-    (code, result, error) = execute([
+    (code, result, error) = Shell.run([
       "systemctl", "start", 'ledger-unit@{0}'.format(self._tenant)
     ])
     assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
@@ -34,7 +34,7 @@ class LedgerUnit(Unit):
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
-      (code, result, error) = execute([
+      (code, result, error) = Shell.run([
         'systemctl', 'stop', 'ledger-unit@{0}'.format(self._tenant)
       ])
       assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
@@ -44,7 +44,7 @@ class LedgerUnit(Unit):
   def restart(self) -> bool:
     @eventually(2)
     def eventual_restart():
-      (code, result, error) = execute([
+      (code, result, error) = Shell.run([
         "systemctl", "restart", 'ledger-unit@{0}'.format(self._tenant)
       ])
       assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
@@ -79,7 +79,7 @@ class LedgerUnit(Unit):
     try:
       @eventually(10)
       def eventual_check():
-        (code, result, error) = execute([
+        (code, result, error) = Shell.run([
           "systemctl", "show", "-p", "SubState", 'ledger-unit@{0}'.format(self._tenant)
         ])
         assert "SubState=running" == str(result).strip(), code + ' ' + str(result) + ' ' + str(error)

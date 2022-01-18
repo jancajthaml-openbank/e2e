@@ -9,15 +9,11 @@ from unit.vault_rest import VaultRest
 from unit.ledger_unit import LedgerUnit
 from unit.ledger_rest import LedgerRest
 from unit.lake import Lake
-from helpers.shell import execute
 from helpers.eventually import eventually
-from helpers.http import Request
-from distutils.version import StrictVersion
+from openbank_testkit import Request, Shell, Package, Platform
 
 import functools
 import datetime
-import docker
-import platform
 import tarfile
 import tempfile
 import errno
@@ -31,145 +27,35 @@ secure_random = random.SystemRandom()
 
 class ApplianceManager(object):
 
-  def get_latest_version(self, service):
-    uri = "https://hub.docker.com/v2/repositories/openbank/{}/tags?page=1".format(service)
-
-    request = Request(method='GET', url=uri)
-    request.add_header('Accept', 'application/json')
-    response = request.do()
-
-    if not response.status == 200:
-      return None
-
-    body = json.loads(response.read().decode('utf-8')).get('results', [])
-    tags = []
-
-    for entry in body:
-      version = entry['name']
-      parts = version.split('-')
-      if parts[0] != self.arch:
-        continue
-
-      if len(parts) < 2:
-        continue
-
-      if not parts[1].endswith('.main'):
-        continue
-
-      tags.append({
-        'semver': StrictVersion(parts[1][:-5]),
-        'version': parts[1][:-5],
-        'tag': entry['name'],
-        'ts': entry['tag_last_pushed']
-      })
-
-    compare = lambda x, y: x['ts'] > y['ts'] if x['semver'] == y['semver'] else x['semver'] > y['semver']
-
-    latest = max(tags, key=functools.cmp_to_key(compare))
-
-    if not latest:
-      return None, None
-
-    return latest['tag'], latest['version']
-
-  def fetch_versions(self):
-    for service in ['lake', 'vault', 'ledger']:
-      self.versions[service] = self.get_latest_version(service)
-
-  def get_arch(self):
-    return {
-      'x86_64': 'amd64',
-      'armv8': 'arm64',
-      'aarch64': 'arm64'
-    }.get(platform.uname().machine, 'amd64')
-
   def __init__(self):
-    self.arch = self.get_arch()
     self.store = dict()
     self.versions = dict()
     self.units = dict()
     self.services = list()
-    self.docker = docker.from_env()
 
   def setup(self):
     os.makedirs('/tmp/packages', exist_ok=True)
 
-    self.fetch_versions()
-
-    failure = None
-    scratch_docker_cmd = ['FROM alpine']
     for service in ['lake', 'vault', 'ledger']:
-      tag, version = self.versions[service]
-      
-      image = 'docker.io/openbank/{}:{}'.format(service, tag)
-      package = '/opt/artifacts/{}_{}_{}.deb'.format(service, version, self.arch)
-      target = '/tmp/packages/{}.deb'.format(service)
-
-      scratch_docker_cmd.append('COPY --from={} {} {}'.format(image, package, target))
-
-    temp = tempfile.NamedTemporaryFile(delete=True)
-
-    try:
-      with open(temp.name, 'w') as fd:
-        fd.write(str(os.linesep).join(scratch_docker_cmd))
-
-      image, stream = self.docker.images.build(fileobj=temp, rm=True, pull=True, tag='perf_artifacts-scratch')
-
-      if TTY:
-        for chunk in stream:
-          if 'stream' in chunk:
-            for line in chunk['stream'].splitlines():
-              if len(line):
-                progress('docker {0}'.format(line.rstrip()))
-
-      scratch = self.docker.containers.run('perf_artifacts-scratch', ['/bin/true'], detach=True)
-
-      for service in ['lake', 'vault', 'ledger']:
-        tar_name = '/tmp/packages/{}.tar'.format(service)
-        bits, stat = scratch.get_archive('/tmp/packages/{}.deb'.format(service))
-
-        if TTY:
-          with open(tar_name, 'wb') as fd:
-            total_bytes = 0
-            for chunk in bits:
-              total_bytes += len(chunk)
-              progress('extracting {0} {1:.2f}%'.format(stat['name'], min(100, 100 * (total_bytes/stat['size']))))
-              fd.write(chunk)
-        else:
-          progress('extracting {}'.format(stat['name']))
-          with open(tar_name, 'wb') as fd:
-            for chunk in bits:
-              fd.write(chunk)
-
-        archive = tarfile.TarFile(tar_name)
-        archive.extract('{}.deb'.format(service), '/tmp/packages')
-        os.remove(tar_name)
-
-        debug('downloaded {}'.format(stat['name']))
-
-      scratch.remove()
-    except Exception as ex:
-      failure = ex
-    finally:
-      temp.close()
-      try:
-        self.docker.images.remove('perf_artifacts-scratch', force=True)
-      except:
-        pass
-
-    if failure:
-      raise failure
+      progress('fetchin version of {}'.format(service))
+      package = Package(service)
+      version = package.latest_version
+      assert version, 'no version known for {}'.format(service)
+      self.versions[service] = version
+      progress('downloading packages from {} {}'.format(service, version))
+      assert package.download(version, 'main', '/tmp/packages'), 'unable to download package {}'.format(service)
+      success('downloaded {}_{}_{}.deb'.format(service, version, Platform.arch))
 
     for service in ['lake', 'vault', 'ledger']:
-      tag, version = self.versions[service]
+      version = self.versions[service]
       progress('installing {} {}'.format(service, version))
-      (code, result, error) = execute([
-        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}.deb'.format(service)
+      (code, result, error) = Shell.run([
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}_{}_{}.deb'.format(service, version, Platform.arch)
       ])
       assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
       success('installed {} {}'.format(service, version))
 
-    (code, result, error) = execute(["systemctl", "list-units", "--no-legend"])
+    (code, result, error) = Shell.run(["systemctl", "list-units", "--no-legend"])
     assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     self.services = set([x.split(' ')[0].split('@')[0].split('.service')[0] for x in result.splitlines()])
@@ -243,7 +129,7 @@ class ApplianceManager(object):
     self.collect_logs()
 
   def collect_logs(self):
-    (code, result, error) = execute(['journalctl', '-o', 'cat', '--no-pager'])
+    (code, result, error) = Shell.run(['journalctl', '-o', 'cat', '--no-pager'])
     if code == 'OK':
       with open('reports/perf-tests/logs/journal.log', 'w') as fd:
         fd.write(result)

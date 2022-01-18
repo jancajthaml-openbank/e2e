@@ -2,8 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from behave import *
-import os
 from helpers.eventually import eventually
+import os
 
 
 @then('file {file} should exist')

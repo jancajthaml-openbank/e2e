@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 
 from behave import *
-import ssl
-import urllib.request
 import json
 import os
 from datetime import datetime

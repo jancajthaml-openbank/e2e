@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-from helpers.http import Request
+from openbank_testkit import Request
 from utils import progress
-
 import multiprocessing
 import functools
 import itertools

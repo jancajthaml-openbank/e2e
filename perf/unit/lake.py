@@ -3,7 +3,7 @@
 
 from unit.common import Unit
 from helpers.eventually import eventually
-from helpers.shell import execute
+from openbank_testkit import Shell
 import string
 import time
 import os
@@ -12,7 +12,7 @@ import os
 class Lake(Unit):
 
   def __init__(self):
-    (code, result, error) = execute(['systemctl', 'start', 'lake-relay'])
+    (code, result, error) = Shell.run(['systemctl', 'start', 'lake-relay'])
     assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
   def __repr__(self):
@@ -21,7 +21,7 @@ class Lake(Unit):
   def teardown(self):
     @eventually(5)
     def eventual_teardown():
-      (code, result, error) = execute(['systemctl', 'stop', 'lake-relay'])
+      (code, result, error) = Shell.run(['systemctl', 'stop', 'lake-relay'])
       assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_teardown()
@@ -29,7 +29,7 @@ class Lake(Unit):
   def restart(self) -> bool:
     @eventually(2)
     def eventual_restart():
-      (code, result, error) = execute(['systemctl', 'restart', 'lake-relay'])
+      (code, result, error) = Shell.run(['systemctl', 'restart', 'lake-relay'])
       assert code == 'OK', code + ' ' + str(result) + ' ' + str(error)
 
     eventual_restart()
@@ -61,7 +61,7 @@ class Lake(Unit):
     try:
       @eventually(10)
       def eventual_check():
-        (code, result) = execute([
+        (code, result) = Shell.run([
           "systemctl", "show", "-p", "SubState", "lake-relay"
         ])
         assert "SubState=running" == str(result).strip(), str(result)
