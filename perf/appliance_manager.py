@@ -37,7 +37,7 @@ class ApplianceManager(object):
     os.makedirs('/tmp/packages', exist_ok=True)
 
     for service in ['lake', 'vault', 'ledger']:
-      progress('fetchin version of {}'.format(service))
+      progress('fetching version of {}'.format(service))
       package = Package(service)
       version = package.latest_version
       assert version, 'no version known for {}'.format(service)
