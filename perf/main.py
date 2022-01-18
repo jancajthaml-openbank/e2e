@@ -193,17 +193,14 @@ def main():
 
 
 if __name__ == "__main__":
-  failed = False
   try:
     main()
+    sys.exit(0)
   except KeyboardInterrupt:
     interrupt_stdout()
     warn('Interrupt')
+    sys.exit(0)
   except Exception as ex:
     failed = True
     print(''.join(traceback.format_exception(etype=type(ex), value=ex, tb=ex.__traceback__)))
-  finally:
-    if failed:
-      sys.exit(1)
-    else:
-      sys.exit(0)
+    sys.exit(1)
