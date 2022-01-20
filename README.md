@@ -13,5 +13,5 @@
 
 [![CircleCI](https://circleci.com/gh/jancajthaml-openbank/e2e/tree/main.svg?style=shield)](https://circleci.com/gh/jancajthaml-openbank/e2e/tree/main)
 
-Run tests with `make -j 8 test`
+Run tests with `make`
 
