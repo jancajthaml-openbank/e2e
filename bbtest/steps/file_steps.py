@@ -11,7 +11,6 @@ def file_should_exist(context, file):
   @eventually(2)
   def wait_file_exist():
     assert os.path.isfile(file)
-
   wait_file_exist()
 
 
@@ -20,7 +19,6 @@ def directory_should_exist(context, directory):
   @eventually(2)
   def wait_directory_exist():
     assert os.path.isdir(directory)
-
   wait_directory_exist()
 
 
@@ -34,6 +32,5 @@ def directory_should_contain_len(context, directory, count):
     except:
       pass
     assert len(entries) == int(count), "expected {} files but found {}".format(count, entries)
-
   directory_should_exist(context, directory)
   wait_files_exists()

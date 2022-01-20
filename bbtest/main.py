@@ -41,6 +41,8 @@ if __name__ == "__main__":
 
   from behave import __main__ as behave_executable
 
+  print('\nStarting tests')
+
   exit_code = behave_executable.main(args=' '.join(args))
 
   with open('reports/blackbox-tests/behave/results.json', 'r') as fd_behave:
