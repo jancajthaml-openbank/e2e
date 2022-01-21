@@ -53,13 +53,13 @@ executors:
     machine:
       image: ubuntu-2004:202111-01
       docker_layer_caching: false
-      resource_class: arm.medium
+    resource_class: arm.medium
 
   machine-amd64:
     machine:
       image: ubuntu-2004:202111-01
       docker_layer_caching: false
-      resource_class: medium
+    resource_class: medium
 
 # ---------------------------------------------------------------------------- #
 
@@ -113,9 +113,5 @@ jobs:
       - store_artifacts:
           path: /home/circleci/project/reports/perf-tests
           destination: reports
-      - persist_to_workspace:
-          root: /home/circleci/project/reports/perf-tests
-          paths:
-            - metrics
 
 # ---------------------------------------------------------------------------- #
