@@ -17,10 +17,11 @@ class ApplianceHelper(object):
   def __init__(self, context):
     self.units = list()
     self.services = {
+      "postgres": None,
       "lake": None,
       "vault": None,
       "ledger": None,
-      "data-warehouse": None,
+      "data-warehouse": None
     }
     self.context = context
 
@@ -30,7 +31,7 @@ class ApplianceHelper(object):
       fd.write(str(os.linesep).join([
         "DATA_WAREHOUSE_LOG_LEVEL=DEBUG",
         "DATA_WAREHOUSE_HTTP_PORT=8080",
-        "DATA_WAREHOUSE_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank",
+        "DATA_WAREHOUSE_POSTGRES_URL=jdbc:postgresql://127.0.0.1:5432/openbank",
         "DATA_WAREHOUSE_PRIMARY_STORAGE_PATH=/data"
       ]))
 
@@ -86,6 +87,7 @@ class ApplianceHelper(object):
 
   def install(self):
     for service in self.services:
+      print('Installing {}'.format(service))
       version = self.services[service]
       cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
       (code, result, error) = Shell.run([
