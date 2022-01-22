@@ -45,9 +45,9 @@ if __name__ == "__main__":
 
   exit_code = behave_executable.main(args=' '.join(args))
 
-  with open('reports/blackbox-tests/behave/results.json', 'r') as fd_behave:
+  with open('{}/../reports/blackbox-tests/behave/results.json'.format(cwd), 'r') as fd_behave:
     cucumber_data = None
-    with open('reports/blackbox-tests/cucumber/results.json', 'w') as fd_cucumber:
+    with open('{}/../reports/blackbox-tests/cucumber/results.json'.format(cwd), 'w') as fd_cucumber:
       behave_data = json.loads(fd_behave.read())
       cucumber_data = json.dumps(behave2cucumber.convert(behave_data))
       fd_cucumber.write(cucumber_data)
