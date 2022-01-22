@@ -119,16 +119,18 @@ class ApplianceHelper(object):
     return False
 
   def collect_logs(self):
+    cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
+
     for unit in set(self.__get_systemd_units() + self.units):
       (code, result, error) = Shell.run(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'])
       if code != 'OK' or not result:
         continue
-      with open('reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
+      with open('{}/reports/blackbox-tests/logs/{}.log'.format(cwd, unit), 'w') as fd:
         fd.write(result)
 
     (code, result, error) = Shell.run(['journalctl', '-o', 'cat', '--no-pager'])
     if code == 'OK':
-      with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
+      with open('{}/reports/blackbox-tests/logs/journal.log'.format(cwd), 'w') as fd:
         fd.write(result)
 
   def __get_systemd_units(self):
