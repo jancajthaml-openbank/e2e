@@ -76,7 +76,6 @@ jobs:
     steps:
       - checkout
       - run: docker pull docker.io/jancajthaml/bbtest:<< parameters.arch >>
-      - run: ARCH=<< parameters.arch >> docker-compose build postgres
       - run:
           name: Run blackbox tests << parameters.arch >>
           command: |
