@@ -1,3 +1,5 @@
+tmp/*
+!tmp/.gitkeep
 reports
 npm-debug*
 __py__cache__*

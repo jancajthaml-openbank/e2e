@@ -78,14 +78,18 @@ class ApplianceHelper(object):
       package = Package(service)
       version = package.latest_version
       assert version, 'no version known for {}'.format(service)
+
+      cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
+
       self.services[service] = version
-      assert package.download(version, 'main', '/tmp/packages'), 'unable to download package {}'.format(service)
+      assert package.download(version, 'main', '{}/tmp'.format(cwd)), 'unable to download package {}'.format(service)
 
   def install(self):
     for service in self.services:
       version = self.services[service]
+      cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
       (code, result, error) = Shell.run([
-        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}_{}_{}.deb'.format(service, version, Platform.arch)
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '{}/tmp/{}_{}_{}.deb'.format(cwd, service, version, Platform.arch)
       ])
       assert code == 'OK', str(code) + ' ' + result
 

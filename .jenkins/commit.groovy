@@ -45,6 +45,43 @@ pipeline {
             }
         }
 
+        stage('Download') {
+            steps {
+                script {
+                    artifactory.download spec: """{
+                        "files": [
+                            {
+                                "flat": true,
+                                "pattern": "generic-local/openbank/lake/1.3.2/linux/amd64/lake.deb",
+                                "target": "${env.WORKSPACE}/tmp/lake_1.3.2_amd64.deb"
+                            },
+                            {
+                                "flat": true,
+                                "pattern": "generic-local/openbank/vault/1.3.5/linux/amd64/vault.deb",
+                                "target": "${env.WORKSPACE}/tmp/vault_1.3.5_amd64.deb"
+                            },
+                            {
+                                "flat": true,
+                                "pattern": "generic-local/openbank/ledger/1.1.4/linux/amd64/ledger.deb",
+                                "target": "${env.WORKSPACE}/tmp/ledger_1.1.4_amd64.deb"
+                            },
+                            {
+                                "flat": true,
+                                "pattern": "generic-local/openbank/data-warehouse/1.1.1/linux/amd64/data-warehouse.deb",
+                                "target": "${env.WORKSPACE}/tmp/data-warehouse_1.1.1_amd64.deb"
+                            }
+                        ]
+                    }"""
+
+                    echo sh(
+                        script: 'ls -la tmp',
+                        returnStdout: true
+                    ).trim()
+
+                }
+            }
+        }
+
         stage('BlackBox Test') {
             agent {
                 docker {
@@ -65,6 +102,9 @@ pipeline {
                     options = """
                         |-e CI=true
                         |--volumes-from=${cid}
+                        |--cpus=1
+                        |--memory=2g
+                        |--memory-swappiness=0
                         |-v /var/run/docker.sock:/var/run/docker.sock:rw
                         |-v /var/lib/docker/containers:/var/lib/docker/containers:rw
                         |-v /sys/fs/cgroup:/sys/fs/cgroup:ro
