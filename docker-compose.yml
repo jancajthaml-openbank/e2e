@@ -6,24 +6,10 @@ services:
 
   # -------------------------------------------------------------------------- #
 
-  postgres:
-    image: docker.io/openbank/postgres:${ARCH}-0.0.0.main
-    hostname: postgres
-    tmpfs:
-      - /tmp
-    healthcheck:
-      test: pg_isready -U postgres -d openbank
-      interval: 10s
-      timeout: 3s
-      retries: 10
-
-  # -------------------------------------------------------------------------- #
-
   perf:
     image: docker.io/jancajthaml/bbtest:${ARCH}
     tty: true
     environment:
-      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
       CI: ${CI:-false}
     tmpfs:
       - /data
@@ -39,11 +25,7 @@ services:
   bbtest:
     image: docker.io/jancajthaml/bbtest:${ARCH}
     tty: true
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
       CI: ${CI:-false}
     tmpfs:
       - /data

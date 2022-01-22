@@ -17,10 +17,11 @@ class ApplianceHelper(object):
   def __init__(self, context):
     self.units = list()
     self.services = {
+      "postgres": None,
       "lake": None,
       "vault": None,
       "ledger": None,
-      "data-warehouse": None,
+      "data-warehouse": None
     }
     self.context = context
 
@@ -30,7 +31,7 @@ class ApplianceHelper(object):
       fd.write(str(os.linesep).join([
         "DATA_WAREHOUSE_LOG_LEVEL=DEBUG",
         "DATA_WAREHOUSE_HTTP_PORT=8080",
-        "DATA_WAREHOUSE_POSTGRES_URL=jdbc:postgresql://postgres:5432/openbank",
+        "DATA_WAREHOUSE_POSTGRES_URL=jdbc:postgresql://127.0.0.1:5432/openbank",
         "DATA_WAREHOUSE_PRIMARY_STORAGE_PATH=/data"
       ]))
 
@@ -78,14 +79,19 @@ class ApplianceHelper(object):
       package = Package(service)
       version = package.latest_version
       assert version, 'no version known for {}'.format(service)
+
+      cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
+
       self.services[service] = version
-      assert package.download(version, 'main', '/tmp/packages'), 'unable to download package {}'.format(service)
+      assert package.download(version, 'main', '{}/tmp'.format(cwd)), 'unable to download package {}'.format(service)
 
   def install(self):
     for service in self.services:
+      print('Installing {}'.format(service))
       version = self.services[service]
+      cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
       (code, result, error) = Shell.run([
-        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '/tmp/packages/{}_{}_{}.deb'.format(service, version, Platform.arch)
+        "apt-get", "install", "-f", "-qq", "-o=Dpkg::Use-Pty=0", "-o=Dpkg::Options::=--force-confdef", "-o=Dpkg::Options::=--force-confnew", '{}/tmp/{}_{}_{}.deb'.format(cwd, service, version, Platform.arch)
       ])
       assert code == 'OK', str(code) + ' ' + result
 
@@ -115,16 +121,18 @@ class ApplianceHelper(object):
     return False
 
   def collect_logs(self):
+    cwd = os.path.realpath('{}/../..'.format(os.path.dirname(__file__)))
+
     for unit in set(self.__get_systemd_units() + self.units):
       (code, result, error) = Shell.run(['journalctl', '-o', 'cat', '-u', unit, '--no-pager'])
       if code != 'OK' or not result:
         continue
-      with open('reports/blackbox-tests/logs/{}.log'.format(unit), 'w') as fd:
+      with open('{}/reports/blackbox-tests/logs/{}.log'.format(cwd, unit), 'w') as fd:
         fd.write(result)
 
     (code, result, error) = Shell.run(['journalctl', '-o', 'cat', '--no-pager'])
     if code == 'OK':
-      with open('reports/blackbox-tests/logs/journal.log', 'w') as fd:
+      with open('{}/reports/blackbox-tests/logs/journal.log'.format(cwd), 'w') as fd:
         fd.write(result)
 
   def __get_systemd_units(self):
