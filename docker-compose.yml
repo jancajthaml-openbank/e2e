@@ -23,7 +23,6 @@ services:
     image: docker.io/jancajthaml/bbtest:${ARCH}
     tty: true
     environment:
-      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
       CI: ${CI:-false}
     tmpfs:
       - /data
@@ -43,7 +42,6 @@ services:
       postgres:
         condition: service_healthy
     environment:
-      GITHUB_RELEASE_TOKEN: ${GITHUB_RELEASE_TOKEN:-}
       CI: ${CI:-false}
     tmpfs:
       - /data
