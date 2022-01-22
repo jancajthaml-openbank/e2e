@@ -69,6 +69,11 @@ pipeline {
                                 "flat": true,
                                 "pattern": "generic-local/openbank/data-warehouse/1.1.1/linux/amd64/data-warehouse.deb",
                                 "target": "${env.WORKSPACE}/tmp/data-warehouse_1.1.1_amd64.deb"
+                            },
+                            {
+                                "flat": true,
+                                "pattern": "generic-local/openbank/postgres/1.0.0/linux/amd64/postgres.deb",
+                                "target": "${env.WORKSPACE}/tmp/postgres_1.0.0_amd64.deb"
                             }
                         ]
                     }"""
